@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/kirillgetmanskii_1/.claude/**)",
+      "Read(//Users/kirillgetmanskii_1/.claude/plugins/**)"
+    ]
+  }
+}

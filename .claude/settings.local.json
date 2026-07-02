@@ -2,7 +2,11 @@
   "permissions": {
     "allow": [
       "Read(//Users/kirillgetmanskii_1/.claude/**)",
-      "Read(//Users/kirillgetmanskii_1/.claude/plugins/**)"
+      "Read(//Users/kirillgetmanskii_1/.claude/plugins/**)",
+      "Bash(grep -rioE \"android skills \\(list|search|add\\)[^\\\\`]*\" ~/.claude/skills/android-cli/SKILL.md)",
+      "Bash(android skills *)",
+      "WebSearch",
+      "Bash(python3 *)"
     ]
   }
 }

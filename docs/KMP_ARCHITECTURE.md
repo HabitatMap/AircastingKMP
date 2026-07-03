@@ -69,6 +69,14 @@ app-* ──▶ presentation ──▶ recording ──▶ ble
 ```
 `:domain` and `:core` depend on nothing platform-specific. Everything else layers on top.
 
+> **Start coarser than this.** 13 Gradle modules on day one = slow sync, a `build.gradle.kts`
+> + source-set ceremony per module, and a steep tax on a team still learning KMP. The layers
+> above are the *target* seams, not the day-one layout. Begin with a handful —
+> `:core`, `:domain`, `:data`, `:ble`, `:shared` (presentation) — and split a module out only
+> when a real boundary starts to hurt (build coupling, ownership, a genuine reuse need).
+> Splitting later is cheap; merging back is not. The vertical bring-up order (§8) doesn't need
+> all 13 modules up front.
+
 ---
 
 ## 3. The Device Seam (the modular crux)
@@ -98,23 +106,36 @@ interface SensorDriver {
     `ResponseParser` move to `commonMain` verbatim minus `android.util.Base64`).
   - `AirBeamMiniV2Driver` — binary LE (parse/build logic to `commonMain`; ByteBuffer →
     `kotlinx-io`/okio).
-- **Transport is the only `expect/actual`:**
+- **Transport is a plain `interface` in `commonMain`, NOT an `expect class`.**
   ```kotlin
-  expect class GattTransport {          // Android: Nordic/Kable · iOS: CoreBluetooth/Kable
+  interface GattTransport {             // impls: Android (Nordic/Kable) · iOS (CoreBluetooth/Kable)
       fun connect(id: String): Flow<GattEvent>
       suspend fun write(char: Uuid, bytes: ByteArray)
       fun observe(char: Uuid): Flow<ByteArray>   // notify + indicate
       suspend fun requestMtu(mtu: Int)
   }
-  expect class BleScanner {             // service-UUID-filtered scan (fixes today's gap)
+  interface BleScanner {                // service-UUID-filtered scan (fixes today's gap)
       fun scan(serviceUuids: List<Uuid>): Flow<ScanResult>
   }
   ```
+  **Why interface, not `expect/actual` for anything with behaviour/lifecycle:** an
+  `expect class` is compiler-bound to exactly one `actual` per target — you cannot fake it in
+  `commonTest`, so the shared `RecordingEngine` and driver logic become untestable without a
+  device; no polymorphism, no DI substitution; and adding a param breaks every `actual` at
+  compile time. Use an interface in `commonMain` and inject the platform impl via Koin.
+  **Rule: `expect/actual` is reserved for pure *leaf* utilities** (gzip/base64, the
+  `SqlDriver` factory, dispatchers, the `Settings` backing store) — never for driver seams.
+  This applies equally to `LocationProvider` and `BackgroundSessionHost` (already interfaces
+  above — keep them that way).
 - **Factory** routes by device type + scanned service UUID (replaces
   `AirBeamConnectorFactory` + the brittle `AirBeamMiniFallbackConnector`): scan with a
   service-UUID filter, so Mini V1 vs V2 is known *before* connect — no connect-then-fallback.
-- **Consider [Kable](https://github.com/JuulLabs/kable)** (KMP BLE) to get `GattTransport` +
-  `BleScanner` for free on both platforms, instead of hand-writing `expect/actual` GATT.
+- **Strongly consider [Kable](https://github.com/JuulLabs/kable)** (KMP BLE): it provides
+  scan + connect + an observable `state: Flow` on Android *and* iOS in `commonMain`, which
+  directly satisfies the observable-connection requirement (`docs/airbeam/01-connecting.md`
+  §5) and the service-UUID-filtered scan (§4). Adopting it means you write **zero**
+  `expect/actual` GATT — `GattTransport`/`BleScanner` become thin wrappers over Kable, or you
+  use Kable's API directly. See §7 decision #3.
 
 **AB2 decision required (§7):** SPP has no iOS path. Keep it behind an Android-only driver
 that returns `DeviceType.unsupported` on iOS, or drop AB2 from the rewrite.
@@ -284,7 +305,10 @@ These change the skeleton — resolve early:
 1. ~~**UI strategy.**~~ **RESOLVED — see §6.1:** native SwiftUI shell + shared Compose
    screens + SKIE-when-needed; iOS nav native, Android nav Compose; Liquid Glass deferred.
 2. **AB2 fate:** keep as Android-only, or drop? (No iOS SPP path.)
-3. **BLE library:** hand-rolled `expect/actual` GATT, or adopt Kable (KMP BLE)?
+3. **BLE library:** hand-rolled GATT vs [Kable](https://github.com/JuulLabs/kable).
+   **Lean: adopt Kable** — cross-platform scan/connect/observable-state in `commonMain`,
+   removes the entire `expect/actual` GATT surface (see §3). Note whichever way you go, the
+   transport seam is an **interface**, not an `expect class` (§3).
 4. **DB migration:** carry Room migration history, or fresh SQLDelight baseline at current
    schema? (Depends on whether existing installs upgrade in place.)
 5. **iOS background recording:** confirm Core Bluetooth background mode + state restoration

@@ -6,7 +6,8 @@
       "Bash(grep -rioE \"android skills \\(list|search|add\\)[^\\\\`]*\" ~/.claude/skills/android-cli/SKILL.md)",
       "Bash(android skills *)",
       "WebSearch",
-      "Bash(python3 *)"
+      "Bash(python3 *)",
+      "WebFetch(domain:github.com)"
     ]
   }
 }

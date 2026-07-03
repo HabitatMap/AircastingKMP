@@ -212,7 +212,68 @@ rolling-window sizing, status transitions) move into `:domain`.
   grid, bounding box), render per platform (Compose chart lib / Swift Charts;
   Maps SDK / MapKit). Return semantic threshold **levels** from shared code; resolve colors
   in the UI.
-- Navigation: a KMP nav lib (Voyager or Decompose) if going CMP-everywhere, else native nav.
+- Navigation: on iOS, navigation is **native** (SwiftUI `NavigationStack`/`TabView`) — see §6.1.
+  On Android, Compose navigation (Navigation-Compose or Decompose). Nav is the one UI layer
+  that is *not* shared under the chosen strategy.
+
+### 6.1 iOS UI Strategy — RESOLVED
+
+**Decision: native SwiftUI *shell* + shared Compose Multiplatform screens/components, with
+SKIE used only where needed.** Not full-native SwiftUI, and not CMP-everywhere-with-its-own-nav.
+
+Structure:
+```
+SwiftUI shell (iOS)              ← TabView / NavigationStack — nav chrome only, holds NO domain data
+  └─ ComposeUIViewController { }  ← each screen is shared Compose (M3), reads its own shared VM
+```
+
+**Why this fits the team** (experienced Android/Compose devs, new to KMP, minimal SwiftUI):
+1. **Skill match.** SwiftUI surface is confined to the shell (`TabView`, `NavigationStack`,
+   `UIViewControllerRepresentable`, a nav coordinator). Small, bounded, learnable — a good
+   SwiftUI on-ramp without betting the app on Swift. Screens stay in Compose (team strength).
+2. **Write UI once.** Full-native would duplicate every screen (Compose + SwiftUI) forever.
+   Shell approach: UI written once in Compose, shell written once. One place to fix bugs.
+3. **Minimal interop.** Full-native routes *every* screen's VM state across the Kotlin↔Swift
+   boundary → pervasive SKIE. The shell approach crosses far less (see data flow below).
+4. **Escape hatch.** The shell already hosts native. If one screen's CMP feel/perf is
+   unacceptable, rewrite *that screen* in SwiftUI later — localized, not pre-paid app-wide.
+5. **Learning goal.** The shell is small enough for the team to *write and understand* the
+   SwiftUI themselves. Principle: **learn the shell, do not outsource it to a code agent** —
+   an agent-written native UI is an iOS half the team can't fluently debug, review, or
+   maintain, which defeats the point of the rewrite.
+
+**Data flow — one thin seam, and it carries navigation, not data:**
+```
+Shared VM (Kotlin) ──StateFlow<UiState>──▶ Compose screen (Kotlin)   [same language, no bridge]
+       ▲                                          │
+       └──────── intent fns (Kotlin call) ────────┘
+                          ▲
+                          │  ONLY route objects cross Kotlin↔Swift here
+                          ▼
+                 SwiftUI shell (tab + nav path; knows zero domain data)
+```
+- Domain data is **Kotlin → Compose**, never touches Swift. No double translation.
+- The shell hears only: "navigate to route X", "go back", "tab changed". Routes are
+  id-carrying enums made `Hashable`/`Identifiable`.
+- **Feed native chrome (nav-bar title/subtitle) from route metadata, not live VM state** — so
+  Swift stays data-free.
+- **SKIE** (preferred over KMP-NativeCoroutines: zero-annotation, and it bridges our many
+  sealed/enum states to exhaustive Swift `switch`) is needed **only** if a *live* value must
+  feed native chrome (e.g. live AQI in a glass toolbar). Otherwise it is not required.
+
+**Liquid Glass (iOS 26) — deferred, two viable paths when we want it:**
+- **Native shell path:** native `TabView`/`NavigationStack` apply real system Liquid Glass
+  for free (iOS 26 only; fallback to full-Compose nav below 26). Cost: a navigation-bridge
+  (forward Compose `NavHost` routes to SwiftUI via callbacks; hide Compose chrome via a
+  `LocalUseNativeNavigation` CompositionLocal). Glass on iOS only; Android stays flat.
+- **Shared-shader path** (e.g. `Kyant0/AndroidLiquidGlass`, `kmp` branch — AGSL on Android,
+  SkSL/Skia on iOS): real refraction/highlights, **glass on both platforms**, one codebase,
+  no native nav split. Trade-offs: no fluid merge/morph animation, self-owned accessibility
+  (Reduce Transparency/Motion), GPU cost, you build the components. ⚠️ **Perf caveat:**
+  benchmark a shader'd nav/tab bar *during an active recording session on the oldest target
+  device* (BLE + 1Hz GPS + live charts already running) before committing.
+- **Revisit trigger:** only pursue real Liquid Glass when it becomes a product requirement.
+  Default UI is plain M3 on both platforms until then.
 
 ---
 
@@ -220,8 +281,8 @@ rolling-window sizing, status transitions) move into `:domain`.
 
 These change the skeleton — resolve early:
 
-1. **UI strategy:** Compose Multiplatform everywhere, or shared ViewModels + native SwiftUI
-   on iOS? (Affects `:presentation` boundary + nav choice.)
+1. ~~**UI strategy.**~~ **RESOLVED — see §6.1:** native SwiftUI shell + shared Compose
+   screens + SKIE-when-needed; iOS nav native, Android nav Compose; Liquid Glass deferred.
 2. **AB2 fate:** keep as Android-only, or drop? (No iOS SPP path.)
 3. **BLE library:** hand-rolled `expect/actual` GATT, or adopt Kable (KMP BLE)?
 4. **DB migration:** carry Room migration history, or fresh SQLDelight baseline at current

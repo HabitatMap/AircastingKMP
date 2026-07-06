@@ -4,5 +4,7 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+    <key>NSBluetoothAlwaysUsageDescription</key>
+    <string>AirCasting connects to your AirBeam sensor over Bluetooth to record air quality measurements.</string>
 </dict>
 </plist>

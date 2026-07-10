@@ -15,8 +15,12 @@ kotlin = "2.4.0"
 material3 = "1.11.0-alpha07"
 kable = "0.43.1"
 kotlinxCoroutines = "1.11.0"
+koin = "4.2.2"
 
 [libraries]
+koin-core    = { module = "io.insert-koin:koin-core",    version.ref = "koin" }
+koin-compose = { module = "io.insert-koin:koin-compose", version.ref = "koin" }
+koin-android = { module = "io.insert-koin:koin-android",  version.ref = "koin" }
 kable-core = { module = "com.juul.kable:kable-core", version.ref = "kable" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }

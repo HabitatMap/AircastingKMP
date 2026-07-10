@@ -1,6 +1,5 @@
 package com.lunarlogic.aircasting.bluetooth
 
-import com.lunarlogic.aircasting.bluetooth.v2_firmware_specific.DeviceReportedState
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -23,10 +22,10 @@ sealed interface ConnectionStatus {
   data object DisconnectedUnexpectedly : ConnectionStatus
 }
 
-enum class FailureReason {
-  NoDeviceFound,
-  LinkTimeout,
-  WrongCommunicationSurface,
-  HandshakeFailed,
-  RadioOrPermissionMissing
+sealed interface FailureReason {
+  data object NoDeviceFound: FailureReason
+  data object LinkTimeout: FailureReason
+  data object WrongCommunicationSurface: FailureReason
+  data object HandshakeFailed: FailureReason
+  data object RadioOrPermissionMissing: FailureReason
 }

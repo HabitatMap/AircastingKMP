@@ -1,4 +1,4 @@
-package com.lunarlogic.aircasting.bluetooth.v2_firmware_specific
+package com.lunarlogic.aircasting.bluetooth
 
 sealed interface DeviceReportedState {
   data object Idle : DeviceReportedState

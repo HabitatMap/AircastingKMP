@@ -4,16 +4,21 @@ import kotlin.jvm.JvmInline
 
 sealed interface AirBeamDevice {
   val reportsOwnState: Boolean
-  data object AirBeam3 : AirBeamDevice { override val reportsOwnState = false }
+  val requiresHandshake: Boolean
+
+  data object AirBeam3 : AirBeamDevice {
+    override val reportsOwnState = false
+    override val requiresHandshake = true
+  }
 
   sealed interface Mini : AirBeamDevice {
     data object V1 : Mini { /* legacy service, handshake yes, state no */
-      override val reportsOwnState: Boolean
-        get() = false
+      override val reportsOwnState = false
+      override val requiresHandshake = true
     }
     data object V2 : Mini { /* V2 service, handshake no, reports state */
-      override val reportsOwnState: Boolean
-        get() = true
+      override val reportsOwnState = true
+      override val requiresHandshake = false
     }
   }
 }

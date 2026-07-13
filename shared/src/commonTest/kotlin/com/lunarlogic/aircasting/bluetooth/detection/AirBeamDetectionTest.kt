@@ -50,7 +50,7 @@ class AirBeamDetectionTest {
   @Test
   fun dedupes_by_id() = runTest {
     val a1 = DiscoveredAirBeam(DeviceId("A"), "AirBeam3", AirBeamDevice.AirBeam3)
-    val a2 = a1.copy(name = "AirBeam3-renamed")     // same id, later ad
+    val a2 = a1.copy(name = "AirBeam3-renamed")
     val b = DiscoveredAirBeam(DeviceId("B"), "AirBeamMini", AirBeamDevice.Mini.V1)
     flowOf(a1, b, a2).accumulateDistinct().test {
       awaitItem()

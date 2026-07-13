@@ -12,13 +12,21 @@ import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.runningFold
 
 class BleAirBeamConnector : AirBeamConnector {
-  override fun scan(): Flow<List<DiscoveredAirBeam>> =
-    Scanner().advertisements
-      // deduplicate provided list of found devices
-      .mapNotNull { adv -> airBeamFrom(adv.name, adv.uuids)?.let {
-        DiscoveredAirBeam(DeviceId(adv.identifier.toString()), adv.name ?: "", it)
-      } }
-      .runningFold(emptyMap<DeviceId, DiscoveredAirBeam>()) { acc, d -> acc + (d.id to d) }
+  fun Flow<DiscoveredAirBeam>.accumulateDistinct(): Flow<List<DiscoveredAirBeam>> =
+    runningFold(emptyMap<DeviceId, DiscoveredAirBeam>()) { acc, d -> acc + (d.id to d) }
       .map { it.values.toList() }
+
+  override fun scan() = Scanner().advertisements
+    .mapNotNull { advertisement ->
+      airBeamFrom(advertisement.name, advertisement.uuids)?.let { airbeamDevice ->
+        DiscoveredAirBeam(
+          DeviceId(advertisement.identifier.toString()),
+          advertisement.name ?: "",
+          airbeamDevice
+        )
+      }
+    }
+    .accumulateDistinct()
+
   override suspend fun connect(target: DiscoveredAirBeam): AirBeamConnection = TODO()
 }

@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.runningFold
 class BleAirBeamConnector : AirBeamConnector {
   override fun scan(): Flow<List<DiscoveredAirBeam>> =
     Scanner().advertisements
+      // deduplicate provided list of found devices
       .mapNotNull { adv -> airBeamFrom(adv.name, adv.uuids)?.let {
         DiscoveredAirBeam(DeviceId(adv.identifier.toString()), adv.name ?: "", it)
       } }

@@ -1,6 +1,8 @@
 package com.lunarlogic.aircasting.bluetooth
 
 import kotlin.jvm.JvmInline
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 enum class Transport { BLE, CLASSIC_SERIAL }
 

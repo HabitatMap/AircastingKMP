@@ -1,10 +1,11 @@
 package com.lunarlogic.aircasting.bluetooth
 
+import com.lunarlogic.aircasting.bluetooth.v2_firmware_specific.DeviceReportedState
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 
 interface AirBeamConnector {
-  fun scan(): Flow<DiscoveredAirBeam>                        // continuous — results arrive over time
+  fun scan(): Flow<List<DiscoveredAirBeam>>                        // continuous — results arrive over time
   suspend fun connect(target: DiscoveredAirBeam): AirBeamConnection
 }
 

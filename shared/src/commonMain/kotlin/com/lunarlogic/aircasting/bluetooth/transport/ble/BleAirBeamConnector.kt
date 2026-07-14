@@ -5,6 +5,7 @@ import com.lunarlogic.aircasting.bluetooth.AirBeamConnection
 import com.lunarlogic.aircasting.bluetooth.AirBeamConnector
 import com.lunarlogic.aircasting.bluetooth.DeviceId
 import com.lunarlogic.aircasting.bluetooth.DiscoveredAirBeam
+import com.lunarlogic.aircasting.bluetooth.Transport
 import com.lunarlogic.aircasting.bluetooth.detection.airBeamFrom
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -12,6 +13,8 @@ import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.runningFold
 
 class BleAirBeamConnector : AirBeamConnector {
+  override val supportedTransports = setOf(Transport.BLE)
+
   override fun scan() = Scanner().advertisements
     .mapNotNull { advertisement ->
       airBeamFrom(advertisement.name, advertisement.uuids)?.let { airbeamDevice ->

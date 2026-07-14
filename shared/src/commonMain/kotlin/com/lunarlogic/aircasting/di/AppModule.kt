@@ -9,7 +9,7 @@ import org.koin.dsl.KoinAppDeclaration
 import org.koin.dsl.module
 
 val bleModule = module {
-  single<AirBeamConnector> { BleAirBeamConnector() }
+  single { BleAirBeamConnector() }
   viewModelOf(::ScanViewModel)
 }
 

@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 
 interface AirBeamConnector {
+  val supportedTransports: Set<Transport>
   fun scan(): Flow<List<DiscoveredAirBeam>>                        // continuous — results arrive over time
   suspend fun connect(target: DiscoveredAirBeam): AirBeamConnection
 }

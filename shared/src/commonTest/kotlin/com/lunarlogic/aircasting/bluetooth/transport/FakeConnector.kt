@@ -2,25 +2,27 @@ package com.lunarlogic.aircasting.bluetooth.transport
 
 import com.lunarlogic.aircasting.bluetooth.AirBeamConnection
 import com.lunarlogic.aircasting.bluetooth.AirBeamConnector
+import com.lunarlogic.aircasting.bluetooth.ConnectionStatus
 import com.lunarlogic.aircasting.bluetooth.DiscoveredAirBeam
+import com.lunarlogic.aircasting.bluetooth.Transport
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 
 class FakeConnector(
-  private val delegates: List<AirBeamConnector>,
+  override val supportedTransports: Set<Transport>,
+  private val scanFlow: Flow<List<DiscoveredAirBeam>> = flowOf(emptyList()),
 ) : AirBeamConnector {
-  override val supportedTransports = delegates
-    .flatMap { it.supportedTransports }
-    .toSet()
+  var connectedTarget: DiscoveredAirBeam? = null    // spy for routing test
+  override fun scan() = scanFlow
+  override suspend fun connect(target: DiscoveredAirBeam): AirBeamConnection {
+    connectedTarget = target
+    return FakeConnection
+  }
+}
 
-  override fun scan(): Flow<List<DiscoveredAirBeam>> =
-    combine(delegates.map { it.scan() }) { lists ->
-      lists.toList()
-        .flatten()
-    }
-
-  override suspend fun connect(target: DiscoveredAirBeam): AirBeamConnection =
-    delegates.firstOrNull { target.device.transport in it.supportedTransports }
-      ?.connect(target)
-      ?: error("No connector for transport ${target.device.transport}")
+object FakeConnection : AirBeamConnection {
+  override val status = MutableStateFlow<ConnectionStatus>(ConnectionStatus.Disconnected)
+  override val deviceState = null
+  override suspend fun disconnect() {}
 }

@@ -6,13 +6,13 @@ import kotlinx.coroutines.flow.StateFlow
 
 interface AirBeamConnector {
   val supportedTransports: Set<Transport>
-  fun scan(): Flow<List<DiscoveredAirBeam>>                        // continuous — results arrive over time
+  fun scan(): Flow<List<DiscoveredAirBeam>>
   suspend fun connect(target: DiscoveredAirBeam): AirBeamConnection
 }
 
 interface AirBeamConnection {
-  val status: StateFlow<ConnectionStatus>                    // §5: observable, continuous
-  val deviceState: StateFlow<DeviceReportedState>?           // null unless device.reportsOwnState
+  val status: StateFlow<ConnectionStatus>
+  val deviceState: StateFlow<DeviceReportedState>?
   suspend fun disconnect()
 }
 

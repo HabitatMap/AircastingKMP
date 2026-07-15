@@ -1,6 +1,7 @@
 package com.lunarlogic.aircasting.di
 
 import com.lunarlogic.aircasting.bluetooth.AirBeamConnector
+import com.lunarlogic.aircasting.bluetooth.AirBeamCredentials
 import com.lunarlogic.aircasting.bluetooth.transport.ble.BleAirBeamConnector
 import com.lunarlogic.aircasting.ui.scan.ScanViewModel
 import org.koin.core.context.startKoin
@@ -9,7 +10,8 @@ import org.koin.dsl.KoinAppDeclaration
 import org.koin.dsl.module
 
 val bleModule = module {
-  single { BleAirBeamConnector() }
+  single<AirBeamCredentials> { StubAirBeamCredentials }
+  single { BleAirBeamConnector(get()) }
   viewModelOf(::ScanViewModel)
 }
 

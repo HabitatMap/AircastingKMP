@@ -12,6 +12,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.IntentCompat
 import com.lunarlogic.aircasting.bluetooth.AirBeamConnection
 import com.lunarlogic.aircasting.bluetooth.AirBeamConnector
+import com.lunarlogic.aircasting.bluetooth.AirBeamCredentials
 import com.lunarlogic.aircasting.bluetooth.AirBeamDevice
 import com.lunarlogic.aircasting.bluetooth.ConnectionStatus
 import com.lunarlogic.aircasting.bluetooth.DeviceId
@@ -44,7 +45,7 @@ private const val HANDSHAKE_SETTLE_MS = 3_000L
 class ClassicAirBeamConnector(
   private val context: Context,
   private val adapter: BluetoothAdapter?,
-  private val credentials: AirBeam2Credentials,
+  private val credentials: AirBeamCredentials,
 ) : AirBeamConnector {
   override val supportedTransports = setOf(Transport.CLASSIC_SERIAL)
 
@@ -157,9 +158,4 @@ private fun airBeam2From(device: BluetoothDevice): DiscoveredAirBeam? {
   val name = device.name ?: return null
   if (!name.contains("airbeam2", ignoreCase = true)) return null
   return DiscoveredAirBeam(DeviceId(device.address), name, AirBeamDevice.AirBeam2)
-}
-
-interface AirBeam2Credentials {
-  suspend fun sessionUuid(): String // identity, written first  (0x04)
-  suspend fun authToken(): String   // credential, written second (0x05)
 }

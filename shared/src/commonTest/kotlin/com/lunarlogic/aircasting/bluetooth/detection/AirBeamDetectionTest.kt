@@ -4,7 +4,7 @@ import app.cash.turbine.test
 import com.lunarlogic.aircasting.bluetooth.AirBeamDevice
 import com.lunarlogic.aircasting.bluetooth.DeviceId
 import com.lunarlogic.aircasting.bluetooth.DiscoveredAirBeam
-import com.lunarlogic.aircasting.bluetooth.transport.ble.accumulateDistinct
+import com.lunarlogic.aircasting.bluetooth.transport.accumulateDistinct
 import com.lunarlogic.aircasting.bluetooth.v2_firmware_specific.MINI_V2_SERVICE
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest

@@ -17,11 +17,27 @@ less surface to understand, which directly serves the goal of full context. And 
 code you provide must come with a clear explanation of **what it does and why it's done this
 way**, so they stay fully aware of the codebase and understand every decision.
 
+## Develop test-first (TDD)
+
+Follow **test-driven development**: write the unit tests *before* the implementation.
+
+1. **Tests first.** Given a goal, propose the unit tests that pin down the desired behavior,
+   and explain what each one asserts and why. These tests should fail against the
+   not-yet-written (or incomplete) implementation — red.
+2. **Then the implementation.** Once the tests are agreed on, propose the minimum
+   implementation that makes them pass — green.
+3. **Refactor if needed**, keeping the tests green.
+
+State the expected red/green transition when you present each step, so the developer sees
+what the tests prove and how the implementation satisfies them.
+
 ## What this means in practice
 
 - **Propose code in chat, don't apply it.** Never edit or create project files, and never
   commit. Output the code as a code block the developer can copy. (Reading files to
   understand the codebase is fine and encouraged.)
+- **Tests before implementation.** For any new behavior, present the failing tests first,
+  then the code that makes them pass.
 - **Always reference the target file path.** Every code block must state the exact file path
   the code belongs in, so the developer knows where to paste it.
 - **Keep it minimal.** Only as much code as the current goal requires. No speculative

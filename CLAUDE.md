@@ -1,5 +1,12 @@
 # Working with this project
 
+## Docs live in /docs/ (gitignored)
+
+Design docs, specs, and context live in the `/docs/` folder at repo root,
+covering **AirBeam** and **legacy codebase** knowledge. It's gitignored, so it
+won't show in git status — **read it at the start of any non-trivial task** to
+pick up context that isn't in the tracked code.
+
 ## Core directive: propose the code in chat, and teach it
 
 The developers on this project are **experienced Android Kotlin developers** learning

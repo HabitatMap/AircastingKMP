@@ -13,7 +13,8 @@
       "Bash(git rev-list *)",
       "Bash(gh pr *)",
       "Bash(git rm *)",
-      "Bash(xxd -p)"
+      "Bash(xxd -p)",
+      "Bash(javap -p /tmp/kall/com/juul/kable/Advertisement.class)"
     ]
   },
   "hooks": {

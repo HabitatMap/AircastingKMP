@@ -16,14 +16,21 @@ import com.lunarlogic.aircasting.bluetooth.Transport
 import com.lunarlogic.aircasting.bluetooth.detection.airBeamFrom
 import com.lunarlogic.aircasting.bluetooth.handshake.HandshakeMessages
 import com.lunarlogic.aircasting.bluetooth.transport.accumulateDistinct
+import com.lunarlogic.aircasting.bluetooth.v2_firmware_specific.DeviceReportedState
+import com.lunarlogic.aircasting.bluetooth.v2_firmware_specific.MINI_V2_SERVICE
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.time.Duration.Companion.milliseconds
@@ -39,6 +46,14 @@ private val configCharacteristic = characteristicOf(
   Uuid.parse("0000ffdd-0000-1000-8000-00805f9b34fb"),
   Uuid.parse("0000ffde-0000-1000-8000-00805f9b34fb")
 )
+
+// Mini V2: dedicated Status characteristic (notify)
+private val statusCharacteristic = characteristicOf(
+  MINI_V2_SERVICE,
+  Uuid.parse("a0e1f000-0002-4b3c-8e9a-1f2d3c4b5a60"),
+)
+
+private val STATUS_SETTLE_TIMEOUT = 5.seconds
 
 class BleAirBeamConnector(
   private val credentials: AirBeamCredentials,
@@ -58,12 +73,6 @@ class BleAirBeamConnector(
     .accumulateDistinct()
 
   override suspend fun connect(target: DiscoveredAirBeam): AirBeamConnection {
-    if (!target.device.requiresHandshake) {
-      // TODO("Mini V2 no-handshake connect — next slice")
-    }
-
-    // Kable connects from an Advertisement, which discovery discarded. Re-scan for this
-    // one id → naturally maps a no-show to NoDeviceFound (spec §6).
     val advertisement = withTimeoutOrNull(SCAN_TIMEOUT_DURATION) {
       Scanner().advertisements.first { it.identifier.toString() == target.id.value }
     } ?: return failedConnection(FailureReason.NoDeviceFound)
@@ -82,10 +91,17 @@ class BleAirBeamConnector(
       peripheral.disconnectQuietly()
       return failedConnection(FailureReason.LinkTimeout)
     }
-// Phase 2: handshake, then ready.
+
     return try {
-      handshake(peripheral)
-      BleConnection(peripheral, target.device)
+      if (target.device.requiresHandshake) {
+        handshake(peripheral)
+        BleConnection(peripheral, target.device)
+      } else {
+        connectV2(peripheral, target.device)
+      }
+    } catch (_: TimeoutCancellationException) {
+      peripheral.disconnectQuietly()
+      failedConnection(FailureReason.HandshakeFailed)
     } catch (cancel: CancellationException) {
       peripheral.disconnectQuietly()
       throw cancel
@@ -93,6 +109,21 @@ class BleAirBeamConnector(
       peripheral.disconnectQuietly()
       failedConnection(FailureReason.HandshakeFailed)
     }
+  }
+
+  private suspend fun connectV2(peripheral: Peripheral, device: AirBeamDevice): AirBeamConnection {
+    // Scope outlives connect(): keeps observing Status for later transitions (Idle -> Running, etc.).
+    val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+    val states = peripheral.observe(statusCharacteristic)
+      .mapNotNull { DeviceReportedState.from(it) }
+    // stateIn (suspend overload) subscribes, then suspends until the first frame — that IS the settle.
+    val deviceState = try {
+      withTimeout(STATUS_SETTLE_TIMEOUT) { states.stateIn(scope) }
+    } catch (e: Exception) {
+      scope.cancel()
+      throw e
+    }
+    return BleConnection(peripheral, device, deviceState, scope)
   }
 
   private suspend fun handshake(peripheral: Peripheral) {
@@ -114,11 +145,14 @@ class BleAirBeamConnector(
 private class BleConnection(
   private val peripheral: Peripheral,
   device: AirBeamDevice,
+  override val deviceState: StateFlow<DeviceReportedState>? = null,
+  private val scope: CoroutineScope? = null,
 ) : AirBeamConnection {
   private val _status = MutableStateFlow<ConnectionStatus>(ConnectionStatus.Ready(device))
   override val status: StateFlow<ConnectionStatus> = _status.asStateFlow()
-  override val deviceState = null // AB3 / Mini V1 don't report their own state
+
   override suspend fun disconnect() {
+    scope?.cancel()
     peripheral.disconnect()
     _status.value = ConnectionStatus.Disconnected
   }

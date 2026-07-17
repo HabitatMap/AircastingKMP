@@ -1,7 +1,9 @@
 package com.lunarlogic.aircasting.bluetooth.transport.ble
 
+import co.touchlab.kermit.Logger
 import com.juul.kable.Peripheral
 import com.juul.kable.Scanner
+import com.juul.kable.State
 import com.juul.kable.WriteType
 import com.juul.kable.characteristicOf
 import com.lunarlogic.aircasting.bluetooth.AirBeamConnection
@@ -29,7 +31,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
@@ -51,6 +55,16 @@ private val configCharacteristic = characteristicOf(
 private val statusCharacteristic = characteristicOf(
   MINI_V2_SERVICE,
   Uuid.parse("a0e1f000-0002-4b3c-8e9a-1f2d3c4b5a60"),
+)
+
+private val responseCharacteristic = characteristicOf(
+  MINI_V2_SERVICE, Uuid.parse("a0e1f000-0004-4b3c-8e9a-1f2d3c4b5a60"),
+)
+private val measurementCharacteristic = characteristicOf(
+  MINI_V2_SERVICE, Uuid.parse("a0e1f000-0005-4b3c-8e9a-1f2d3c4b5a60"),
+)
+private val syncCharacteristic = characteristicOf(
+  MINI_V2_SERVICE, Uuid.parse("a0e1f000-0006-4b3c-8e9a-1f2d3c4b5a60"),
 )
 
 private val STATUS_SETTLE_TIMEOUT = 5.seconds
@@ -114,15 +128,21 @@ class BleAirBeamConnector(
   private suspend fun connectV2(peripheral: Peripheral, device: AirBeamDevice): AirBeamConnection {
     // Scope outlives connect(): keeps observing Status for later transitions (Idle -> Running, etc.).
     val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+    listOf(responseCharacteristic, measurementCharacteristic, syncCharacteristic).forEach { ch ->
+      peripheral.observe(ch).launchIn(scope)
+    }
     val states = peripheral.observe(statusCharacteristic)
+      .onEach { raw -> Logger.d("V2 Status raw [${raw.size}B]: " + raw.joinToString(" ") { (it.toInt() and 0xFF).toString(16) }) } // TEMP
       .mapNotNull { DeviceReportedState.from(it) }
     // stateIn (suspend overload) subscribes, then suspends until the first frame — that IS the settle.
-    val deviceState = try {
-      withTimeout(STATUS_SETTLE_TIMEOUT) { states.stateIn(scope) }
-    } catch (e: Exception) {
+    val deviceState = withTimeoutOrNull(STATUS_SETTLE_TIMEOUT) { states.stateIn(scope) }
+
+    if (deviceState == null && peripheral.state.value !is State.Connected) {
       scope.cancel()
-      throw e
+      peripheral.disconnectQuietly()
+      return failedConnection(FailureReason.LinkTimeout)
     }
+
     return BleConnection(peripheral, device, deviceState, scope)
   }
 

@@ -11,7 +11,23 @@
       "Bash(gh auth *)",
       "Bash(gh --version)",
       "Bash(git rev-list *)",
-      "Bash(gh pr *)"
+      "Bash(gh pr *)",
+      "Bash(git rm *)",
+      "Bash(xxd -p)",
+      "Bash(javap -p /tmp/kall/com/juul/kable/Advertisement.class)"
+    ]
+  },
+  "hooks": {
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "osascript -e 'display notification \"Claude Code needs your attention\" with title \"Claude Code\" sound name \"Glass\"'"
+          }
+        ]
+      }
     ]
   }
 }

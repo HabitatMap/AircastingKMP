@@ -1,6 +1,5 @@
 package com.lunarlogic.aircasting.bluetooth.transport.ble
 
-import co.touchlab.kermit.Logger
 import com.juul.kable.Peripheral
 import com.juul.kable.Scanner
 import com.juul.kable.State
@@ -33,7 +32,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.mapNotNull
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
@@ -132,7 +130,6 @@ class BleAirBeamConnector(
       peripheral.observe(ch).launchIn(scope)
     }
     val states = peripheral.observe(statusCharacteristic)
-      .onEach { raw -> Logger.d("V2 Status raw [${raw.size}B]: " + raw.joinToString(" ") { (it.toInt() and 0xFF).toString(16) }) } // TEMP
       .mapNotNull { DeviceReportedState.from(it) }
     // stateIn (suspend overload) subscribes, then suspends until the first frame — that IS the settle.
     val deviceState = withTimeoutOrNull(STATUS_SETTLE_TIMEOUT) { states.stateIn(scope) }

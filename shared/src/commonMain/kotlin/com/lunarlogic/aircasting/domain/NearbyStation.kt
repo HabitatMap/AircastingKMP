@@ -70,13 +70,14 @@ fun mergeByStation(byPollutant: Map<Pollutant, List<FixedStation>>): List<Nearby
       )
     }
 
+/** All stations ranked by true distance from [location], nearest first. */
+fun List<NearbyStation>.byDistanceFrom(location: GeoLocation): List<StationWithDistance> =
+  map { StationWithDistance(it, location.distanceMetersTo(it.location)) }
+    .sortedBy { it.distanceMeters }
+
+/** Nearest station to [location]; null if the list is empty. */
 fun List<NearbyStation>.nearestTo(location: GeoLocation): StationWithDistance? =
-  map {
-    StationWithDistance(
-      it,
-      location.distanceMetersTo(it.location)
-    )
-  }.minByOrNull { it.distanceMeters }
+  byDistanceFrom(location).firstOrNull()
 
 /** Square roughly ±[radiusKm] around this point (per-axis degree conversion). */
 fun GeoLocation.squareAround(radiusKm: Double = 30.0): GeoSquare {

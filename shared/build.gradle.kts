@@ -36,11 +36,18 @@ kotlin {
   }
 
   sourceSets {
+    iosMain.dependencies {
+      implementation(libs.ktor.client.darwin)
+    }
     androidMain.dependencies {
       implementation(libs.compose.uiToolingPreview)
       implementation(libs.androidx.core.ktx)
+      implementation(libs.ktor.client.okhttp)
     }
     commonMain.dependencies {
+      implementation(libs.ktor.client.core)
+      implementation(libs.ktor.client.content.negotiation)
+      implementation(libs.ktor.serialization.kotlinx.json)
       implementation(libs.kotlinx.serialization.json)
       implementation(libs.kotlinx.datetime)
       implementation(libs.compose.runtime)
@@ -59,7 +66,7 @@ kotlin {
       implementation(libs.kermit)
     }
     commonTest.dependencies {
-      implementation(libs.kotlin.test)
+      implementation(libs.ktor.client.mock)
       implementation(libs.kotlin.test)
       implementation(libs.kotlinx.coroutines.test)
       implementation(libs.turbine)

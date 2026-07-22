@@ -8,7 +8,7 @@ import com.lunarlogic.aircasting.data.network.createAircastingHttpClient
 import com.lunarlogic.aircasting.home.HomeRepository
 import com.lunarlogic.aircasting.home.HomeViewModel
 import com.lunarlogic.aircasting.home.NetworkHomeRepository
-import com.lunarlogic.aircasting.ui.scan.ScanViewModel
+import com.lunarlogic.aircasting.scan.ScanViewModel
 import org.koin.core.context.startKoin
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.KoinAppDeclaration

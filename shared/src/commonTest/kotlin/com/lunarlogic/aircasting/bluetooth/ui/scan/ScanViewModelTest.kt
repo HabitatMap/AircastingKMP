@@ -9,8 +9,8 @@ import com.lunarlogic.aircasting.bluetooth.FailureReason
 import com.lunarlogic.aircasting.bluetooth.Transport
 import com.lunarlogic.aircasting.bluetooth.transport.ControllableConnection
 import com.lunarlogic.aircasting.bluetooth.transport.FakeConnector
-import com.lunarlogic.aircasting.ui.scan.ConnectionUiState
-import com.lunarlogic.aircasting.ui.scan.ScanViewModel
+import com.lunarlogic.aircasting.scan.ConnectionUiState
+import com.lunarlogic.aircasting.scan.ScanViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow

@@ -6,6 +6,7 @@ import com.lunarlogic.aircasting.data.network.FixedStationsApi
 import com.lunarlogic.aircasting.data.network.FixedStationsRepository
 import com.lunarlogic.aircasting.data.network.createAircastingHttpClient
 import com.lunarlogic.aircasting.home.HomeRepository
+import com.lunarlogic.aircasting.home.NetworkHomeRepository
 import com.lunarlogic.aircasting.ui.scan.ScanViewModel
 import org.koin.core.context.startKoin
 import org.koin.core.module.dsl.viewModelOf
@@ -24,7 +25,7 @@ val networkModule = module {
   single { FixedStationsApi(get()) }
   single<Clock> { Clock.System }
   single { FixedStationsRepository(get(), get()) }
-  single { HomeRepository(get()) }
+  single<HomeRepository> { NetworkHomeRepository(get()) }
 }
 
 fun initKoin(extra: KoinAppDeclaration = {}) = startKoin {

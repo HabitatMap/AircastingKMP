@@ -82,7 +82,7 @@ class HomeRepositoryTest {
     assertTrue(state.nearby.isEmpty())
   }
 
-  private fun homeRepo(engine: MockEngine) = HomeRepository(
+  private fun homeRepo(engine: MockEngine) = NetworkHomeRepository(
     FixedStationsRepository(FixedStationsApi(createAircastingHttpClient(engine)), clock),
   )
 

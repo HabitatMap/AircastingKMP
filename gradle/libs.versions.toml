@@ -21,8 +21,10 @@ turbine = "1.2.1"
 kotlinxSerialization = "1.11.0"
 kotlinxDatetime = "0.8.0"
 ktor = "3.5.1"
+play-services-location = "21.4.0"
 
 [libraries]
+play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "play-services-location" }
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
 ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }

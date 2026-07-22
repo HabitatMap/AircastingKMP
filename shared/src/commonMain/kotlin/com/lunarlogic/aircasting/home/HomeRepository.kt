@@ -12,11 +12,15 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 
-class HomeRepository(
+interface HomeRepository {
+  suspend fun load(userLocation: GeoLocation?): HomeUiState
+}
+
+class NetworkHomeRepository(
   private val stations: FixedStationsRepository,
   private val radiusKm: Double = 15.0,
-) {
-  suspend fun load(userLocation: GeoLocation?): HomeUiState {
+): HomeRepository {
+  override suspend fun load(userLocation: GeoLocation?): HomeUiState {
     if (userLocation == null) {
       return HomeUiState(HomeUiState.AirQuality.NoLocation, nearby = emptyList())
     }

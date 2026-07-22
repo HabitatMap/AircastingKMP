@@ -43,6 +43,7 @@ kotlin {
       implementation(libs.compose.uiToolingPreview)
       implementation(libs.androidx.core.ktx)
       implementation(libs.ktor.client.okhttp)
+      implementation(libs.play.services.location)
     }
     commonMain.dependencies {
       implementation(libs.ktor.client.core)

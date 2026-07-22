@@ -17,7 +17,8 @@
       "Bash(javap -p /tmp/kall/com/juul/kable/Advertisement.class)",
       "mcp__plugin_figma_figma__get_design_context",
       "mcp__plugin_figma_figma__get_screenshot",
-      "Bash(grep \"\\\\.kt$\")"
+      "Bash(grep \"\\\\.kt$\")",
+      "Bash(xargs cat)"
     ]
   },
   "hooks": {

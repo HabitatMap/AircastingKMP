@@ -20,6 +20,8 @@ class FixedStationsRepository(
       unitSymbol = pollutant.unitSymbol,
       measurementType = pollutant.measurementType,
     )
-    return api.activeInRegion(query).sessions.map { it.toFixedStation() }
+    val dto = api.activeInRegion(query)
+    println("AIRDIAG/API: sensor=${pollutant.sensorName} -> fetchable=${dto.fetchableSessionsCount}, sessions=${dto.sessions.size}")
+    return dto.sessions.map { it.toFixedStation() }
   }
 }

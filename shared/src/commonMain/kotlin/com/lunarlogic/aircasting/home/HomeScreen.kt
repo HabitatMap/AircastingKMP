@@ -25,12 +25,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.lunarlogic.aircasting.domain.MeasurementLevel
 import com.lunarlogic.aircasting.domain.Pollutant
 import com.lunarlogic.aircasting.domain.PollutantReading
 import com.lunarlogic.aircasting.domain.StationWithDistance
+import com.lunarlogic.aircasting.home.HomeUiState.AirQuality.Loaded
 import kotlin.math.round
+import kotlin.time.Instant
 
 @Composable
 fun HomeScreen(
@@ -89,7 +92,7 @@ private fun AirQualityCard(aq: HomeUiState.AirQuality, onRequestLocation: () -> 
           )
         }
 
-        is HomeUiState.AirQuality.Loaded -> {
+        is Loaded -> {
           Text(aq.stationName, style = MaterialTheme.typography.titleMedium)
           Text(distanceLabel(aq.distanceMeters), style = MaterialTheme.typography.bodySmall)
           Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -164,4 +167,34 @@ private fun levelColor(level: MeasurementLevel): Color = when (level) {
   MeasurementLevel.HIGH -> Color(0xFFE8720C)
   MeasurementLevel.VERY_HIGH -> Color(0xFFD32F2F)
   MeasurementLevel.EXTREMELY_HIGH -> Color(0xFF7B1FA2)
+}
+
+private val previewReadings = listOf(
+  PollutantReading(Pollutant.PM25, 4.2, "µg/m³", MeasurementLevel.LOW),
+  PollutantReading(Pollutant.NO2, 9.1, "ppb", MeasurementLevel.LOW),
+  PollutantReading(Pollutant.OZONE, 4.2, "ppb", MeasurementLevel.LOW),
+)
+
+@Preview
+@Composable
+private fun AirQualityCardLoadedPreview() {
+  MaterialTheme {
+    AirQualityCard(
+      aq = Loaded(
+        stationName = "Central Park Station, New York",
+        distanceMeters = 643.7,
+        readings = previewReadings,
+        updatedAt = Instant.fromEpochSeconds(0),
+      ),
+      onRequestLocation = {},
+    )
+  }
+}
+
+@Preview
+@Composable
+private fun AirQualityCardNoLocationPreview() {
+  MaterialTheme {
+    AirQualityCard(aq = HomeUiState.AirQuality.NoLocation, onRequestLocation = {})
+  }
 }

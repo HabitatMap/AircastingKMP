@@ -18,7 +18,9 @@
       "mcp__plugin_figma_figma__get_design_context",
       "mcp__plugin_figma_figma__get_screenshot",
       "Bash(grep \"\\\\.kt$\")",
-      "Bash(xargs cat)"
+      "Bash(xargs cat)",
+      "Bash(grep -E '\\\\.\\(kt\\)$')",
+      "Bash(echo \"EXIT: $?\")"
     ]
   },
   "hooks": {

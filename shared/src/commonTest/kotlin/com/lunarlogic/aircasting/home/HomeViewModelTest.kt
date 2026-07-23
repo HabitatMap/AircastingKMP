@@ -27,6 +27,22 @@ class HomeViewModelTest {
   )
 
   @Test
+  fun a_reload_keeps_Content_on_screen_without_flashing_Loading() = runTest {
+    val repo = FakeHomeRepository(Result.success(located))
+    val vm = HomeViewModel(repo, FakeLocationProvider(HERE))
+    vm.refresh()
+    testScheduler.advanceUntilIdle()
+
+    vm.state.test {
+      assertEquals(HomeScreenState.Content(located), awaitItem())
+      vm.refresh()                    // what ON_RESUME will trigger
+      testScheduler.advanceUntilIdle()
+      expectNoEvents()                // never dropped to Loading — stayed Content throughout
+      cancelAndIgnoreRemainingEvents()
+    }
+  }
+
+  @Test
   fun starts_in_Loading_before_the_first_load_completes() = runTest {
     val vm = HomeViewModel(FakeHomeRepository(Result.success(located)), FakeLocationProvider(null))
 
@@ -39,6 +55,7 @@ class HomeViewModelTest {
 
     vm.state.test {
       assertEquals(HomeScreenState.Loading, awaitItem())
+      vm.refresh()
       assertEquals(HomeScreenState.Content(located), awaitItem())
       cancelAndIgnoreRemainingEvents()
     }
@@ -47,8 +64,9 @@ class HomeViewModelTest {
   @Test
   fun feeds_the_providers_location_into_the_repository() = runTest {
     val repo = FakeHomeRepository(Result.success(located))
-    HomeViewModel(repo, FakeLocationProvider(HERE))
+    val vm = HomeViewModel(repo, FakeLocationProvider(HERE))
 
+    vm.refresh()
     testScheduler.advanceUntilIdle()
 
     assertEquals(HERE, repo.receivedLocation)
@@ -63,6 +81,7 @@ class HomeViewModelTest {
 
     vm.state.test {
       assertEquals(HomeScreenState.Loading, awaitItem())
+      vm.refresh()
       assertIs<HomeScreenState.Error>(awaitItem())
       cancelAndIgnoreRemainingEvents()
     }
@@ -72,7 +91,9 @@ class HomeViewModelTest {
   fun refresh_recovers_from_Error_to_Content() = runTest {
     val repo = FakeHomeRepository(Result.failure(RuntimeException("boom")))
     val vm = HomeViewModel(repo, FakeLocationProvider(HERE))
+    vm.refresh()
     testScheduler.advanceUntilIdle()
+
     assertIs<HomeScreenState.Error>(vm.state.value)
 
     repo.result = Result.success(located)

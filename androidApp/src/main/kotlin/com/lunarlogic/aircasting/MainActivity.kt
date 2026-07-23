@@ -1,6 +1,7 @@
 package com.lunarlogic.aircasting
 
 import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -14,37 +15,38 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.core.content.ContextCompat
 
 private val LOCATION_PERMISSIONS = arrayOf(
-    Manifest.permission.ACCESS_FINE_LOCATION,
-    Manifest.permission.ACCESS_COARSE_LOCATION,
+  Manifest.permission.ACCESS_FINE_LOCATION,
+  Manifest.permission.ACCESS_COARSE_LOCATION,
 )
 
 class MainActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge()
-        super.onCreate(savedInstanceState)
+  override fun onCreate(savedInstanceState: Bundle?) {
+    enableEdgeToEdge()
+    super.onCreate(savedInstanceState)
 
-        setContent {
-            // Every permission result bumps this; App re-runs its load with the new grant.
-            var refreshSignal by remember { mutableIntStateOf(0) }
-            val launcher = rememberLauncherForActivityResult(
-                ActivityResultContracts.RequestMultiplePermissions()
-            ) { refreshSignal++ }
+    setContent {
+      val launcher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+      ) { /* result picked up by App's ON_RESUME reload — nothing to do here */ }
 
-            // Ask once on first launch; AndroidLocationProvider needs a runtime grant.
-            LaunchedEffect(Unit) { launcher.launch(LOCATION_PERMISSIONS) }
-
-            App(
-                onRequestLocation = { launcher.launch(LOCATION_PERMISSIONS) },
-                refreshSignal = refreshSignal,
-            )
+      LaunchedEffect(Unit) {
+        val granted = LOCATION_PERMISSIONS.any {
+          ContextCompat.checkSelfPermission(this@MainActivity, it) == PackageManager.PERMISSION_GRANTED
         }
+        if (!granted) launcher.launch(LOCATION_PERMISSIONS)   // the already-granted guard from before
+      }
+      App(
+        onRequestLocation = { launcher.launch(LOCATION_PERMISSIONS) },
+      )
     }
+  }
 }
 
 @Preview
 @Composable
 fun AppAndroidPreview() {
-    App()
+  App()
 }

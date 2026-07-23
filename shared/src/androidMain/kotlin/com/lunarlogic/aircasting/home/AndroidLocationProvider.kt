@@ -16,8 +16,14 @@ class AndroidLocationProvider(context: Context) : LocationProvider {
   private val client = LocationServices.getFusedLocationProviderClient(appContext)
 
   override suspend fun current(): GeoLocation? {
-    if (!hasLocationPermission()) return null
-    return runCatching { requestFresh() ?: lastKnown() }.getOrNull()
+    val hasPerm = hasLocationPermission()
+    println("AIRDIAG/LOC: hasLocationPermission = $hasPerm")
+    if (!hasPerm) return null
+    val result = runCatching { requestFresh() ?: lastKnown() }
+      .onFailure { println("AIRDIAG/LOC: location lookup threw ${it::class.simpleName}: ${it.message}") }
+      .getOrNull()
+    println("AIRDIAG/LOC: result = $result")
+    return result
   }
 
   @Suppress("MissingPermission") // guarded by hasLocationPermission()

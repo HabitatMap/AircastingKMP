@@ -5,6 +5,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lunarlogic.aircasting.home.HomeViewModel
 import com.lunarlogic.aircasting.home.HomeScreen
@@ -12,17 +14,11 @@ import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 @Preview
-fun App(
-  onRequestLocation: () -> Unit = {},
-  // Bumped by the host after a location-permission result; re-runs the load with the new grant.
-  refreshSignal: Int = 0,
-) {
+fun App(onRequestLocation: () -> Unit = {}) {
   MaterialTheme {
     val vm = koinViewModel<HomeViewModel>()
     val state by vm.state.collectAsStateWithLifecycle()
-    LaunchedEffect(refreshSignal) {
-      if (refreshSignal > 0) vm.refresh()
-    }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { vm.refresh() }
     HomeScreen(
       state = state,
       onRetry = vm::refresh,

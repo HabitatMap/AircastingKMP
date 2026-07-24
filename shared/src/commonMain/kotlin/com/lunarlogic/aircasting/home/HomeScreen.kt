@@ -1,5 +1,10 @@
 package com.lunarlogic.aircasting.home
 
+import aircasting.shared.generated.resources.Res
+import aircasting.shared.generated.resources.air_quality_good
+import aircasting.shared.generated.resources.ic_help
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,7 +20,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -25,15 +32,25 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.lunarlogic.aircasting.domain.MeasurementLevel
 import com.lunarlogic.aircasting.domain.Pollutant
 import com.lunarlogic.aircasting.domain.PollutantReading
 import com.lunarlogic.aircasting.domain.StationWithDistance
+import com.lunarlogic.aircasting.domain.worstLevel
 import com.lunarlogic.aircasting.home.HomeUiState.AirQuality.Loaded
+import org.jetbrains.compose.resources.painterResource
 import kotlin.math.round
 import kotlin.time.Instant
+
+private val CardWhite = Color(0xFFFFFFFF)
+private val Outline = Color(0xFF75777B)
+private val OutlineVariant = Color(0xFFCAC4D0)
+private val OnSurfaceVariant = Color(0xFF44474A)
+private val OnBackground = Color(0xFF171C20)
 
 @Composable
 fun HomeScreen(
@@ -72,18 +89,20 @@ private fun HomeContent(ui: HomeUiState, onRequestLocation: () -> Unit) {
 
 @Composable
 private fun AirQualityCard(aq: HomeUiState.AirQuality, onRequestLocation: () -> Unit) {
-  Card(shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
-    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+  Card(
+    shape = RoundedCornerShape(16.dp),
+    colors = CardDefaults.cardColors(containerColor = CardWhite),
+    modifier = Modifier.fillMaxWidth(),
+  ) {
+    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
       when (aq) {
-        HomeUiState.AirQuality.NoLocation -> {
-          Text("No nearby station found", style = MaterialTheme.typography.titleMedium)
-          Text(
-            "We couldn't match your location to a reporting station. Try enabling precise location.",
-            style = MaterialTheme.typography.bodyMedium,
-          )
-          OutlinedButton(onClick = onRequestLocation) { Text("Turn on location services") }
+        is HomeUiState.AirQuality.Loaded -> {
+          // Empty readings can't reach Loaded, but default keeps this total.
+          val level = aq.readings.worstLevel() ?: MeasurementLevel.LOW
+          AirQualityHeader(status = level.aqStatus(), level = level)
+          PollutantRow(aq.readings)
+          StationSelectorRow(aq.stationName, aq.distanceMeters)
         }
-
         HomeUiState.AirQuality.NoReadings -> {
           Text("No air quality data available", style = MaterialTheme.typography.titleMedium)
           Text(
@@ -92,16 +111,95 @@ private fun AirQualityCard(aq: HomeUiState.AirQuality, onRequestLocation: () -> 
           )
         }
 
-        is Loaded -> {
-          Text(aq.stationName, style = MaterialTheme.typography.titleMedium)
-          Text(distanceLabel(aq.distanceMeters), style = MaterialTheme.typography.bodySmall)
-          Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            aq.readings.forEach { MetricChip(it) }
-          }
+        HomeUiState.AirQuality.NoLocation -> {
+          Text("No nearby station found", style = MaterialTheme.typography.titleMedium)
+          Text(
+            "We couldn't match your location to a reporting station. Try enabling precise location.",
+            style = MaterialTheme.typography.bodyMedium,
+          )
+          OutlinedButton(onClick = onRequestLocation) { Text("Turn on location services") }
         }
       }
     }
   }
+}
+@Composable
+private fun AirQualityHeader(status: AqStatus, level: MeasurementLevel) {
+  Row(
+    horizontalArrangement = Arrangement.spacedBy(12.dp),
+    verticalAlignment = Alignment.CenterVertically,
+    modifier = Modifier.fillMaxWidth(),
+  ) {
+    Image(
+      painter = painterResource(Res.drawable.air_quality_good), // TODO: per-level art; only "Good" exported
+      contentDescription = null,
+      modifier = Modifier.size(96.dp),
+    )
+    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+      Text("AIR QUALITY", style = MaterialTheme.typography.titleSmall, color = Outline)
+      Text(
+        status.label,
+        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Medium),
+        color = levelColor(level),
+      )
+      Text(status.description, style = MaterialTheme.typography.bodySmall, color = levelColor(level))
+    }
+  }
+}
+@Composable
+private fun PollutantRow(readings: List<PollutantReading>) {
+  Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+    readings.forEach { PollutantCell(it, Modifier.weight(1f)) }
+  }
+}
+@Composable
+private fun PollutantCell(reading: PollutantReading, modifier: Modifier = Modifier) {
+  Column(
+    modifier
+      .border(1.dp, levelColor(reading.level), RoundedCornerShape(8.dp)) // per-pollutant color
+      .padding(16.dp),
+    verticalArrangement = Arrangement.spacedBy(4.dp),
+  ) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+      Text(reading.pollutant.label, style = MaterialTheme.typography.labelLarge, color = OnSurfaceVariant)
+      Icon(painterResource(Res.drawable.ic_help), contentDescription = null, Modifier.size(16.dp), tint = Outline)
+    }
+    Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+      Text(
+        reading.value.toString(),
+        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+        color = OnBackground,
+      )
+      Text(reading.unitSymbol, style = MaterialTheme.typography.labelMedium, color = Outline)
+    }
+  }
+}
+@Composable
+private fun StationSelectorRow(name: String, distanceMeters: Double) {
+  Row(
+    Modifier.fillMaxWidth()
+      .border(1.dp, OutlineVariant, RoundedCornerShape(8.dp))
+      .padding(horizontal = 12.dp, vertical = 8.dp),
+    horizontalArrangement = Arrangement.SpaceBetween,
+    verticalAlignment = Alignment.CenterVertically,
+  ) {
+    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+      Text(name, style = MaterialTheme.typography.titleSmall, color = OnBackground)
+      Text(distanceLabel(distanceMeters), style = MaterialTheme.typography.bodySmall, color = Outline)
+    }
+    Icon(Icons.Filled.KeyboardArrowRight, contentDescription = null, Modifier.size(20.dp), tint = Outline)
+  }
+}
+private data class AqStatus(val label: String, val description: String)
+
+private fun MeasurementLevel.aqStatus(): AqStatus = when (this) {
+  MeasurementLevel.EXTREMELY_LOW, MeasurementLevel.LOW ->
+    AqStatus("Good", "The air outside is clean. A great time to enjoy activities outside.")
+  // TODO: copy + illustrations for these come from the other Figma states — placeholder for now.
+  MeasurementLevel.MEDIUM -> AqStatus("Moderate", "Air quality is acceptable for most people.")
+  MeasurementLevel.HIGH -> AqStatus("Unhealthy for sensitive groups", "Sensitive groups should limit outdoor exertion.")
+  MeasurementLevel.VERY_HIGH -> AqStatus("Unhealthy", "Everyone may begin to feel effects. Limit outdoor time.")
+  MeasurementLevel.EXTREMELY_HIGH -> AqStatus("Hazardous", "Health warning. Avoid outdoor activity.")
 }
 
 @Composable
@@ -180,10 +278,14 @@ private val previewReadings = listOf(
 private fun AirQualityCardLoadedPreview() {
   MaterialTheme {
     AirQualityCard(
-      aq = Loaded(
+      aq = HomeUiState.AirQuality.Loaded(
         stationName = "Central Park Station, New York",
-        distanceMeters = 643.7,
-        readings = previewReadings,
+        distanceMeters = 643.7, // ≈ 0.4 mile
+        readings = listOf(
+          PollutantReading(Pollutant.PM25, 4.2, "µg/m³", MeasurementLevel.LOW),
+          PollutantReading(Pollutant.NO2, 9.1, "ppb", MeasurementLevel.LOW),
+          PollutantReading(Pollutant.OZONE, 4.2, "ppb", MeasurementLevel.LOW),
+        ),
         updatedAt = Instant.fromEpochSeconds(0),
       ),
       onRequestLocation = {},
@@ -194,7 +296,5 @@ private fun AirQualityCardLoadedPreview() {
 @Preview
 @Composable
 private fun AirQualityCardNoLocationPreview() {
-  MaterialTheme {
-    AirQualityCard(aq = HomeUiState.AirQuality.NoLocation, onRequestLocation = {})
-  }
+  MaterialTheme { AirQualityCard(HomeUiState.AirQuality.NoLocation, onRequestLocation = {}) }
 }

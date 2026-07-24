@@ -4,6 +4,7 @@ import aircasting.shared.generated.resources.Res
 import aircasting.shared.generated.resources.air_quality_good
 import aircasting.shared.generated.resources.ic_help
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -27,7 +28,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -40,12 +43,20 @@ import com.lunarlogic.aircasting.domain.MeasurementLevel
 import com.lunarlogic.aircasting.domain.Pollutant
 import com.lunarlogic.aircasting.domain.PollutantReading
 import com.lunarlogic.aircasting.domain.StationWithDistance
+import com.lunarlogic.aircasting.domain.ageLabelFrom
 import com.lunarlogic.aircasting.domain.worstLevel
 import com.lunarlogic.aircasting.home.HomeUiState.AirQuality.Loaded
 import org.jetbrains.compose.resources.painterResource
+import org.koin.compose.koinInject
 import kotlin.math.round
+import kotlin.time.Clock
 import kotlin.time.Instant
 
+private val SurfaceCell = Color(0xFFFCF8F8)   // schemes/surface
+private val OnSurfaceVariantAlt = Color(0xFF49454F)
+private val GovTagBg = Color(0x1400B2EF)      // primary-container @ 8%
+private val GovTagText = Color(0xFF004059)
+private val StationName = Color(0xFF0D0D12)
 private val CardWhite = Color(0xFFFFFFFF)
 private val Outline = Color(0xFF75777B)
 private val OutlineVariant = Color(0xFFCAC4D0)
@@ -103,6 +114,7 @@ private fun AirQualityCard(aq: HomeUiState.AirQuality, onRequestLocation: () -> 
           PollutantRow(aq.readings)
           StationSelectorRow(aq.stationName, aq.distanceMeters)
         }
+
         HomeUiState.AirQuality.NoReadings -> {
           Text("No air quality data available", style = MaterialTheme.typography.titleMedium)
           Text(
@@ -123,6 +135,7 @@ private fun AirQualityCard(aq: HomeUiState.AirQuality, onRequestLocation: () -> 
     }
   }
 }
+
 @Composable
 private fun AirQualityHeader(status: AqStatus, level: MeasurementLevel) {
   Row(
@@ -142,16 +155,22 @@ private fun AirQualityHeader(status: AqStatus, level: MeasurementLevel) {
         style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Medium),
         color = levelColor(level),
       )
-      Text(status.description, style = MaterialTheme.typography.bodySmall, color = levelColor(level))
+      Text(
+        status.description,
+        style = MaterialTheme.typography.bodySmall,
+        color = levelColor(level)
+      )
     }
   }
 }
+
 @Composable
 private fun PollutantRow(readings: List<PollutantReading>) {
   Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
     readings.forEach { PollutantCell(it, Modifier.weight(1f)) }
   }
 }
+
 @Composable
 private fun PollutantCell(reading: PollutantReading, modifier: Modifier = Modifier) {
   Column(
@@ -161,8 +180,17 @@ private fun PollutantCell(reading: PollutantReading, modifier: Modifier = Modifi
     verticalArrangement = Arrangement.spacedBy(4.dp),
   ) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-      Text(reading.pollutant.label, style = MaterialTheme.typography.labelLarge, color = OnSurfaceVariant)
-      Icon(painterResource(Res.drawable.ic_help), contentDescription = null, Modifier.size(16.dp), tint = Outline)
+      Text(
+        reading.pollutant.label,
+        style = MaterialTheme.typography.labelLarge,
+        color = OnSurfaceVariant
+      )
+      Icon(
+        painterResource(Res.drawable.ic_help),
+        contentDescription = null,
+        Modifier.size(16.dp),
+        tint = Outline
+      )
     }
     Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
       Text(
@@ -174,6 +202,7 @@ private fun PollutantCell(reading: PollutantReading, modifier: Modifier = Modifi
     }
   }
 }
+
 @Composable
 private fun StationSelectorRow(name: String, distanceMeters: Double) {
   Row(
@@ -185,11 +214,21 @@ private fun StationSelectorRow(name: String, distanceMeters: Double) {
   ) {
     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
       Text(name, style = MaterialTheme.typography.titleSmall, color = OnBackground)
-      Text(distanceLabel(distanceMeters), style = MaterialTheme.typography.bodySmall, color = Outline)
+      Text(
+        distanceLabel(distanceMeters),
+        style = MaterialTheme.typography.bodySmall,
+        color = Outline
+      )
     }
-    Icon(Icons.Filled.KeyboardArrowRight, contentDescription = null, Modifier.size(20.dp), tint = Outline)
+    Icon(
+      Icons.Filled.KeyboardArrowRight,
+      contentDescription = null,
+      Modifier.size(20.dp),
+      tint = Outline
+    )
   }
 }
+
 private data class AqStatus(val label: String, val description: String)
 
 private fun MeasurementLevel.aqStatus(): AqStatus = when (this) {
@@ -197,9 +236,20 @@ private fun MeasurementLevel.aqStatus(): AqStatus = when (this) {
     AqStatus("Good", "The air outside is clean. A great time to enjoy activities outside.")
   // TODO: copy + illustrations for these come from the other Figma states — placeholder for now.
   MeasurementLevel.MEDIUM -> AqStatus("Moderate", "Air quality is acceptable for most people.")
-  MeasurementLevel.HIGH -> AqStatus("Unhealthy for sensitive groups", "Sensitive groups should limit outdoor exertion.")
-  MeasurementLevel.VERY_HIGH -> AqStatus("Unhealthy", "Everyone may begin to feel effects. Limit outdoor time.")
-  MeasurementLevel.EXTREMELY_HIGH -> AqStatus("Hazardous", "Health warning. Avoid outdoor activity.")
+  MeasurementLevel.HIGH -> AqStatus(
+    "Unhealthy for sensitive groups",
+    "Sensitive groups should limit outdoor exertion."
+  )
+
+  MeasurementLevel.VERY_HIGH -> AqStatus(
+    "Unhealthy",
+    "Everyone may begin to feel effects. Limit outdoor time."
+  )
+
+  MeasurementLevel.EXTREMELY_HIGH -> AqStatus(
+    "Hazardous",
+    "Health warning. Avoid outdoor activity."
+  )
 }
 
 @Composable
@@ -226,24 +276,125 @@ private fun MetricChip(reading: PollutantReading) {
 }
 
 @Composable
-private fun NearbyStationsSection(stations: List<StationWithDistance>) {
-  Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-    Text("Nearby stations", style = MaterialTheme.typography.titleMedium)
+private fun NearbyStationsSection(stations: List<StationWithDistance>, onViewMap: () -> Unit = {}) {
+  val clock = koinInject<Clock>()
+  val now = remember(stations) { clock.now() }
+  Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Row(
+      Modifier.fillMaxWidth(),
+      horizontalArrangement = Arrangement.SpaceBetween,
+      verticalAlignment = Alignment.CenterVertically,
+    ) {
+      Text("Nearby stations", style = MaterialTheme.typography.titleLarge)
+      TextButton(onClick = onViewMap) {
+        Text("View map")
+        Icon(Icons.Filled.KeyboardArrowRight, contentDescription = null, Modifier.size(20.dp))
+      }
+    }
     LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-      items(stations) { StationCard(it) }
+      items(stations) { item ->
+        StationCard(
+          name = item.station.name,
+          subtitle = distanceLabel(item.distanceMeters),        // we have distance, not an address
+          // TODO: Actual updatedAt field
+          updatedLabel = item.station.updatedAt.ageLabelFrom(now),
+          readings = item.station.readings,
+        )
+      }
     }
   }
 }
 
 @Composable
-private fun StationCard(item: StationWithDistance) {
-  Card(shape = RoundedCornerShape(16.dp), modifier = Modifier.width(220.dp)) {
-    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-      Text(item.station.name, style = MaterialTheme.typography.titleSmall)
-      Text(distanceLabel(item.distanceMeters), style = MaterialTheme.typography.bodySmall)
-      item.station.readings.firstOrNull()
-        ?.let { MetricChip(it) }
+private fun StationCard(
+  name: String,
+  subtitle: String,
+  updatedLabel: String,
+  readings: List<PollutantReading>,
+) {
+  val level = readings.worstLevel() ?: MeasurementLevel.LOW
+  Card(
+    shape = RoundedCornerShape(16.dp),
+    colors = CardDefaults.cardColors(containerColor = CardWhite),
+    modifier = Modifier.width(332.dp),
+  ) {
+    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+      Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(
+          Modifier.fillMaxWidth(),
+          horizontalArrangement = Arrangement.SpaceBetween,
+          verticalAlignment = Alignment.CenterVertically,
+        ) {
+          Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+          ) {
+            GovMonitorTag()
+            StatusBadge(level)
+          }
+          Icon(
+            Icons.Filled.MoreVert,
+            contentDescription = null,
+            Modifier.size(24.dp),
+            tint = Outline
+          ) // TODO: options menu
+        }
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+          Text(
+            name,
+            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+            color = StationName,
+          )
+          Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = OnSurfaceVariantAlt)
+            Text("•", style = MaterialTheme.typography.bodySmall, color = OnSurfaceVariantAlt)
+            Text(
+              updatedLabel,
+              style = MaterialTheme.typography.bodySmall,
+              color = OnSurfaceVariantAlt
+            )
+          }
+        }
+      }
+      Row(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.fillMaxWidth()) {
+        readings.forEach { StationPollutantCell(it, Modifier.weight(1f)) }
+      }
     }
+  }
+}
+@Composable
+private fun GovMonitorTag() {
+  Box(
+    Modifier.clip(RoundedCornerShape(8.dp)).background(GovTagBg).padding(horizontal = 6.dp, vertical = 2.dp),
+  ) {
+    Text("GOV MONITOR", style = MaterialTheme.typography.labelSmall, color = GovTagText)
+  }
+}
+@Composable
+private fun StatusBadge(level: MeasurementLevel) {
+  val c = levelColor(level)
+  Box(
+    Modifier.clip(RoundedCornerShape(100.dp)).background(c.copy(alpha = 0.12f)).padding(horizontal = 8.dp, vertical = 2.dp),
+  ) {
+    Text(level.aqStatus().label, style = MaterialTheme.typography.labelSmall, color = c)
+  }
+}
+
+@Composable
+private fun StationPollutantCell(reading: PollutantReading, modifier: Modifier = Modifier) {
+  Column(
+    modifier.clip(RoundedCornerShape(8.dp)).background(SurfaceCell).padding(vertical = 12.dp),
+    horizontalAlignment = Alignment.CenterHorizontally,
+    verticalArrangement = Arrangement.spacedBy(4.dp),
+  ) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+      Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        Box(Modifier.size(8.dp).clip(CircleShape).background(levelColor(reading.level)))
+        Text(reading.value.toString(), style = MaterialTheme.typography.titleMedium, color = OnBackground)
+      }
+      Text(reading.unitSymbol, style = MaterialTheme.typography.labelSmall, color = Outline)
+    }
+    Text(reading.pollutant.label, style = MaterialTheme.typography.bodySmall, color = Outline)
   }
 }
 
@@ -297,4 +448,21 @@ private fun AirQualityCardLoadedPreview() {
 @Composable
 private fun AirQualityCardNoLocationPreview() {
   MaterialTheme { AirQualityCard(HomeUiState.AirQuality.NoLocation, onRequestLocation = {}) }
+}
+
+@Preview
+@Composable
+private fun StationCardPreview() {
+  MaterialTheme {
+    StationCard(
+      name = "Downtown Civic Station",
+      subtitle = "0.4 mile away",
+      updatedLabel = "2 min ago",
+      readings = listOf(
+        PollutantReading(Pollutant.PM25, 8.2, "µg/m³", MeasurementLevel.LOW),
+        PollutantReading(Pollutant.PM25, 15.0, "ppb", MeasurementLevel.LOW),
+        PollutantReading(Pollutant.NO2, 18.3, "ppb", MeasurementLevel.LOW),
+      ),
+    )
+  }
 }

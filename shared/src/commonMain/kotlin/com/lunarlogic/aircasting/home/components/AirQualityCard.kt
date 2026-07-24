@@ -110,7 +110,7 @@ private fun PollutantRow(readings: List<PollutantReading>) {
 private fun PollutantCell(reading: PollutantReading, modifier: Modifier = Modifier) {
   Column(
     modifier
-      .border(1.dp, LocalAqColors.current.forLevel(reading.level), RoundedCornerShape(8.dp)) // per-pollutant color
+      .border(1.dp, LocalAqColors.current.forLevel(reading.level), RoundedCornerShape(8.dp))
       .padding(16.dp),
     verticalArrangement = Arrangement.spacedBy(4.dp),
   ) {
@@ -127,7 +127,7 @@ private fun PollutantCell(reading: PollutantReading, modifier: Modifier = Modifi
         tint = MaterialTheme.colorScheme.outline,
       )
     }
-    Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
       Text(
         reading.value.toString(),
         style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),

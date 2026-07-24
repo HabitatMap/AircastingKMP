@@ -93,15 +93,3 @@ fun GeoLocation.squareAround(radiusKm: Double = 100.0): GeoSquare {
 
 fun List<PollutantReading>.worstLevel(): MeasurementLevel? =
   maxByOrNull { it.level.ordinal }?.level
-
-/** Coarse "x ago" label for a timestamp, relative to [now]. Presentation-facing; caller
- *  supplies the clock reading so this stays pure and testable. */
-fun Instant.ageLabelFrom(now: Instant): String {
-  val secs = (now - this).inWholeSeconds.coerceAtLeast(0)
-  return when {
-    secs < 60 -> "just now"
-    secs < 3600 -> "${secs / 60} min ago"
-    secs < 86_400 -> "${secs / 3600} hr ago"
-    else -> "${secs / 86_400} d ago"
-  }
-}

@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.lunarlogic.aircasting.home.components.AirQualityCard
 import com.lunarlogic.aircasting.home.components.NearbyStationsSection
+import com.lunarlogic.aircasting.i18n.LocalStrings
 
 @Composable
 fun HomeScreen(
@@ -35,9 +36,10 @@ fun HomeScreen(
 
 @Composable
 private fun ErrorState(onRetry: () -> Unit) {
+  val strings = LocalStrings.current
   Column(horizontalAlignment = Alignment.CenterHorizontally) {
-    Text("Something went wrong.", style = MaterialTheme.typography.titleMedium)
-    Button(onClick = onRetry, modifier = Modifier.padding(top = 12.dp)) { Text("Try again") }
+    Text(strings.errorTitle, style = MaterialTheme.typography.titleMedium)
+    Button(onClick = onRetry, modifier = Modifier.padding(top = 12.dp)) { Text(strings.errorRetry) }
   }
 }
 

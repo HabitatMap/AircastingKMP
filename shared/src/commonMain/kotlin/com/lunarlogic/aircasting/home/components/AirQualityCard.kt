@@ -30,6 +30,7 @@ import com.lunarlogic.aircasting.domain.Pollutant
 import com.lunarlogic.aircasting.domain.PollutantReading
 import com.lunarlogic.aircasting.domain.worstLevel
 import com.lunarlogic.aircasting.home.HomeUiState
+import com.lunarlogic.aircasting.i18n.LocalStrings
 import com.lunarlogic.aircasting.ui.theme.AircastingTheme
 import com.lunarlogic.aircasting.ui.theme.LocalAqColors
 import org.jetbrains.compose.resources.painterResource
@@ -38,6 +39,7 @@ import kotlin.time.Instant
 /** The nearest-station air-quality card (Figma "Air quality card", node 277:7291). */
 @Composable
 internal fun AirQualityCard(aq: HomeUiState.AirQuality, onRequestLocation: () -> Unit) {
+  val strings = LocalStrings.current
   Card(
     shape = RoundedCornerShape(16.dp),
     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
@@ -48,26 +50,20 @@ internal fun AirQualityCard(aq: HomeUiState.AirQuality, onRequestLocation: () ->
         is HomeUiState.AirQuality.Loaded -> {
           // Empty readings can't reach Loaded, but the default keeps this `when` total.
           val level = aq.readings.worstLevel() ?: MeasurementLevel.LOW
-          AirQualityHeader(status = level.aqStatus(), level = level)
+          AirQualityHeader(status = level.aqStatus(strings), level = level)
           PollutantRow(aq.readings)
           StationSelectorRow(aq.stationName, aq.distanceMeters)
         }
 
         HomeUiState.AirQuality.NoReadings -> {
-          Text("No air quality data available", style = MaterialTheme.typography.titleMedium)
-          Text(
-            "We couldn't find current readings for this location. Check again later.",
-            style = MaterialTheme.typography.bodyMedium,
-          )
+          Text(strings.noReadingsTitle, style = MaterialTheme.typography.titleMedium)
+          Text(strings.noReadingsBody, style = MaterialTheme.typography.bodyMedium)
         }
 
         HomeUiState.AirQuality.NoLocation -> {
-          Text("No nearby station found", style = MaterialTheme.typography.titleMedium)
-          Text(
-            "We couldn't match your location to a reporting station. Try enabling precise location.",
-            style = MaterialTheme.typography.bodyMedium,
-          )
-          OutlinedButton(onClick = onRequestLocation) { Text("Turn on location services") }
+          Text(strings.noLocationTitle, style = MaterialTheme.typography.titleMedium)
+          Text(strings.noLocationBody, style = MaterialTheme.typography.bodyMedium)
+          OutlinedButton(onClick = onRequestLocation) { Text(strings.turnOnLocation) }
         }
       }
     }
@@ -88,7 +84,7 @@ private fun AirQualityHeader(status: AqStatus, level: MeasurementLevel) {
       modifier = Modifier.size(96.dp),
     )
     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-      Text("AIR QUALITY", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.outline)
+      Text(LocalStrings.current.airQualityLabel, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.outline)
       Text(
         status.label,
         style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Medium),
@@ -116,7 +112,7 @@ private fun PollutantCell(reading: PollutantReading, modifier: Modifier = Modifi
   ) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
       Text(
-        reading.pollutant.label,
+        reading.pollutant.label(LocalStrings.current),
         style = MaterialTheme.typography.labelLarge,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
       )
@@ -149,7 +145,7 @@ private fun StationSelectorRow(name: String, distanceMeters: Double) {
   ) {
     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
       Text(name, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onBackground)
-      Text(distanceLabel(distanceMeters), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
+      Text(distanceLabel(distanceMeters, LocalStrings.current), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
     }
     Icon(
       painterResource(Res.drawable.ic_arrow_forward_ios),

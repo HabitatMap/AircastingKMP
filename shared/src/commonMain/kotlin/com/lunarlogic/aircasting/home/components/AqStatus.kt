@@ -1,20 +1,21 @@
 package com.lunarlogic.aircasting.home.components
 
 import com.lunarlogic.aircasting.domain.MeasurementLevel
+import com.lunarlogic.aircasting.i18n.Strings
 
 /** Overall air-quality status shown on the cards. Derived from the worst pollutant level. */
 internal data class AqStatus(val label: String, val description: String)
 
-internal fun MeasurementLevel.aqStatus(): AqStatus = when (this) {
+internal fun MeasurementLevel.aqStatus(strings: Strings): AqStatus = when (this) {
   MeasurementLevel.EXTREMELY_LOW, MeasurementLevel.LOW ->
-    AqStatus("Good", "The air outside is clean. A great time to enjoy activities outside.")
-  // TODO: copy + illustrations for these come from the other Figma states — placeholder for now.
+    AqStatus(strings.aqGoodLabel, strings.aqGoodDescription)
+  // TODO: illustrations for these come from the other Figma states — copy is now localised.
   MeasurementLevel.MEDIUM ->
-    AqStatus("Moderate", "Air quality is acceptable for most people.")
+    AqStatus(strings.aqModerateLabel, strings.aqModerateDescription)
   MeasurementLevel.HIGH ->
-    AqStatus("Unhealthy for sensitive groups", "Sensitive groups should limit outdoor exertion.")
+    AqStatus(strings.aqUnhealthySensitiveLabel, strings.aqUnhealthySensitiveDescription)
   MeasurementLevel.VERY_HIGH ->
-    AqStatus("Unhealthy", "Everyone may begin to feel effects. Limit outdoor time.")
+    AqStatus(strings.aqUnhealthyLabel, strings.aqUnhealthyDescription)
   MeasurementLevel.EXTREMELY_HIGH ->
-    AqStatus("Hazardous", "Health warning. Avoid outdoor activity.")
+    AqStatus(strings.aqHazardousLabel, strings.aqHazardousDescription)
 }

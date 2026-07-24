@@ -135,24 +135,6 @@ class NearbyStationTest {
     assertNull(emptyList<PollutantReading>().worstLevel())
   }
 
-  @Test
-  fun age_under_a_minute_reads_just_now() {
-    val t = Instant.fromEpochSeconds(1000)
-    assertEquals("just now", t.ageLabelFrom(Instant.fromEpochSeconds(1030)))
-  }
-
-  @Test
-  fun age_floors_to_whole_minutes() {
-    val t = Instant.fromEpochSeconds(0)
-    assertEquals("2 min ago", t.ageLabelFrom(Instant.fromEpochSeconds(150))) // 2m30s → 2
-  }
-
-  @Test
-  fun age_floors_to_whole_hours() {
-    val t = Instant.fromEpochSeconds(0)
-    assertEquals("3 hr ago", t.ageLabelFrom(Instant.fromEpochSeconds(3 * 3600 + 5)))
-  }
-
   private fun fixedStation(
     location: GeoLocation,
     pollutant: Pollutant,

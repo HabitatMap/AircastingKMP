@@ -34,8 +34,8 @@ import com.lunarlogic.aircasting.domain.MeasurementLevel
 import com.lunarlogic.aircasting.domain.Pollutant
 import com.lunarlogic.aircasting.domain.PollutantReading
 import com.lunarlogic.aircasting.domain.StationWithDistance
-import com.lunarlogic.aircasting.domain.ageLabelFrom
 import com.lunarlogic.aircasting.domain.worstLevel
+import com.lunarlogic.aircasting.i18n.LocalStrings
 import com.lunarlogic.aircasting.ui.theme.AircastingTheme
 import com.lunarlogic.aircasting.ui.theme.LocalAqColors
 import org.jetbrains.compose.resources.painterResource
@@ -47,15 +47,16 @@ import kotlin.time.Clock
 internal fun NearbyStationsSection(stations: List<StationWithDistance>, onViewMap: () -> Unit = {}) {
   val clock = koinInject<Clock>()
   val now = remember(stations) { clock.now() } // one clock reading per loaded list
+  val strings = LocalStrings.current
   Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
     Row(
       Modifier.fillMaxWidth(),
       horizontalArrangement = Arrangement.SpaceBetween,
       verticalAlignment = Alignment.CenterVertically,
     ) {
-      Text("Nearby stations", style = MaterialTheme.typography.titleLarge)
+      Text(strings.nearbyStationsTitle, style = MaterialTheme.typography.titleLarge)
       TextButton(onClick = onViewMap) {
-        Text("View map")
+        Text(strings.viewMap)
         Icon(painterResource(Res.drawable.ic_arrow_forward_ios), contentDescription = null, Modifier.size(20.dp))
       }
     }
@@ -63,8 +64,8 @@ internal fun NearbyStationsSection(stations: List<StationWithDistance>, onViewMa
       items(stations) { item ->
         StationCard(
           name = item.station.name,
-          subtitle = distanceLabel(item.distanceMeters), // we have distance, not an address
-          updatedLabel = item.station.updatedAt.ageLabelFrom(now),
+          subtitle = distanceLabel(item.distanceMeters, strings), // we have distance, not an address
+          updatedLabel = ageLabel(item.station.updatedAt, now, strings),
           readings = item.station.readings,
         )
       }
@@ -130,7 +131,7 @@ private fun GovMonitorTag() {
       .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.08f))
       .padding(horizontal = 6.dp, vertical = 2.dp),
   ) {
-    Text("GOV MONITOR", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onPrimaryContainer)
+    Text(LocalStrings.current.govMonitor, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onPrimaryContainer)
   }
 }
 
@@ -142,7 +143,7 @@ private fun StatusBadge(level: MeasurementLevel) {
       .background(c.copy(alpha = 0.12f))
       .padding(horizontal = 8.dp, vertical = 2.dp),
   ) {
-    Text(level.aqStatus().label, style = MaterialTheme.typography.labelSmall, color = c)
+    Text(level.aqStatus(LocalStrings.current).label, style = MaterialTheme.typography.labelSmall, color = c)
   }
 }
 
@@ -160,7 +161,7 @@ private fun StationPollutantCell(reading: PollutantReading, modifier: Modifier =
       }
       Text(reading.unitSymbol, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
     }
-    Text(reading.pollutant.label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
+    Text(reading.pollutant.label(LocalStrings.current), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
   }
 }
 

@@ -3,7 +3,9 @@ package com.lunarlogic.aircasting.home
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -45,6 +47,7 @@ private fun HomeContent(ui: HomeUiState, onRequestLocation: () -> Unit) {
     modifier = Modifier.fillMaxSize().padding(16.dp),
     verticalArrangement = Arrangement.spacedBy(24.dp),
   ) {
+    Spacer(modifier = Modifier.height(50.dp)) // TODO: remove
     AirQualityCard(ui.airQuality, onRequestLocation)
     if (ui.nearby.isNotEmpty()) NearbyStationsSection(ui.nearby)
   }

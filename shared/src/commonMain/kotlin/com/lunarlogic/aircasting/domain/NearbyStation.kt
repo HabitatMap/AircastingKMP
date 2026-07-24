@@ -80,7 +80,7 @@ fun List<NearbyStation>.nearestTo(location: GeoLocation): StationWithDistance? =
   byDistanceFrom(location).firstOrNull()
 
 /** Square roughly ±[radiusKm] around this point (per-axis degree conversion). */
-fun GeoLocation.squareAround(radiusKm: Double = 30.0): GeoSquare {
+fun GeoLocation.squareAround(radiusKm: Double = 100.0): GeoSquare {
   val latDelta = radiusKm / 111.2
   val lngDelta = radiusKm / (111.2 * cos(latitude.toRadians()))
   return GeoSquare(
@@ -90,3 +90,6 @@ fun GeoLocation.squareAround(radiusKm: Double = 30.0): GeoSquare {
     west = longitude - lngDelta,
   )
 }
+
+fun List<PollutantReading>.worstLevel(): MeasurementLevel? =
+  maxByOrNull { it.level.ordinal }?.level

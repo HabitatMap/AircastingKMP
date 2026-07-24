@@ -22,11 +22,16 @@ class NetworkHomeRepository(
 ): HomeRepository {
   override suspend fun load(userLocation: GeoLocation?): HomeUiState {
     if (userLocation == null) {
+      println("AIRDIAG/REPO: userLocation is null -> NoLocation")
       return HomeUiState(HomeUiState.AirQuality.NoLocation, nearby = emptyList())
     }
 
     val box = userLocation.squareAround(radiusKm)
-    val ranked = mergeByStation(fetchAll(box)).byDistanceFrom(userLocation)
+    println("AIRDIAG/REPO: box=$box (radiusKm=$radiusKm) around $userLocation")
+    val fetched = fetchAll(box)
+    fetched.forEach { (p, s) -> println("AIRDIAG/REPO: pollutant=$p -> ${s.size} stations") }
+    val ranked = mergeByStation(fetched).byDistanceFrom(userLocation)
+    println("AIRDIAG/REPO: merged+ranked = ${ranked.size} stations")
 
     val airQuality = ranked.firstOrNull()?.let { nearest ->
       HomeUiState.AirQuality.Loaded(

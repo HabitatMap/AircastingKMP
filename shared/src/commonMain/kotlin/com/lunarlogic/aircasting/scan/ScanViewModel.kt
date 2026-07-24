@@ -1,4 +1,4 @@
-package com.lunarlogic.aircasting.ui.scan
+package com.lunarlogic.aircasting.scan
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

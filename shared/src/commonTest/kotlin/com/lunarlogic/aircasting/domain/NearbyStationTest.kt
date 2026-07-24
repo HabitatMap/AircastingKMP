@@ -120,6 +120,21 @@ class NearbyStationTest {
     assertTrue(ranked[1].distanceMeters < ranked[2].distanceMeters)
   }
 
+  @Test
+  fun worst_level_is_the_most_severe_reading() {
+    val readings = listOf(
+      PollutantReading(Pollutant.PM25, 4.2, "µg/m³", MeasurementLevel.LOW),
+      PollutantReading(Pollutant.NO2, 40.0, "ppb", MeasurementLevel.HIGH),
+      PollutantReading(Pollutant.OZONE, 4.2, "ppb", MeasurementLevel.LOW),
+    )
+    assertEquals(MeasurementLevel.HIGH, readings.worstLevel())
+  }
+
+  @Test
+  fun worst_level_of_empty_readings_is_null() {
+    assertNull(emptyList<PollutantReading>().worstLevel())
+  }
+
   private fun fixedStation(
     location: GeoLocation,
     pollutant: Pollutant,

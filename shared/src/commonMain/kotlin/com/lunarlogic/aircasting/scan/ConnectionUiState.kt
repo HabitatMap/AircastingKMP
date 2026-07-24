@@ -1,4 +1,4 @@
-package com.lunarlogic.aircasting.ui.scan
+package com.lunarlogic.aircasting.scan
 
 import com.lunarlogic.aircasting.bluetooth.AirBeamDevice
 import com.lunarlogic.aircasting.bluetooth.FailureReason

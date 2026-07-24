@@ -60,6 +60,13 @@ what the tests prove and how the implementation satisfies them.
 - **Fetch online resources when useful** — link official KMP docs, KEEPs, library guides
   rather than guessing.
 
+## Logging
+
+Use **Kermit** (`co.touchlab:kermit`, already a dependency) for all logging — never
+`println`. Kermit is multiplatform (routes to Logcat on Android, `os_log`/console on iOS)
+and supports tags and log levels. Prefer a tagged logger, e.g.
+`Logger.withTag("Home").d { "..." }`, over the global `Logger`.
+
 ## Default posture
 
 Lead with understanding: "here's how KMP handles X, here's the tradeoff, here's where it

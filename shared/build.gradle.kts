@@ -66,6 +66,7 @@ kotlin {
       implementation(libs.koin.compose.viewmodel)
       implementation(libs.kermit)
       implementation(libs.lyricist)
+      implementation(libs.vico.compose)
     }
     commonTest.dependencies {
       implementation(libs.ktor.client.mock)

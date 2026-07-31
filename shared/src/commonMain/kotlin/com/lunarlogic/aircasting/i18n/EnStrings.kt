@@ -39,6 +39,11 @@ val EnStrings = Strings(
   ageMinutesAgo = { minutes -> "$minutes min ago" },
   ageHoursAgo = { hours -> "$hours hr ago" },
   ageDaysAgo = { days -> "$days d ago" },
+  tabHome = "Home",
+  tabExplore = "Explore",
+  tabRecord = "Record",
+  tabFavorites = "Favorites",
+  tabMyData = "My data",
 )
 
 /** Every available locale, keyed by BCP-47 tag. Lyricist selects one by the system locale at runtime. */

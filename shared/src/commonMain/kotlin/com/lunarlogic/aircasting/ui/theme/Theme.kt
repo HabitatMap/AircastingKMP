@@ -20,6 +20,7 @@ private val LightColors = lightColorScheme(
   outlineVariant = Color(0xFFCAC4D0),
   primaryContainer = Color(0xFF00B2EF),
   onPrimaryContainer = Color(0xFF004059),
+  onSecondaryContainer = Color(0xFFF9FCFF),
 )
 
 @Composable

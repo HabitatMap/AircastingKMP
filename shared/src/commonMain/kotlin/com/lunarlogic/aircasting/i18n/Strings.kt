@@ -12,6 +12,13 @@ package com.lunarlogic.aircasting.i18n
  * in [AppStrings]. The field set here is the single source of truth every locale must fill in.
  */
 data class Strings(
+  // Bottom navigation
+  val tabHome: String,
+  val tabExplore: String,
+  val tabRecord: String,
+  val tabFavorites: String,
+  val tabMyData: String,
+
   // Error state
   val errorTitle: String,
   val errorRetry: String,

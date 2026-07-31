@@ -1,3 +1,4 @@
+import java.util.Properties
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -17,20 +18,34 @@ dependencies {
 
     implementation(libs.androidx.activity.compose)
 
+    // Map spike — Google Maps SDK surface; the dot renderer itself lives in :shared.
+    implementation(libs.maps.compose)
+    implementation(libs.compose.foundation)
+    implementation(libs.compose.material3)
+    implementation(libs.compose.ui)
+
     implementation(libs.compose.uiToolingPreview)
     debugImplementation(libs.compose.uiTooling)
 }
 
+/** Maps API key stays out of git: put `MAPS_API_KEY=…` in local.properties. */
+val mapsApiKey: String = Properties().run {
+    val file = rootProject.file("local.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
+    getProperty("MAPS_API_KEY", "")
+}
+
 android {
-    namespace = "com.lunarlogic.aircasting"
+    namespace = "pl.llp.aircasting"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     defaultConfig {
-        applicationId = "com.lunarlogic.aircasting"
+        applicationId = "pl.llp.aircasting"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
         versionName = "1.0"
+        manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
     }
     packaging {
         resources {

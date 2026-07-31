@@ -20,9 +20,26 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.Light.NoActionBar">
+
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="${MAPS_API_KEY}" />
+
         <activity
             android:exported="true"
             android:name=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Throwaway launcher entry for the map rendering spike. Delete with spike/. -->
+        <activity
+            android:exported="true"
+            android:label="Map Spike"
+            android:name=".spike.MapSpikeActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

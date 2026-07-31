@@ -20,7 +20,7 @@ kotlin {
   }
 
   androidLibrary {
-    namespace = "com.lunarlogic.aircasting.shared"
+    namespace = "pl.llp.aircasting.shared"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
     minSdk = libs.versions.android.minSdk.get().toInt()
 

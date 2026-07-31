@@ -32,7 +32,9 @@
       "Bash(curl -s \"https://repo1.maven.org/maven2/org/jetbrains/compose/material/material-icons-extended/maven-metadata.xml\")",
       "Bash(curl -s \"https://dl.google.com/dl/android/maven2/androidx/compose/material/material-icons-core/maven-metadata.xml\")",
       "Bash(curl -s \"https://repo1.maven.org/maven2/org/jetbrains/compose/material/material-icons-core/1.7.3/material-icons-core-1.7.3.module\")",
-      "Bash(npx --yes svg2vectordrawable@latest -i home.default.svg -o out_home.xml)"
+      "Bash(npx --yes svg2vectordrawable@latest -i home.default.svg -o out_home.xml)",
+      "Bash(awk -F: '{s+=$2} END {print \"kotlin/swift refs:\", s}')",
+      "Bash(bash /private/tmp/claude-503/-Users-kirillgetmanskii-1-AndroidStudioProjects-Aircasting/a91846ce-d5a5-46b8-8b9c-2037fb4d1073/scratchpad/rename_package.sh)"
     ]
   },
   "hooks": {

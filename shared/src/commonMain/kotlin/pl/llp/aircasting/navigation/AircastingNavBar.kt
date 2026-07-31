@@ -47,7 +47,7 @@ fun AircastingNavBar(selected: AppTab, onSelect: (AppTab) -> Unit, modifier: Mod
         colors = NavigationBarItemDefaults.colors(
           selectedIconColor = MaterialTheme.colorScheme.primaryContainer,
           selectedTextColor = MaterialTheme.colorScheme.primaryContainer,
-          indicatorColor = MaterialTheme.colorScheme.onSecondaryContainer,
+          indicatorColor = MaterialTheme.colorScheme.surfaceContainerLowest,
           unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
           unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
         ),

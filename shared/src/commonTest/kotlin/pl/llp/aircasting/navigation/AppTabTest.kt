@@ -16,8 +16,9 @@ class AppTabTest {
       AppTab.entries,
     )
   }
+
   @Test
-  fun `every tab has a distinct, non-blank label`() {
+  fun `every tab has a distinct non-blank label`() {
     val labels = AppTab.entries.map { EnStrings.label(it) }
     assertTrue(labels.none { it.isBlank() }, "blank tab label in $labels")
     assertEquals(labels.size, labels.toSet().size, "duplicate tab label in $labels")

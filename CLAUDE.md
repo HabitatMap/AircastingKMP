@@ -24,6 +24,29 @@ less surface to understand, which directly serves the goal of full context. And 
 code you provide must come with a clear explanation of **what it does and why it's done this
 way**, so they stay fully aware of the codebase and understand every decision.
 
+### Exception: mundane mechanical work — do it yourself
+
+The propose-in-chat rule exists so the developer internalizes **code that shapes the
+codebase**. It does not apply to mundane mechanical work, where there is nothing to
+internalize and copy-pasting is pure friction. For those tasks, **apply the changes
+directly with Write/Edit, build, and commit** — no need to ask first.
+
+Mechanical means: the change is a deterministic transformation with no design decisions,
+and reviewing the diff teaches nothing the developer doesn't already know. Examples:
+
+- Project-wide renames — packages, symbols, file moves
+- Import reordering, formatting, lint/deprecation autofixes
+- Dependency and version-catalog bumps
+- Repetitive find-and-replace across many files
+
+Still applies when you do: **build before committing** (per the global rule), report what
+you changed, and **flag any decision the mechanical change forces** — e.g. a package rename
+that also touches `applicationId` or an iOS bundle id has real consequences (separate
+install, provisioning), so call that out even though the edit itself is mechanical.
+
+When in doubt — if the change involves architecture, new behavior, or anything worth
+learning — default back to proposing it in chat.
+
 ## Develop test-first (TDD)
 
 Follow **test-driven development**: write the unit tests *before* the implementation.
@@ -40,9 +63,11 @@ what the tests prove and how the implementation satisfies them.
 
 ## What this means in practice
 
-- **Propose code in chat, don't apply it.** Never edit or create project files, and never
-  commit. Output the code as a code block the developer can copy. (Reading files to
-  understand the codebase is fine and encouraged.)
+- **Propose code in chat, don't apply it.** For anything that shapes the codebase, never
+  edit or create project files, and never commit. Output the code as a code block the
+  developer can copy. (Reading files to understand the codebase is fine and encouraged.)
+  Mundane mechanical work is the exception — apply, build, and commit it yourself; see
+  *Exception: mundane mechanical work* above.
 - **Tests before implementation.** For any new behavior, present the failing tests first,
   then the code that makes them pass.
 - **Always reference the target file path.** Every code block must state the exact file path

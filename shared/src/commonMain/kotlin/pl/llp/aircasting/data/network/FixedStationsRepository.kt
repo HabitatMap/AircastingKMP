@@ -1,0 +1,27 @@
+package pl.llp.aircasting.data.network
+
+import pl.llp.aircasting.domain.FixedStation
+import pl.llp.aircasting.domain.GeoSquare
+import pl.llp.aircasting.domain.Pollutant
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.days
+
+class FixedStationsRepository(
+  private val api: FixedStationsApi,
+  private val clock: Clock,
+) {
+  suspend fun activeStations(area: GeoSquare, pollutant: Pollutant): List<FixedStation> {
+    val now = clock.now()
+    val query = FixedStationsQuery(
+      timeFrom = (now - 365.days).epochSeconds.toString(),
+      timeTo = now.epochSeconds.toString(),
+      west = area.west, east = area.east, south = area.south, north = area.north,
+      sensorName = pollutant.sensorName,
+      unitSymbol = pollutant.unitSymbol,
+      measurementType = pollutant.measurementType,
+    )
+    val dto = api.activeInRegion(query)
+    println("AIRDIAG/API: sensor=${pollutant.sensorName} -> fetchable=${dto.fetchableSessionsCount}, sessions=${dto.sessions.size}")
+    return dto.sessions.map { it.toFixedStation() }
+  }
+}

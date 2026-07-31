@@ -22,11 +22,11 @@ dependencies {
 }
 
 android {
-    namespace = "com.lunarlogic.aircasting"
+    namespace = "pl.llp.aircasting"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     defaultConfig {
-        applicationId = "com.lunarlogic.aircasting"
+        applicationId = "pl.llp.aircasting"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1

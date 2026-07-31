@@ -23,7 +23,18 @@
       "Bash(echo \"EXIT: $?\")",
       "Bash(grep -rnoE '\\(/Users/[^ \\)`]*|~/[^ \\)`]*|AndroidStudioProjects/[A-Za-z]*\\)' docs/)",
       "mcp__plugin_figma_figma__get_variable_defs",
-      "mcp__plugin_figma_figma__get_metadata"
+      "mcp__plugin_figma_figma__get_metadata",
+      "Bash(curl -sL -o bottomnav.png \"https://www.figma.com/api/mcp/asset/5abac6aa-157b-4fba-9920-cfb4db215fc1\")",
+      "Read(//Users/kirillgetmanskii_1/.gradle/caches/modules-2/files-2.1/org.jetbrains.compose.material/**)",
+      "Read(//Users/kirillgetmanskii_1/.gradle/caches/modules-2/files-2.1/androidx.compose.material/**)",
+      "Bash(echo \"exit:$?\")",
+      "Bash(curl -s \"https://repo1.maven.org/maven2/org/jetbrains/compose/material/material-icons-core/maven-metadata.xml\")",
+      "Bash(curl -s \"https://repo1.maven.org/maven2/org/jetbrains/compose/material/material-icons-extended/maven-metadata.xml\")",
+      "Bash(curl -s \"https://dl.google.com/dl/android/maven2/androidx/compose/material/material-icons-core/maven-metadata.xml\")",
+      "Bash(curl -s \"https://repo1.maven.org/maven2/org/jetbrains/compose/material/material-icons-core/1.7.3/material-icons-core-1.7.3.module\")",
+      "Bash(npx --yes svg2vectordrawable@latest -i home.default.svg -o out_home.xml)",
+      "Bash(awk -F: '{s+=$2} END {print \"kotlin/swift refs:\", s}')",
+      "Bash(bash /private/tmp/claude-503/-Users-kirillgetmanskii-1-AndroidStudioProjects-Aircasting/a91846ce-d5a5-46b8-8b9c-2037fb4d1073/scratchpad/rename_package.sh)"
     ]
   },
   "hooks": {

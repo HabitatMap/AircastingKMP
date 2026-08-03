@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import pl.llp.aircasting.domain.MeasurementLevel
 import pl.llp.aircasting.domain.Pollutant
 import pl.llp.aircasting.domain.PollutantReading
@@ -111,7 +112,7 @@ private fun PollutantCell(reading: PollutantReading, modifier: Modifier = Modifi
   Column(
     modifier
       .border(1.dp, LocalAqColors.current.forLevel(reading.level), RoundedCornerShape(8.dp))
-      .padding(16.dp),
+      .padding(horizontal = 12.dp, vertical = 16.dp),
     verticalArrangement = Arrangement.spacedBy(4.dp),
   ) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -127,11 +128,16 @@ private fun PollutantCell(reading: PollutantReading, modifier: Modifier = Modifi
         tint = MaterialTheme.colorScheme.outline,
       )
     }
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
       Text(
         reading.value.toString(),
-        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+        style = MaterialTheme.typography.titleLarge.copy(
+          fontWeight = FontWeight.Bold,
+          letterSpacing = (-0.26).sp,
+        ),
         color = MaterialTheme.colorScheme.onBackground,
+        maxLines = 1,
+        softWrap = false,
       )
       Text(reading.unitSymbol, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.outline)
     }
@@ -185,3 +191,7 @@ private fun AirQualityCardLoadedPreview() {
 private fun AirQualityCardNoLocationPreview() {
   AircastingTheme { AirQualityCard(HomeUiState.AirQuality.NoLocation, onRequestLocation = {}) }
 }
+
+@Preview(widthDp = 360)
+@Composable
+private fun AirQualityCardNarrowPreview() = AirQualityCardLoadedPreview()

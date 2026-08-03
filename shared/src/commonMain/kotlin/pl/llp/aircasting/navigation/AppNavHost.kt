@@ -1,6 +1,19 @@
 package pl.llp.aircasting.navigation
 
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.Composable
+import androidx.lifecycle.Lifecycle
+import androidx.navigation.NavBackStackEntry
+import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -10,28 +23,24 @@ import kotlinx.serialization.Serializable
 import pl.llp.aircasting.settings.SettingsPlaceholderScreen
 import pl.llp.aircasting.settings.SettingsRootScreen
 
-/** The tab shell — bottom bar plus all five tabs. */
 @Serializable
 data object ShellRoute
 
-/**
- * The root back stack.
- *
- * Settings sits *beside* [ShellRoute], not inside a tab, because the design has no bottom bar
- * on any Settings screen. Because [AircastingNavBar] lives inside the shell destination, it
- * disappears on Settings for free — no `if (currentRoute is ...)` conditional anywhere.
- *
- * Deliberately no `enterTransition`/`exitTransition`: on iOS a custom transition suppresses
- * the default back-swipe animation that Compose Multiplatform gives us for nothing.
- */
 @Composable
 fun AppNavHost(onRequestLocation: () -> Unit = {}) {
   val nav = rememberNavController()
-  NavHost(navController = nav, startDestination = ShellRoute) {
+  NavHost(
+    navController = nav,
+    startDestination = ShellRoute,
+    enterTransition = enterTransition,
+    exitTransition = exitTransition,
+    popEnterTransition = popEnterTransition,
+    popExitTransition = popExitTransition,
+  ) {
     composable<ShellRoute> {
       ShellScreen(
         onRequestLocation = onRequestLocation,
-        onOpenSettings = { nav.navigate(SettingsRoute.Root) },
+        onOpenSettings = { nav.navigateOnce(SettingsRoute.Root) },
       )
     }
     settingsGraph(nav, onExit = { nav.popBackStack() })
@@ -49,15 +58,45 @@ internal fun NavGraphBuilder.settingsGraph(nav: NavHostController, onExit: () ->
   val pop: () -> Unit = { nav.popBackStack() }
 
   composable<SettingsRoute.Root> {
-    SettingsRootScreen(onBack = onExit, onSection = { nav.navigate(it) })
+    SettingsRootScreen(onBack = onExit, onSection = { nav.navigateOnce(it) })
   }
 
-  // composable<T> takes a reified type parameter, so these can't be generated in a loop over
-  // SettingsRoute.sections. NOTE: nothing enforces that this list stays in sync with
-  // `sections` — a new section without a `composable<>` here fails at navigate() time, not at
-  // compile time. See the review note about closing that gap.
   composable<SettingsRoute.Account> { SettingsPlaceholderScreen(SettingsRoute.Account, pop) }
   composable<SettingsRoute.AirBeams> { SettingsPlaceholderScreen(SettingsRoute.AirBeams, pop) }
   composable<SettingsRoute.AppSettings> { SettingsPlaceholderScreen(SettingsRoute.AppSettings, pop) }
   composable<SettingsRoute.Help> { SettingsPlaceholderScreen(SettingsRoute.Help, pop) }
+}
+
+private fun NavController.navigateOnce(route: Any) {
+  if (currentBackStackEntry?.lifecycle?.currentState == Lifecycle.State.RESUMED) navigate(route)
+}
+
+private const val TIME_DURATION = 300
+
+val enterTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
+  slideInHorizontally(
+    initialOffsetX = { it },
+    animationSpec = tween(durationMillis = TIME_DURATION, easing = LinearOutSlowInEasing)
+  )
+}
+
+val exitTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
+  slideOutHorizontally(
+    targetOffsetX = { -it / 3 },
+    animationSpec = tween(durationMillis = TIME_DURATION, easing = LinearOutSlowInEasing)
+  )
+}
+
+val popEnterTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
+  slideInHorizontally(
+    initialOffsetX = { -it / 3 },
+    animationSpec = tween(durationMillis = TIME_DURATION, easing = LinearOutSlowInEasing)
+  )
+}
+
+val popExitTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
+  slideOutHorizontally(
+    targetOffsetX = { it },
+    animationSpec = tween(durationMillis = TIME_DURATION, easing = LinearOutSlowInEasing)
+  )
 }

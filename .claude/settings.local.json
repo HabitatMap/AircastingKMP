@@ -43,7 +43,12 @@
       "Bash(curl -sL -o s_app.png \"https://www.figma.com/api/mcp/asset/6150a7b8-84fd-4c5f-be0e-70619d3e8c6f\")",
       "Bash(curl -sL -o s_help.png \"https://www.figma.com/api/mcp/asset/fdc53fb2-5f64-40db-8fbd-f89b6fa89f11\")",
       "Bash(curl -sL -o s_airbeam.png \"https://www.figma.com/api/mcp/asset/de6e1619-87a4-41a9-a141-45624d7cd716\")",
-      "WebFetch(domain:repo1.maven.org)"
+      "WebFetch(domain:repo1.maven.org)",
+      "Bash(curl -s \"https://search.maven.org/solrsearch/select?q=g:org.jetbrains.androidx.navigation+AND+a:navigation-compose&core=gav&rows=30&wt=json\")",
+      "Bash(curl -s \"https://repo1.maven.org/maven2/org/jetbrains/androidx/navigation/navigation-compose/maven-metadata.xml\")",
+      "Bash(curl -s \"https://repo1.maven.org/maven2/org/jetbrains/androidx/navigation/navigation-compose/maven-metadata.xml\" -H \"User-Agent: curl\")",
+      "Bash(xargs -I{} sh -c 'echo \"FILE: {}\"; grep -oE \"tests=\\\\\"[0-9]+\\\\\" skipped=\\\\\"[0-9]+\\\\\" failures=\\\\\"[0-9]+\\\\\" errors=\\\\\"[0-9]+\\\\\"\" {}; grep -oE \"testcase name=\\\\\"[^\\\\\"]+\\\\\"\" {}')",
+      "Bash(git check-ignore *)"
     ]
   },
   "hooks": {

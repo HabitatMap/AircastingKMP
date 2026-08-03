@@ -17,19 +17,28 @@ import pl.llp.aircasting.i18n.LocalStrings
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
-fun TabContent(tab: AppTab, onRequestLocation: () -> Unit = {}) {
+fun TabContent(
+  tab: AppTab,
+  onRequestLocation: () -> Unit = {},
+  onOpenSettings: () -> Unit = {},
+) {
   when (tab) {
-    AppTab.Home -> HomeRoute(onRequestLocation)
+    AppTab.Home -> HomeRoute(onRequestLocation, onOpenSettings)
     else -> Placeholder(LocalStrings.current.label(tab))
   }
 }
 
 @Composable
-private fun HomeRoute(onRequestLocation: () -> Unit) {
+private fun HomeRoute(onRequestLocation: () -> Unit, onOpenSettings: () -> Unit) {
   val vm = koinViewModel<HomeViewModel>()
   val state by vm.state.collectAsStateWithLifecycle()
   LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { vm.refresh() }
-  HomeScreen(state = state, onRetry = vm::refresh, onRequestLocation = onRequestLocation)
+  HomeScreen(
+    state = state,
+    onRetry = vm::refresh,
+    onRequestLocation = onRequestLocation,
+    onOpenSettings = onOpenSettings,
+  )
 }
 
 @Composable

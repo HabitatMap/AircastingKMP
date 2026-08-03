@@ -12,6 +12,21 @@ package pl.llp.aircasting.i18n
  * in [AppStrings]. The field set here is the single source of truth every locale must fill in.
  */
 data class Strings(
+  // Settings
+  val settingsTitle: String,
+  val settingsAccountTitle: String,
+  val settingsAccountSubtitle: String,
+  val settingsAirBeamsTitle: String,
+  val settingsAirBeamsSubtitle: String,
+  val settingsAppTitle: String,
+  val settingsAppSubtitle: String,
+  val settingsHelpTitle: String,
+  val settingsHelpSubtitle: String,
+
+  // Accessibility labels for icon-only controls
+  val openSettings: String,
+  val back: String,
+  val appLogo: String,
   // Bottom navigation
   val tabHome: String,
   val tabExplore: String,

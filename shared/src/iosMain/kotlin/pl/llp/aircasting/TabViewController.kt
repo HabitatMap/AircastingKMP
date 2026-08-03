@@ -17,15 +17,20 @@ import platform.UIKit.UIViewController
  * One Compose host per tab. SwiftUI's TabView owns tab selection and keeps each controller
  * alive after first use, so each tab keeps its own composition + ViewModelStore.
  */
-fun TabViewController(tab: AppTab): UIViewController = ComposeUIViewController {
-  val lyricist = rememberStrings(AppStrings)
-  ProvideStrings(lyricist, LocalStrings) {
-    AircastingTheme {
-      val permission = remember { IosLocationPermission() }
-      TabContent(tab, onRequestLocation = { permission.request() })
+fun TabViewController(tab: AppTab, onOpenSettings: () -> Unit): UIViewController =
+  ComposeUIViewController {
+    val lyricist = rememberStrings(AppStrings)
+    ProvideStrings(lyricist, LocalStrings) {
+      AircastingTheme {
+        val permission = remember { IosLocationPermission() }
+        TabContent(
+          tab = tab,
+          onRequestLocation = { permission.request() },
+          onOpenSettings = onOpenSettings,
+        )
+      }
     }
   }
-}
 
 /** Tab titles for the native tab bar — copy stays in Kotlin, Swift only asks for it. */
 object TabTitles {

@@ -5,6 +5,19 @@ import cafe.adriel.lyricist.LanguageTag
 
 /** English copy — the source-of-truth locale. Add `es`/`fr` as sibling values and map them below. */
 val EnStrings = Strings(
+  settingsTitle = "Settings",
+  settingsAccountTitle = "Account settings",
+  settingsAccountSubtitle = "Change password, delete account",
+  settingsAirBeamsTitle = "AirBeam management",
+  settingsAirBeamsSubtitle = "Name, battery, storage, connection",
+  settingsAppTitle = "App settings",
+  settingsAppSubtitle = "Language, notifications, privacy",
+  settingsHelpTitle = "Help",
+  settingsHelpSubtitle = "FAQ, resources, app version",
+
+  openSettings = "Open settings",
+  back = "Back",
+  appLogo = "AirCasting",
   errorTitle = "Something went wrong.",
   errorRetry = "Try again",
 

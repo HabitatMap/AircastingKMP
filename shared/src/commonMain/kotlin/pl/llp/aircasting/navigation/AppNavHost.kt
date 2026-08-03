@@ -4,6 +4,8 @@ import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -11,6 +13,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.unit.IntOffset
 import androidx.lifecycle.Lifecycle
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
@@ -71,32 +74,22 @@ private fun NavController.navigateOnce(route: Any) {
   if (currentBackStackEntry?.lifecycle?.currentState == Lifecycle.State.RESUMED) navigate(route)
 }
 
-private const val TIME_DURATION = 300
+private const val NavDurationMs = 300
+
+private val NavSpec: FiniteAnimationSpec<IntOffset> =
+  tween(durationMillis = NavDurationMs, easing = FastOutSlowInEasing)
 
 val enterTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
-  slideInHorizontally(
-    initialOffsetX = { it },
-    animationSpec = tween(durationMillis = TIME_DURATION, easing = LinearOutSlowInEasing)
-  )
+  slideInHorizontally(initialOffsetX = { it }, animationSpec = NavSpec)
 }
 
 val exitTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
-  slideOutHorizontally(
-    targetOffsetX = { -it / 3 },
-    animationSpec = tween(durationMillis = TIME_DURATION, easing = LinearOutSlowInEasing)
-  )
+  slideOutHorizontally(targetOffsetX = { -it / 3 }, animationSpec = NavSpec)
 }
-
 val popEnterTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
-  slideInHorizontally(
-    initialOffsetX = { -it / 3 },
-    animationSpec = tween(durationMillis = TIME_DURATION, easing = LinearOutSlowInEasing)
-  )
+  slideInHorizontally(initialOffsetX = { -it / 3 }, animationSpec = NavSpec)
 }
 
 val popExitTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
-  slideOutHorizontally(
-    targetOffsetX = { it },
-    animationSpec = tween(durationMillis = TIME_DURATION, easing = LinearOutSlowInEasing)
-  )
+  slideOutHorizontally(targetOffsetX = { it }, animationSpec = NavSpec)
 }

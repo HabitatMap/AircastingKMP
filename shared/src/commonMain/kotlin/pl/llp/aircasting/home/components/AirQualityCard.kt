@@ -8,8 +8,11 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -36,7 +39,6 @@ import pl.llp.aircasting.ui.theme.LocalAqColors
 import org.jetbrains.compose.resources.painterResource
 import kotlin.time.Instant
 
-/** The nearest-station air-quality card (Figma "Air quality card", node 277:7291). */
 @Composable
 internal fun AirQualityCard(aq: HomeUiState.AirQuality, onRequestLocation: () -> Unit) {
   val strings = LocalStrings.current
@@ -48,7 +50,6 @@ internal fun AirQualityCard(aq: HomeUiState.AirQuality, onRequestLocation: () ->
     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
       when (aq) {
         is HomeUiState.AirQuality.Loaded -> {
-          // Empty readings can't reach Loaded, but the default keeps this `when` total.
           val level = aq.readings.worstLevel() ?: MeasurementLevel.LOW
           AirQualityHeader(status = level.aqStatus(strings), level = level)
           PollutantRow(aq.readings)
@@ -97,8 +98,11 @@ private fun AirQualityHeader(status: AqStatus, level: MeasurementLevel) {
 
 @Composable
 private fun PollutantRow(readings: List<PollutantReading>) {
-  Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-    readings.forEach { PollutantCell(it, Modifier.weight(1f)) }
+  Row(
+    horizontalArrangement = Arrangement.spacedBy(8.dp),
+    modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
+  ) {
+    readings.forEach { PollutantCell(it, Modifier.weight(1f).fillMaxHeight()) }
   }
 }
 

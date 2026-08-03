@@ -48,7 +48,12 @@
       "Bash(curl -s \"https://repo1.maven.org/maven2/org/jetbrains/androidx/navigation/navigation-compose/maven-metadata.xml\")",
       "Bash(curl -s \"https://repo1.maven.org/maven2/org/jetbrains/androidx/navigation/navigation-compose/maven-metadata.xml\" -H \"User-Agent: curl\")",
       "Bash(xargs -I{} sh -c 'echo \"FILE: {}\"; grep -oE \"tests=\\\\\"[0-9]+\\\\\" skipped=\\\\\"[0-9]+\\\\\" failures=\\\\\"[0-9]+\\\\\" errors=\\\\\"[0-9]+\\\\\"\" {}; grep -oE \"testcase name=\\\\\"[^\\\\\"]+\\\\\"\" {}')",
-      "Bash(git check-ignore *)"
+      "Bash(git check-ignore *)",
+      "Bash(rm -rf klib)",
+      "Bash(mkdir klib *)",
+      "Bash(unzip -oq ~/.gradle/caches/modules-2/files-2.1/org.jetbrains.compose.ui/ui-uikit-iossimulatorarm64/1.11.1/ebea9e9e2a20bdf1a9948937a78f2d247e18c93b/ui-uikit-iosSimulatorArm64Main-1.11.1.klib -d klib)",
+      "Bash(unzip -oq ~/.gradle/caches/modules-2/files-2.1/org.jetbrains.compose.ui/ui-uikit-iossimulatorarm64/1.11.1/ebea9e9e2a20bdf1a9948937a78f2d247e18c93b/ui-uikit-iosSimulatorArm64Main-1.11.1.klib -d /private/tmp/claude-503/-Users-kirillgetmanskii-1-AndroidStudioProjects-Aircasting/27b9c66e-2a60-419b-83a4-16b2f1df4789/scratchpad/klib)",
+      "Bash(echo \"exit=$?\")"
     ]
   },
   "hooks": {

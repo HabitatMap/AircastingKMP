@@ -3,13 +3,9 @@ package pl.llp.aircasting.navigation
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
-import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.FiniteAnimationSpec
-import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.Composable
@@ -46,22 +42,15 @@ fun AppNavHost(onRequestLocation: () -> Unit = {}) {
         onOpenSettings = { nav.navigateOnce(SettingsRoute.Root) },
       )
     }
-    settingsGraph(nav, onExit = { nav.popBackStack() })
+    settingsGraph(nav)
   }
 }
 
-/**
- * The Settings destinations, factored out so iOS can host them in a NavHost of their own
- * (see SettingsViewController) without duplicating the wiring.
- *
- * [onExit] is what "back" does at [SettingsRoute.Root]: on Android it pops back to the shell;
- * on iOS it dismisses the full-screen cover that Swift presented.
- */
-internal fun NavGraphBuilder.settingsGraph(nav: NavHostController, onExit: () -> Unit) {
+private fun NavGraphBuilder.settingsGraph(nav: NavHostController) {
   val pop: () -> Unit = { nav.popBackStack() }
 
   composable<SettingsRoute.Root> {
-    SettingsRootScreen(onBack = onExit, onSection = { nav.navigateOnce(it) })
+    SettingsRootScreen(onBack = pop, onSection = { nav.navigateOnce(it) })
   }
 
   composable<SettingsRoute.Account> { SettingsPlaceholderScreen(SettingsRoute.Account, pop) }

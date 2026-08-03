@@ -8,8 +8,11 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -25,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import pl.llp.aircasting.domain.MeasurementLevel
 import pl.llp.aircasting.domain.Pollutant
 import pl.llp.aircasting.domain.PollutantReading
@@ -36,7 +40,6 @@ import pl.llp.aircasting.ui.theme.LocalAqColors
 import org.jetbrains.compose.resources.painterResource
 import kotlin.time.Instant
 
-/** The nearest-station air-quality card (Figma "Air quality card", node 277:7291). */
 @Composable
 internal fun AirQualityCard(aq: HomeUiState.AirQuality, onRequestLocation: () -> Unit) {
   val strings = LocalStrings.current
@@ -48,7 +51,6 @@ internal fun AirQualityCard(aq: HomeUiState.AirQuality, onRequestLocation: () ->
     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
       when (aq) {
         is HomeUiState.AirQuality.Loaded -> {
-          // Empty readings can't reach Loaded, but the default keeps this `when` total.
           val level = aq.readings.worstLevel() ?: MeasurementLevel.LOW
           AirQualityHeader(status = level.aqStatus(strings), level = level)
           PollutantRow(aq.readings)
@@ -97,8 +99,11 @@ private fun AirQualityHeader(status: AqStatus, level: MeasurementLevel) {
 
 @Composable
 private fun PollutantRow(readings: List<PollutantReading>) {
-  Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-    readings.forEach { PollutantCell(it, Modifier.weight(1f)) }
+  Row(
+    horizontalArrangement = Arrangement.spacedBy(8.dp),
+    modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
+  ) {
+    readings.forEach { PollutantCell(it, Modifier.weight(1f).fillMaxHeight()) }
   }
 }
 
@@ -107,7 +112,7 @@ private fun PollutantCell(reading: PollutantReading, modifier: Modifier = Modifi
   Column(
     modifier
       .border(1.dp, LocalAqColors.current.forLevel(reading.level), RoundedCornerShape(8.dp))
-      .padding(16.dp),
+      .padding(horizontal = 12.dp, vertical = 16.dp),
     verticalArrangement = Arrangement.spacedBy(4.dp),
   ) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -123,11 +128,16 @@ private fun PollutantCell(reading: PollutantReading, modifier: Modifier = Modifi
         tint = MaterialTheme.colorScheme.outline,
       )
     }
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
       Text(
         reading.value.toString(),
-        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+        style = MaterialTheme.typography.titleLarge.copy(
+          fontWeight = FontWeight.Bold,
+          letterSpacing = (-0.26).sp,
+        ),
         color = MaterialTheme.colorScheme.onBackground,
+        maxLines = 1,
+        softWrap = false,
       )
       Text(reading.unitSymbol, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.outline)
     }
@@ -181,3 +191,7 @@ private fun AirQualityCardLoadedPreview() {
 private fun AirQualityCardNoLocationPreview() {
   AircastingTheme { AirQualityCard(HomeUiState.AirQuality.NoLocation, onRequestLocation = {}) }
 }
+
+@Preview(widthDp = 360)
+@Composable
+private fun AirQualityCardNarrowPreview() = AirQualityCardLoadedPreview()

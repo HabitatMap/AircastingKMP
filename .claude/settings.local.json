@@ -34,7 +34,27 @@
       "Bash(curl -s \"https://repo1.maven.org/maven2/org/jetbrains/compose/material/material-icons-core/1.7.3/material-icons-core-1.7.3.module\")",
       "Bash(npx --yes svg2vectordrawable@latest -i home.default.svg -o out_home.xml)",
       "Bash(awk -F: '{s+=$2} END {print \"kotlin/swift refs:\", s}')",
-      "Bash(bash /private/tmp/claude-503/-Users-kirillgetmanskii-1-AndroidStudioProjects-Aircasting/a91846ce-d5a5-46b8-8b9c-2037fb4d1073/scratchpad/rename_package.sh)"
+      "Bash(bash /private/tmp/claude-503/-Users-kirillgetmanskii-1-AndroidStudioProjects-Aircasting/a91846ce-d5a5-46b8-8b9c-2037fb4d1073/scratchpad/rename_package.sh)",
+      "Bash(curl -sL -o appbar.png \"https://www.figma.com/api/mcp/asset/5c037f9a-ea66-42b8-b1a3-b5d8341f0fe4\")",
+      "mcp__plugin_figma_figma__search_design_system",
+      "mcp__plugin_figma_figma__use_figma",
+      "Bash(curl -sL -o s_root.png \"https://www.figma.com/api/mcp/asset/39894045-5a5d-4880-af93-085015bf4ad6\")",
+      "Bash(curl -sL -o s_account.png \"https://www.figma.com/api/mcp/asset/438f7bb8-cabe-46b3-929b-e7ef4688c2be\")",
+      "Bash(curl -sL -o s_app.png \"https://www.figma.com/api/mcp/asset/6150a7b8-84fd-4c5f-be0e-70619d3e8c6f\")",
+      "Bash(curl -sL -o s_help.png \"https://www.figma.com/api/mcp/asset/fdc53fb2-5f64-40db-8fbd-f89b6fa89f11\")",
+      "Bash(curl -sL -o s_airbeam.png \"https://www.figma.com/api/mcp/asset/de6e1619-87a4-41a9-a141-45624d7cd716\")",
+      "WebFetch(domain:repo1.maven.org)",
+      "Bash(curl -s \"https://search.maven.org/solrsearch/select?q=g:org.jetbrains.androidx.navigation+AND+a:navigation-compose&core=gav&rows=30&wt=json\")",
+      "Bash(curl -s \"https://repo1.maven.org/maven2/org/jetbrains/androidx/navigation/navigation-compose/maven-metadata.xml\")",
+      "Bash(curl -s \"https://repo1.maven.org/maven2/org/jetbrains/androidx/navigation/navigation-compose/maven-metadata.xml\" -H \"User-Agent: curl\")",
+      "Bash(xargs -I{} sh -c 'echo \"FILE: {}\"; grep -oE \"tests=\\\\\"[0-9]+\\\\\" skipped=\\\\\"[0-9]+\\\\\" failures=\\\\\"[0-9]+\\\\\" errors=\\\\\"[0-9]+\\\\\"\" {}; grep -oE \"testcase name=\\\\\"[^\\\\\"]+\\\\\"\" {}')",
+      "Bash(git check-ignore *)",
+      "Bash(rm -rf klib)",
+      "Bash(mkdir klib *)",
+      "Bash(unzip -oq ~/.gradle/caches/modules-2/files-2.1/org.jetbrains.compose.ui/ui-uikit-iossimulatorarm64/1.11.1/ebea9e9e2a20bdf1a9948937a78f2d247e18c93b/ui-uikit-iosSimulatorArm64Main-1.11.1.klib -d klib)",
+      "Bash(unzip -oq ~/.gradle/caches/modules-2/files-2.1/org.jetbrains.compose.ui/ui-uikit-iossimulatorarm64/1.11.1/ebea9e9e2a20bdf1a9948937a78f2d247e18c93b/ui-uikit-iosSimulatorArm64Main-1.11.1.klib -d /private/tmp/claude-503/-Users-kirillgetmanskii-1-AndroidStudioProjects-Aircasting/27b9c66e-2a60-419b-83a4-16b2f1df4789/scratchpad/klib)",
+      "Bash(echo \"exit=$?\")",
+      "Bash(echo \"exit=$? \\(1 = no leftovers\\)\")"
     ]
   },
   "hooks": {

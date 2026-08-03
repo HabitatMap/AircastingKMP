@@ -29,8 +29,6 @@ import org.jetbrains.compose.resources.painterResource
 fun AircastingNavBar(selected: AppTab, onSelect: (AppTab) -> Unit, modifier: Modifier = Modifier) {
   val strings = LocalStrings.current
   NavigationBar(
-    // Figma bar is white with an elevation-2 drop shadow. M3's tonalElevation would *tint*
-    // the surface instead of casting a shadow, so switch it off and draw the shadow ourselves.
     containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
     tonalElevation = 0.dp,
     modifier = modifier.shadow(elevation = 3.dp),

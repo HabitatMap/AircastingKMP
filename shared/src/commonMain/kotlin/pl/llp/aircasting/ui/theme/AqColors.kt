@@ -8,11 +8,11 @@ import pl.llp.aircasting.domain.MeasurementLevel
 /** Air-quality level palette — semantic colors with no M3 ColorScheme slot. */
 @Immutable
 data class AqColors(
-  val good: Color = Color(0xFF006E02),
-  val moderate: Color = Color(0xFFC9A400),
-  val unhealthySensitive: Color = Color(0xFFE8720C),
-  val unhealthy: Color = Color(0xFFD32F2F),
-  val hazardous: Color = Color(0xFF7B1FA2),
+  val good: Color,
+  val moderate: Color,
+  val unhealthySensitive: Color,
+  val unhealthy: Color,
+  val hazardous: Color,
 ) {
   fun forLevel(level: MeasurementLevel): Color = when (level) {
     MeasurementLevel.EXTREMELY_LOW, MeasurementLevel.LOW -> good
@@ -23,4 +23,20 @@ data class AqColors(
   }
 }
 
-val LocalAqColors = staticCompositionLocalOf { AqColors() }
+internal val LightAqColors = AqColors(
+  good = Color(0xFF006E02),
+  moderate = Color(0xFFC9A400),
+  unhealthySensitive = Color(0xFFE8720C),
+  unhealthy = Color(0xFFD32F2F),
+  hazardous = Color(0xFF7B1FA2),
+)
+
+internal val DarkAqColors = AqColors(
+  good = Color(0xFF6EDC6E),
+  moderate = Color(0xFFEBCD4A),
+  unhealthySensitive = Color(0xFFFF9F55),
+  unhealthy = Color(0xFFFF8A80),
+  hazardous = Color(0xFFD69CF0),
+)
+
+val LocalAqColors = staticCompositionLocalOf { LightAqColors }

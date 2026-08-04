@@ -22,9 +22,6 @@ class NetworkAccountRepositoryTest {
 
   @Test
   fun profile_authenticates_with_the_stored_token_and_maps_username_to_name() = runTest {
-    // The `"$token:X"` shape is the load-bearing detail: the backend reads the token out of the
-    // *username* half of Basic auth and ignores the password. Decoding it here rather than
-    // hardcoding the base64 blob keeps the assertion about the convention, not about a string.
     var auth: String? = null
     val repo = repository(USER_JSON, token = "tok-123") { auth = it.headers[HttpHeaders.Authorization] }
 
@@ -47,8 +44,6 @@ class NetworkAccountRepositoryTest {
 
   @Test
   fun password_reset_posts_the_login_wrapped_in_user() = runTest {
-    // Rails' Devise expects {"user":{"login":...}} — a flat {"login":...} is accepted with a
-    // 200 and silently sends no email, which is the worst possible failure mode.
     var body: String? = null
     var path: String? = null
     val repo = repository(EMPTY_JSON, token = "tok-123") { request ->
@@ -103,9 +98,6 @@ class NetworkAccountRepositoryTest {
   ): AccountRepository {
     val engine = MockEngine { request ->
       onRequest(request)
-      // One unconditional respond: the caller's status AND body both reach the client. The old
-      // `respondBadRequest()` branch threw the body away and forced 400, so no test could
-      // reproduce the 401 that every rejected-auth path here actually returns.
       respond(responseJson, status, headersOf(HttpHeaders.ContentType, "application/json"))
     }
     return NetworkAccountRepository(AccountApi(createAircastingHttpClient(engine)), tokens)

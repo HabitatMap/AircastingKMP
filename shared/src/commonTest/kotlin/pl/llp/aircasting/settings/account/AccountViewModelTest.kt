@@ -23,8 +23,6 @@ class AccountViewModelTest {
 
   @Test
   fun reset_password_uses_the_signed_in_email() = runTest {
-    // The endpoint takes a login, and the only one we can legitimately supply is the loaded
-    // profile's. Signed out, there is nothing to send — and nothing to reset.
     val repo = FakeAccountRepository(profile = ADAM)
     val vm = AccountViewModel(repo)
     vm.refresh(); testScheduler.advanceUntilIdle()
@@ -61,9 +59,8 @@ class AccountViewModelTest {
     vm.sessionEnded.test {
       vm.signOut()
       testScheduler.advanceUntilIdle()
-      awaitItem()                                   // navigation signal fired exactly once
+      awaitItem()
       assertEquals(1, repo.signOuts)
-      // State is untouched: the screen is on its way out, not repainting as signed-out.
       assertIs<AccountScreenState.Content>(vm.state.value)
       cancelAndIgnoreRemainingEvents()
     }

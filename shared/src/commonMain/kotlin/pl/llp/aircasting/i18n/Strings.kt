@@ -30,6 +30,15 @@ data class Strings(
   val accountResetPassword: String,
   val accountSignOut: String,
   val accountDeleteAccount: String,
+  val cancel: String,
+  val deleteAccountConfirmTitle: String,
+  val deleteAccountConfirmBody: String,
+  val deleteAccountSendCode: String,
+  val deleteAccountCodeTitle: String,
+  val deleteAccountCodeBody: (email: String) -> String,
+  val deleteAccountCodeLabel: String,
+  val deleteAccountCodeInvalid: String,
+  val deleteAccountResend: String,
 
   // Accessibility labels for icon-only controls
   val openSettings: String,

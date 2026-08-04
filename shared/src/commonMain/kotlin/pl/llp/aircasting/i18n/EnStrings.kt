@@ -23,6 +23,19 @@ val EnStrings = Strings(
   accountResetPassword = "Reset password",
   accountSignOut = "Sign out",
   accountDeleteAccount = "Delete account",
+  cancel = "Cancel",
+  deleteAccountConfirmTitle = "Delete account?",
+  deleteAccountConfirmBody =
+    "This permanently deletes your account and every session you've recorded. " +
+      "We'll email you a code to confirm.",
+  deleteAccountSendCode = "Email me a code",
+  deleteAccountCodeTitle = "Confirm deletion",
+  // The TTL is in the copy because it is short enough to expire while the user hunts for the
+  // email, and a silent 401 twenty minutes later is baffling.
+  deleteAccountCodeBody = { email -> "Enter the 4-digit code we sent to $email. It expires in 30 minutes." },
+  deleteAccountCodeLabel = "4-digit code",
+  deleteAccountCodeInvalid = "That code is wrong or has expired.",
+  deleteAccountResend = "Send a new code",
 
   openSettings = "Open settings",
   back = "Back",

@@ -32,6 +32,7 @@ class AccountViewModel(private val repository: AccountRepository) : ViewModel() 
       },
     )
   }
+
   fun signOut() = viewModelScope.launch {
     repository.signOut()
     _sessionEnded.emit(Unit)
@@ -44,18 +45,33 @@ class AccountViewModel(private val repository: AccountRepository) : ViewModel() 
     runCatching { repository.requestPasswordReset(email) }
       .onFailure { log.e(it) { "password reset failed" } }
   }
-  fun requestAccountDeletion() = viewModelScope.launch {
+
+  fun startAccountDeletion() = updateDeletion { Deletion.Confirming }
+
+  fun cancelAccountDeletion() = updateDeletion { Deletion.None }
+
+  fun sendDeletionCode() = viewModelScope.launch {
     runCatching { repository.requestAccountDeletion() }
-      .onSuccess {
-        _state.update { s -> if (s is AccountScreenState.Content) s.copy(awaitingDeletionCode = true) else s }
-      }
+      .onSuccess { updateDeletion { Deletion.AwaitingCode() } }
+      // Stay on the confirmation: no code was mailed, so asking for one would strand the user.
       .onFailure { log.e(it) { "deletion code request failed" } }
   }
 
-  fun confirmAccountDeletion(code: String) = viewModelScope.launch {
+  fun submitDeletionCode(code: String) = viewModelScope.launch {
     runCatching { repository.confirmAccountDeletion(code) }
       .onSuccess { _sessionEnded.emit(Unit) }
-      // 401 = wrong or expired (30 min) code. Stay put with the prompt open so it can be retyped.
-      .onFailure { log.e(it) { "deletion confirmation rejected" } }
+      .onFailure {
+        log.e(it) { "deletion confirmation rejected" }
+        updateDeletion { Deletion.AwaitingCode(rejected = true) }
+      }
+  }
+
+  private fun updateDeletion(next: (Deletion) -> Deletion) {
+    _state.update { s ->
+      if (s is AccountScreenState.Content)
+        s.copy(deletion = next(s.deletion))
+      else
+        s
+    }
   }
 }

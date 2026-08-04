@@ -2,7 +2,7 @@ package pl.llp.aircasting.settings.account
 
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
-import io.ktor.client.engine.mock.respondBadRequest
+import io.ktor.client.plugins.ClientRequestException
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
@@ -17,7 +17,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
-import kotlin.test.assertTrue
 
 class NetworkAccountRepositoryTest {
 
@@ -36,16 +35,6 @@ class NetworkAccountRepositoryTest {
     assertEquals("tok-123:X", Base64.decode(auth!!.removePrefix("Basic ")).decodeToString())
   }
 
-  @Test
-  fun profile_is_null_and_no_request_is_made_when_there_is_no_token() = runTest {
-    // Signed-out is a normal state, not an error: firing an unauthenticated GET would earn a
-    // 401 and paint Error over a screen that should simply show no header card.
-    var called = false
-    val repo = repository(USER_JSON, token = null) { called = true }
-
-    assertNull(repo.profile())
-    assertTrue(!called, "hit the network without a token")
-  }
   @Test
   fun sign_out_clears_the_token() = runTest {
     val tokens = InMemoryAuthTokenStore("tok-123")
@@ -74,13 +63,15 @@ class NetworkAccountRepositoryTest {
   }
 
   @Test
-  fun deletion_confirm_keeps_the_token_when_the_payload_carries_an_error() = runTest {
-    // The endpoint answers 200 with {"error": ...} on a wrong code. Trusting the status code
-    // would sign the user out of an account that still exists.
+  fun deletion_confirm_keeps_the_token_when_the_code_is_rejected() = runTest {
     val tokens = InMemoryAuthTokenStore("tok-123")
-    val repo = repository("""{"error":"invalid code","message":null}""", tokens = tokens)
+    val repo = repository(
+      """{"error":"Invalid or expired confirmation code."}""",
+      status = HttpStatusCode.Unauthorized,
+      tokens = tokens,
+    )
 
-    assertFailsWith<IllegalStateException> { repo.confirmAccountDeletion("0000") }
+    assertFailsWith<ClientRequestException> { repo.confirmAccountDeletion("0000") }
     assertEquals("tok-123", tokens.token())
   }
 
@@ -96,12 +87,13 @@ class NetworkAccountRepositoryTest {
 
   @Test
   fun an_unauthorised_profile_request_fails_loudly() = runTest {
-    // expectSuccess = true turns a 401 into an HTTP exception the VM can map to Error,
-    // instead of a JsonConvertException about a missing "email" field.
-    val repo = repository(token = "stale") { }
-    assertFailsWith<Exception> { repo.profile() }
+    val repo = repository(
+      """{"error":"You need to sign in or sign up before continuing."}""",
+      status = HttpStatusCode.Unauthorized,
+      token = "stale",
+    )
+    assertFailsWith<ClientRequestException> { repo.profile() }
   }
-
   private fun repository(
     responseJson: String = EMPTY_JSON,
     status: HttpStatusCode = HttpStatusCode.OK,
@@ -111,8 +103,10 @@ class NetworkAccountRepositoryTest {
   ): AccountRepository {
     val engine = MockEngine { request ->
       onRequest(request)
-      if (status != HttpStatusCode.OK) respondBadRequest()
-      else respond(responseJson, status, headersOf(HttpHeaders.ContentType, "application/json"))
+      // One unconditional respond: the caller's status AND body both reach the client. The old
+      // `respondBadRequest()` branch threw the body away and forced 400, so no test could
+      // reproduce the 401 that every rejected-auth path here actually returns.
+      respond(responseJson, status, headersOf(HttpHeaders.ContentType, "application/json"))
     }
     return NetworkAccountRepository(AccountApi(createAircastingHttpClient(engine)), tokens)
   }

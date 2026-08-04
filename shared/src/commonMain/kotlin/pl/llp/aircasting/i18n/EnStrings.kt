@@ -17,6 +17,13 @@ val EnStrings = Strings(
   settingsHelpTitle = "Help",
   settingsHelpSubtitle = "FAQ, resources, app version",
 
+  settingsAccountSectionHeader = "ACCOUNT",
+  accountChangeEmail = "Change email",
+  accountChangeUsername = "Change username",
+  accountResetPassword = "Reset password",
+  accountSignOut = "Sign out",
+  accountDeleteAccount = "Delete account",
+
   openSettings = "Open settings",
   back = "Back",
   appLogo = "AirCasting",

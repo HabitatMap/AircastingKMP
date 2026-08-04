@@ -13,6 +13,8 @@ package pl.llp.aircasting.i18n
  */
 data class Strings(
   // Settings
+  val settingsVersion: (version: String) -> String,
+  val settingsTagline: String,
   val settingsTitle: String,
   val settingsAccountTitle: String,
   val settingsAccountSubtitle: String,

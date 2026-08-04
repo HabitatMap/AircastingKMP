@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -28,6 +29,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
+import org.koin.compose.koinInject
+import pl.llp.aircasting.AppVersion
 import pl.llp.aircasting.i18n.LocalStrings
 import pl.llp.aircasting.navigation.SettingsRoute
 import pl.llp.aircasting.navigation.subtitle
@@ -49,6 +52,8 @@ fun SettingsRootScreen(onBack: () -> Unit, onSection: (SettingsRoute) -> Unit) {
           SectionRow(section, onClick = { onSection(section) })
         }
       }
+      Spacer(Modifier.weight(1f))
+      SettingsFooter(Modifier.fillMaxWidth().padding(bottom = 40.dp))
     }
   }
 }
@@ -109,4 +114,26 @@ internal fun SettingsRoute.icon(): DrawableResource? = when (this) {
   SettingsRoute.AirBeams -> Res.drawable.ic_airbeam
   SettingsRoute.AppSettings -> Res.drawable.ic_settings
   SettingsRoute.Help -> Res.drawable.ic_info
+}
+
+@Composable
+private fun SettingsFooter(modifier: Modifier = Modifier) {
+  val strings = LocalStrings.current
+  val version = koinInject<AppVersion>()
+  Column(
+    modifier = modifier,
+    horizontalAlignment = Alignment.CenterHorizontally,
+    verticalArrangement = Arrangement.spacedBy(8.dp),
+  ) {
+    Text(
+      strings.settingsVersion(version.name),
+      style = MaterialTheme.typography.bodySmall,
+      color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Text(
+      strings.settingsTagline,
+      style = MaterialTheme.typography.bodySmall,
+      color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+  }
 }

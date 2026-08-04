@@ -56,7 +56,8 @@
       "Bash(echo \"exit=$?\")",
       "Bash(echo \"exit=$? \\(1 = no leftovers\\)\")",
       "mcp__plugin_figma_figma__download_assets",
-      "Bash(curl -sL -o account.png \"https://www.figma.com/api/mcp/asset/e6d6a21f-ddaa-4c91-92a7-2abe3decc719\")"
+      "Bash(curl -sL -o account.png \"https://www.figma.com/api/mcp/asset/e6d6a21f-ddaa-4c91-92a7-2abe3decc719\")",
+      "WebFetch(domain:raw.githubusercontent.com)"
     ]
   },
   "hooks": {

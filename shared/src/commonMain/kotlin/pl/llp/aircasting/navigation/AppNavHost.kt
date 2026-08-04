@@ -55,16 +55,7 @@ private fun NavGraphBuilder.settingsGraph(nav: NavHostController) {
     SettingsRootScreen(onBack = pop, onSection = { nav.navigateOnce(it) })
   }
 
-  composable<SettingsRoute.Account> {
-    SettingsAccountScreen(
-      // TODO(data layer): AccountViewModel — GET /api/user.json. null = card hidden until then.
-      profile = null,
-      onBack = pop,
-      onAction = { Logger.withTag("Account").d { "action $it — sheet not wired yet" } },
-      onSignOut = { Logger.withTag("Account").d { "sign out not wired yet" } },
-      onDeleteAccount = { Logger.withTag("Account").d { "delete account not wired yet" } },
-    )
-  }
+  composable<SettingsRoute.Account> { AccountRoute(onBack = pop) }
   composable<SettingsRoute.AirBeams> { SettingsPlaceholderScreen(SettingsRoute.AirBeams, pop) }
   composable<SettingsRoute.AppSettings> { SettingsPlaceholderScreen(SettingsRoute.AppSettings, pop) }
   composable<SettingsRoute.Help> { SettingsPlaceholderScreen(SettingsRoute.Help, pop) }

@@ -14,6 +14,12 @@ import org.koin.core.context.startKoin
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.KoinAppDeclaration
 import org.koin.dsl.module
+import pl.llp.aircasting.data.auth.AuthTokenStore
+import pl.llp.aircasting.data.auth.InMemoryAuthTokenStore
+import pl.llp.aircasting.data.network.AccountApi
+import pl.llp.aircasting.settings.account.AccountRepository
+import pl.llp.aircasting.settings.account.AccountViewModel
+import pl.llp.aircasting.settings.account.NetworkAccountRepository
 import kotlin.time.Clock
 
 val bleModule = module {
@@ -32,7 +38,15 @@ val networkModule = module {
   viewModelOf(::HomeViewModel)
 }
 
+val accountModule = module {
+  // TODO(login): swap for a persistent store once a login screen writes a real token.
+  single<AuthTokenStore> { InMemoryAuthTokenStore() }
+  single { AccountApi(get()) }
+  single<AccountRepository> { NetworkAccountRepository(get(), get()) }
+  viewModelOf(::AccountViewModel)
+}
+
 fun initKoin(extra: KoinAppDeclaration = {}) = startKoin {
   extra()
-  modules(platformModule(), bleModule, networkModule)
+  modules(platformModule(), bleModule, networkModule, accountModule)
 }

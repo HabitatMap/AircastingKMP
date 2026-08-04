@@ -15,6 +15,7 @@ fun createAircastingHttpClient(
   engine: HttpClientEngine,
   baseUrl: String = "https://aircasting.org",
 ): HttpClient = HttpClient(engine) {
+  expectSuccess = true   // 401/5xx throw instead of surfacing as a JSON-decode error
   install(ContentNegotiation) { json(AircastingJson) }
-  install(DefaultRequest) { url(baseUrl) }   // relative request paths resolve against this
+  install(DefaultRequest) { url(baseUrl) }
 }

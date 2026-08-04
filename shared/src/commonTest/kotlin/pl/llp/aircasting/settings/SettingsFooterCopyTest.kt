@@ -2,6 +2,7 @@ package pl.llp.aircasting.settings
 
 import pl.llp.aircasting.i18n.EnStrings
 import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class SettingsFooterCopyTest {
 

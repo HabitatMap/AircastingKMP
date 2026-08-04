@@ -13,6 +13,8 @@ package pl.llp.aircasting.i18n
  */
 data class Strings(
   // Settings
+  val settingsVersion: (version: String) -> String,
+  val settingsTagline: String,
   val settingsTitle: String,
   val settingsAccountTitle: String,
   val settingsAccountSubtitle: String,
@@ -22,6 +24,12 @@ data class Strings(
   val settingsAppSubtitle: String,
   val settingsHelpTitle: String,
   val settingsHelpSubtitle: String,
+  val settingsAccountSectionHeader: String,
+  val accountChangeEmail: String,
+  val accountChangeUsername: String,
+  val accountResetPassword: String,
+  val accountSignOut: String,
+  val accountDeleteAccount: String,
 
   // Accessibility labels for icon-only controls
   val openSettings: String,

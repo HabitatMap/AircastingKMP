@@ -18,9 +18,11 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import co.touchlab.kermit.Logger
 import kotlinx.serialization.Serializable
 import pl.llp.aircasting.settings.SettingsPlaceholderScreen
 import pl.llp.aircasting.settings.SettingsRootScreen
+import pl.llp.aircasting.settings.account.SettingsAccountScreen
 
 @Serializable
 data object ShellRoute
@@ -53,7 +55,7 @@ private fun NavGraphBuilder.settingsGraph(nav: NavHostController) {
     SettingsRootScreen(onBack = pop, onSection = { nav.navigateOnce(it) })
   }
 
-  composable<SettingsRoute.Account> { SettingsPlaceholderScreen(SettingsRoute.Account, pop) }
+  composable<SettingsRoute.Account> { AccountRoute(onBack = pop) }
   composable<SettingsRoute.AirBeams> { SettingsPlaceholderScreen(SettingsRoute.AirBeams, pop) }
   composable<SettingsRoute.AppSettings> { SettingsPlaceholderScreen(SettingsRoute.AppSettings, pop) }
   composable<SettingsRoute.Help> { SettingsPlaceholderScreen(SettingsRoute.Help, pop) }

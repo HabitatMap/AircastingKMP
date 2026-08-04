@@ -5,6 +5,8 @@ import cafe.adriel.lyricist.LanguageTag
 
 /** English copy — the source-of-truth locale. Add `es`/`fr` as sibling values and map them below. */
 val EnStrings = Strings(
+  settingsVersion = { version -> "AirCasting v$version" },
+  settingsTagline = "HabitatMap · Open source air quality",
   settingsTitle = "Settings",
   settingsAccountTitle = "Account settings",
   settingsAccountSubtitle = "Change password, delete account",
@@ -14,6 +16,13 @@ val EnStrings = Strings(
   settingsAppSubtitle = "Language, notifications, privacy",
   settingsHelpTitle = "Help",
   settingsHelpSubtitle = "FAQ, resources, app version",
+
+  settingsAccountSectionHeader = "ACCOUNT",
+  accountChangeEmail = "Change email",
+  accountChangeUsername = "Change username",
+  accountResetPassword = "Reset password",
+  accountSignOut = "Sign out",
+  accountDeleteAccount = "Delete account",
 
   openSettings = "Open settings",
   back = "Back",

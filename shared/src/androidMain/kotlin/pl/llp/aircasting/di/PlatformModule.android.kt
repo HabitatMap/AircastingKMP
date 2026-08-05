@@ -2,6 +2,8 @@ package pl.llp.aircasting.di
 
 import android.bluetooth.BluetoothManager
 import android.content.Context
+import com.russhwolf.settings.Settings
+import com.russhwolf.settings.SharedPreferencesSettings
 import pl.llp.aircasting.bluetooth.AirBeamConnector
 import pl.llp.aircasting.bluetooth.transport.CompositeAirBeamConnector
 import pl.llp.aircasting.bluetooth.transport.ble.BleAirBeamConnector
@@ -16,6 +18,11 @@ import pl.llp.aircasting.AppVersion
 actual fun platformModule() = module {
   single<AirBeamConnector> {
     CompositeAirBeamConnector(listOf(get<BleAirBeamConnector>(), get<ClassicAirBeamConnector>()))
+  }
+  single<Settings> {
+    SharedPreferencesSettings(
+      get<Context>().getSharedPreferences("aircasting_settings", Context.MODE_PRIVATE),
+    )
   }
   single { ClassicAirBeamConnector(get(), get<BluetoothManager>().adapter, get()) }
   single { get<Context>().getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager }

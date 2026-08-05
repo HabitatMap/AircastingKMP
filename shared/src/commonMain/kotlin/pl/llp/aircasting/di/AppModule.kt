@@ -20,7 +20,15 @@ import pl.llp.aircasting.data.network.AccountApi
 import pl.llp.aircasting.settings.account.AccountRepository
 import pl.llp.aircasting.settings.account.AccountViewModel
 import pl.llp.aircasting.settings.account.NetworkAccountRepository
+import pl.llp.aircasting.settings.app.AppSettingsRepository
+import pl.llp.aircasting.settings.app.AppSettingsViewModel
+import pl.llp.aircasting.settings.app.StoredAppSettingsRepository
 import kotlin.time.Clock
+
+val appSettingsModule = module {
+  single<AppSettingsRepository> { StoredAppSettingsRepository(get()) }
+  viewModelOf(::AppSettingsViewModel)
+}
 
 val bleModule = module {
   single<AirBeamCredentials> { StubAirBeamCredentials }
@@ -48,5 +56,5 @@ val accountModule = module {
 
 fun initKoin(extra: KoinAppDeclaration = {}) = startKoin {
   extra()
-  modules(platformModule(), bleModule, networkModule, accountModule)
+  modules(platformModule(), bleModule, networkModule, accountModule, appSettingsModule)
 }

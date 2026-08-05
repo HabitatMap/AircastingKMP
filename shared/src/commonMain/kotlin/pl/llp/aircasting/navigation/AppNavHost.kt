@@ -59,6 +59,7 @@ private fun NavGraphBuilder.settingsGraph(nav: NavHostController) {
   composable<SettingsRoute.AirBeams> { SettingsPlaceholderScreen(SettingsRoute.AirBeams, pop) }
   composable<SettingsRoute.AppSettings> { SettingsPlaceholderScreen(SettingsRoute.AppSettings, pop) }
   composable<SettingsRoute.Help> { SettingsPlaceholderScreen(SettingsRoute.Help, pop) }
+  composable<SettingsRoute.AppSettings> { AppSettingsRoute(onBack = pop) }
 }
 
 private fun NavController.navigateOnce(route: Any) {

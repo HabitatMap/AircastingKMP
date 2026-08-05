@@ -36,6 +36,39 @@ val EnStrings = Strings(
   deleteAccountCodeLabel = "4-digit code",
   deleteAccountCodeInvalid = "That code is wrong or has expired.",
   deleteAccountResend = "Send a new code",
+  appSettingsCommunityHeader = "COMMUNITY",
+  appSettingsUnitsRegionHeader = "UNITS & REGION",
+  appSettingsDisplayHeader = "DISPLAY",
+  appSettingsSensorsHeader = "SENSORS",
+  appSettingsNotificationsHeader = "NOTIFICATIONS",
+  appSettingsSyncHeader = "SYNC",
+  appSettingsBackendHeader = "BACKEND",
+  appSettingCrowdMap = "Contribute to crowd map",
+  appSettingCrowdMapSubtitle = "Share measurements with community",
+  appSettingDisableMapping = "Disable mapping",
+  appSettingDisableMappingSubtitle = "Stop recording location data",
+  appSettingTemperatureUnits = "Temperature units",
+  appSettingRegionalFormats = "Regional formats",
+  appSettingRegionalFormatsSubtitle = "Date, time, distance and units",
+  appSettingLanguage = "Language",
+  appSettingMapType = "Map type",
+  appSettingDarkMode = "Dark mode",
+  appSettingMicrophoneCalibration = "Microphone calibration",
+  appSettingMicrophoneCalibrationSubtitle = "Calibrate built-in mic",
+  appSettingPushNotifications = "Push notifications",
+  appSettingPushNotificationsSubtitle = "Air quality alerts and reminders",
+  appSettingWifiOnlySync = "Sync only with WiFi",
+  appSettingWifiOnlySyncSubtitle = "Prevents mobile data usage during sync",
+  appSettingCustomDataServer = "Custom data server",
+  appSettingCustomDataServerSubtitle = "Choose where data is stored",
+
+  appSettingValueFahrenheit = "°F",
+  appSettingValueCelsius = "°C",
+  appSettingValueRegionUs = "US",
+  appSettingValueRegionMetric = "Metric",
+  appSettingValueMapDefault = "Default",
+  appSettingValueMapSatellite = "Satellite",
+  languageName = "English",
 
   openSettings = "Open settings",
   back = "Back",
@@ -84,6 +117,8 @@ val EnStrings = Strings(
 /** Every available locale, keyed by BCP-47 tag. Lyricist selects one by the system locale at runtime. */
 val AppStrings: Map<LanguageTag, Strings> = mapOf(
   "en" to EnStrings,
+  // Bare tags only: Lyricist strips the region ("fr-CA" -> "fr") before its second lookup.
+  "fr" to FrStrings,
 )
 
 /**

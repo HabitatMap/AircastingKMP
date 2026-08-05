@@ -28,7 +28,7 @@ fun AccountRoute(onBack: () -> Unit) {
     }
   }
   SettingsAccountScreen(
-    profile = (state as? AccountScreenState.Content)?.profile,
+    state = state,
     onBack = onBack,
     onAction = { action ->
       when (action) {
@@ -39,6 +39,9 @@ fun AccountRoute(onBack: () -> Unit) {
       }
     },
     onSignOut = vm::signOut,
-    onDeleteAccount = vm::requestAccountDeletion,
+    onDeleteAccount = vm::startAccountDeletion,
+    onDeletionConfirmed = vm::sendDeletionCode,
+    onDeletionCodeSubmit = vm::submitDeletionCode,
+    onDeletionDismissed = vm::cancelAccountDeletion,
   )
 }

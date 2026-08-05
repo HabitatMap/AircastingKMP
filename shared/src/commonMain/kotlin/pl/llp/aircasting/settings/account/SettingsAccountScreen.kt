@@ -39,17 +39,22 @@ import pl.llp.aircasting.settings.SettingsScaffold
 
 @Composable
 fun SettingsAccountScreen(
-  profile: AccountProfile?,
+  state: AccountScreenState,
   onBack: () -> Unit,
   onAction: (AccountAction) -> Unit,
   onSignOut: () -> Unit,
   onDeleteAccount: () -> Unit,
+  onDeletionConfirmed: () -> Unit,
+  onDeletionCodeSubmit: (String) -> Unit,
+  onDeletionDismissed: () -> Unit,
 ) {
   val strings = LocalStrings.current
+  val content = state as? AccountScreenState.Content
+
   SettingsScaffold(title = strings.title(SettingsRoute.Account), onBack = onBack) { padding ->
     Column(Modifier.padding(padding).padding(horizontal = 24.dp).padding(top = 24.dp)) {
-      profile?.let {
-        ProfileCard(it)
+      content?.let {
+        ProfileCard(it.profile)
         Spacer(Modifier.height(26.dp))
       }
       Text(
@@ -74,6 +79,20 @@ fun SettingsAccountScreen(
       Spacer(Modifier.height(16.dp))
       DeleteAccountButton(onDeleteAccount)
     }
+  }
+  when (val deletion = content?.deletion) {
+    Deletion.Confirming -> DeleteAccountConfirmDialog(
+      onConfirm = onDeletionConfirmed,
+      onDismiss = onDeletionDismissed,
+    )
+    is Deletion.AwaitingCode -> DeleteAccountCodeDialog(
+      email = content.profile.email,
+      rejected = deletion.rejected,
+      onSubmit = onDeletionCodeSubmit,
+      onResend = onDeletionConfirmed,
+      onDismiss = onDeletionDismissed,
+    )
+    Deletion.None, null -> Unit
   }
 }
 

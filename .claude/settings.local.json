@@ -57,7 +57,15 @@
       "Bash(echo \"exit=$? \\(1 = no leftovers\\)\")",
       "mcp__plugin_figma_figma__download_assets",
       "Bash(curl -sL -o account.png \"https://www.figma.com/api/mcp/asset/e6d6a21f-ddaa-4c91-92a7-2abe3decc719\")",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(curl -s -o /private/tmp/claude-503/-Users-kirillgetmanskii-1-AndroidStudioProjects-Aircasting/2a097cc9-0026-48a9-8868-3c03e65c1eed/scratchpad/login.json -w 'status=%{http_code}\\\\n' -u kget@gmail.com:12345678 https://aircasting.org/api/user.json)",
+      "Bash(adb devices *)",
+      "Bash(adb logcat *)",
+      "Bash(adb shell *)",
+      "Bash(curl -s -w '\\\\nstatus=%{http_code}\\\\n' -X POST 'https://aircasting.org/users/password.json' -H 'Content-Type: application/json' -d '{\"user\":{\"login\":\"kget@gmail.com\"}}')",
+      "Bash(gh api *)",
+      "Bash(awk -F'\"' '{s+=$2} END {print \"tests=\"s}')",
+      "Bash(awk -F'\"' '{s+=$2} END {print \"failures=\"s}')"
     ]
   },
   "hooks": {

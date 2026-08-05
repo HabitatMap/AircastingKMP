@@ -117,6 +117,8 @@ val EnStrings = Strings(
 /** Every available locale, keyed by BCP-47 tag. Lyricist selects one by the system locale at runtime. */
 val AppStrings: Map<LanguageTag, Strings> = mapOf(
   "en" to EnStrings,
+  // Bare tags only: Lyricist strips the region ("fr-CA" -> "fr") before its second lookup.
+  "fr" to FrStrings,
 )
 
 /**

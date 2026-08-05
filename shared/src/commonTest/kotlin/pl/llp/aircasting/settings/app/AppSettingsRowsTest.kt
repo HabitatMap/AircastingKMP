@@ -7,7 +7,7 @@ import kotlin.test.assertNull
 
 class AppSettingsRowsTest {
   @Test
-  fun `every setting gets exactly one row, in design order`() {
+  fun `every setting gets exactly one row in design order`() {
     val rows = AppPreferences().toRows(EnStrings, systemDarkMode = false)
     assertEquals(AppSetting.entries, rows.map { it.setting })
   }

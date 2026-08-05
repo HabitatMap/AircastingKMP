@@ -126,6 +126,8 @@ private fun LinkRow(row: AppSettingRow.Link, onClick: () -> Unit) {
           it,
           style = MaterialTheme.typography.labelLarge,
           color = MaterialTheme.colorScheme.onSurfaceVariant,
+          maxLines = 1,
+          overflow = TextOverflow.Ellipsis,
         )
       }
       Icon(

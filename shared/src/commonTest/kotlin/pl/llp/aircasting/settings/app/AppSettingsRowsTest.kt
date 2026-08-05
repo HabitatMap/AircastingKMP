@@ -63,7 +63,7 @@ class AppSettingsRowsTest {
   fun `link rows show the formatted preference`() {
     val rows = AppPreferences(
       temperatureUnit = TemperatureUnit.Celsius,
-      regionalFormat = RegionalFormat.Metric,
+      regionalFormat = RegionalFormat.US,
       mapType = MapType.Satellite,
     ).toRows(EnStrings, systemDarkMode = false)
       .associateBy { it.setting }
@@ -73,11 +73,10 @@ class AppSettingsRowsTest {
       rows[AppSetting.TemperatureUnits]
     )
     assertEquals(
-      AppSettingRow.Link(AppSetting.RegionalFormats, "Metric"),
+      AppSettingRow.Link(AppSetting.RegionalFormats, "US format"),
       rows[AppSetting.RegionalFormats]
     )
     assertEquals(AppSettingRow.Link(AppSetting.MapType, "Satellite"), rows[AppSetting.MapType])
-    // Language is not a stored pref yet — it reports the locale whose copy is loaded.
     assertEquals(AppSettingRow.Link(AppSetting.Language, "English"), rows[AppSetting.Language])
   }
 

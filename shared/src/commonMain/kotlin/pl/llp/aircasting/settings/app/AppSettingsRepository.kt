@@ -31,10 +31,12 @@ private const val KeyWifiOnlySync = "wifi_only_sync"
 private const val KeyTemperatureUnit = "temperature_unit"
 private const val KeyRegionalFormat = "regional_format"
 private const val KeyMapType = "map_type"
+private const val KeyLanguage = "language"
 
 private val Defaults = AppPreferences()
 
 private fun Settings.readPreferences() = AppPreferences(
+  language = getStringOrNull(KeyLanguage),
   crowdMapEnabled = getBoolean(KeyCrowdMap, Defaults.crowdMapEnabled),
   locationTrackingEnabled = getBoolean(KeyLocationTracking, Defaults.locationTrackingEnabled),
   darkMode = getBooleanOrNull(KeyDarkMode),
@@ -46,6 +48,7 @@ private fun Settings.readPreferences() = AppPreferences(
 )
 
 private fun Settings.writePreferences(prefs: AppPreferences) {
+  prefs.language?.let { putString(KeyLanguage, it) } ?: remove(KeyLanguage)
   putBoolean(KeyCrowdMap, prefs.crowdMapEnabled)
   putBoolean(KeyLocationTracking, prefs.locationTrackingEnabled)
   // Absent, not false: "not chosen yet" has to stay distinguishable from "chosen: light".

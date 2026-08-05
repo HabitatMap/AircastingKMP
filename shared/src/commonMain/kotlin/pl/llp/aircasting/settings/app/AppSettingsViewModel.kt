@@ -1,6 +1,7 @@
 package pl.llp.aircasting.settings.app
 
 import androidx.lifecycle.ViewModel
+import cafe.adriel.lyricist.LanguageTag
 import co.touchlab.kermit.Logger
 import kotlinx.coroutines.flow.StateFlow
 
@@ -29,4 +30,11 @@ class AppSettingsViewModel(private val repository: AppSettingsRepository) : View
       AppSetting.CustomDataServer -> prefs.also { log.w { "$setting is not a switch" } }
     }
   }
+  fun choose(unit: TemperatureUnit) = repository.update { it.copy(temperatureUnit = unit) }
+
+  fun choose(format: RegionalFormat) = repository.update { it.copy(regionalFormat = format) }
+
+  fun choose(type: MapType) = repository.update { it.copy(mapType = type) }
+
+  fun chooseLanguage(tag: LanguageTag) = repository.update { it.copy(language = tag) }
 }

@@ -26,10 +26,18 @@ fun Strings.display(unit: TemperatureUnit): String = when (unit) {
 
 fun Strings.display(format: RegionalFormat): String = when (format) {
   RegionalFormat.US -> appSettingValueRegionUs
-  RegionalFormat.Metric -> appSettingValueRegionMetric
+  RegionalFormat.UK -> appSettingValueRegionUk
+  RegionalFormat.CentralEuropean -> appSettingValueRegionCentralEuropean
+  RegionalFormat.Nordic -> appSettingValueRegionNordic
+  RegionalFormat.EastAsian -> appSettingValueRegionEastAsian
 }
 
 fun Strings.display(type: MapType): String = when (type) {
   MapType.Default -> appSettingValueMapDefault
   MapType.Satellite -> appSettingValueMapSatellite
+}
+
+fun Strings.display(unit: DistanceUnit): String = when (unit) {
+  DistanceUnit.Miles -> unitMiles
+  DistanceUnit.Kilometers -> unitKilometers
 }

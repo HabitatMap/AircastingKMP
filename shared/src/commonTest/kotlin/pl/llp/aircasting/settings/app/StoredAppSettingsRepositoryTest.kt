@@ -51,4 +51,22 @@ class StoredAppSettingsRepositoryTest {
 
     assertEquals(MapType.Default, StoredAppSettingsRepository(store).preferences.value.mapType)
   }
+
+  @Test
+  fun `the language choice survives a restart`() {
+    val store = MapSettings()
+    StoredAppSettingsRepository(store).update { it.copy(language = "fr") }
+
+    assertEquals("fr", StoredAppSettingsRepository(store).preferences.value.language)
+  }
+
+  @Test
+  fun `going back to the system language clears the stored tag`() {
+    val store = MapSettings()
+    StoredAppSettingsRepository(store).update { it.copy(language = "fr") }
+
+    StoredAppSettingsRepository(store).update { it.copy(language = null) }
+
+    assertEquals(null, StoredAppSettingsRepository(store).preferences.value.language)
+  }
 }

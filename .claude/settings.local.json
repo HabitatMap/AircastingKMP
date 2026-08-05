@@ -69,7 +69,9 @@
       "Bash(curl -sL -o /private/tmp/claude-503/-Users-kirillgetmanskii-1-AndroidStudioProjects-Aircasting/c7e01189-1bdf-45c3-bad2-0199674fd707/scratchpad/appsettings.png \"https://www.figma.com/api/mcp/asset/0a57146d-cda4-4cff-ab68-f6e9f738dd00.png\")",
       "Bash(curl -s \"https://search.maven.org/solrsearch/select?q=g:com.russhwolf+AND+a:multiplatform-settings&core=gav&rows=8&wt=json\")",
       "Bash(curl -s \"https://search.maven.org/solrsearch/select?q=g:com.russhwolf+AND+a:multiplatform-settings-coroutines&core=gav&rows=8&wt=json\")",
-      "Bash(curl -s \"https://search.maven.org/solrsearch/select?q=g:com.russhwolf+AND+a:multiplatform-settings-test&core=gav&rows=6&wt=json\")"
+      "Bash(curl -s \"https://search.maven.org/solrsearch/select?q=g:com.russhwolf+AND+a:multiplatform-settings-test&core=gav&rows=6&wt=json\")",
+      "Bash(grep -rn '^  fun `[^`]*,' shared/src/commonTest)",
+      "Bash(git -C /Users/kirillgetmanskii_1/AndroidStudioProjects/Aircasting log --oneline -3 --stat)"
     ]
   },
   "hooks": {

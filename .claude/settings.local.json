@@ -65,7 +65,11 @@
       "Bash(curl -s -w '\\\\nstatus=%{http_code}\\\\n' -X POST 'https://aircasting.org/users/password.json' -H 'Content-Type: application/json' -d '{\"user\":{\"login\":\"kget@gmail.com\"}}')",
       "Bash(gh api *)",
       "Bash(awk -F'\"' '{s+=$2} END {print \"tests=\"s}')",
-      "Bash(awk -F'\"' '{s+=$2} END {print \"failures=\"s}')"
+      "Bash(awk -F'\"' '{s+=$2} END {print \"failures=\"s}')",
+      "Bash(curl -sL -o /private/tmp/claude-503/-Users-kirillgetmanskii-1-AndroidStudioProjects-Aircasting/c7e01189-1bdf-45c3-bad2-0199674fd707/scratchpad/appsettings.png \"https://www.figma.com/api/mcp/asset/0a57146d-cda4-4cff-ab68-f6e9f738dd00.png\")",
+      "Bash(curl -s \"https://search.maven.org/solrsearch/select?q=g:com.russhwolf+AND+a:multiplatform-settings&core=gav&rows=8&wt=json\")",
+      "Bash(curl -s \"https://search.maven.org/solrsearch/select?q=g:com.russhwolf+AND+a:multiplatform-settings-coroutines&core=gav&rows=8&wt=json\")",
+      "Bash(curl -s \"https://search.maven.org/solrsearch/select?q=g:com.russhwolf+AND+a:multiplatform-settings-test&core=gav&rows=6&wt=json\")"
     ]
   },
   "hooks": {

@@ -67,12 +67,14 @@ kotlin {
       implementation(libs.koin.compose.viewmodel)
       implementation(libs.kermit)
       implementation(libs.lyricist)
+      implementation(libs.multiplatform.settings)
     }
     commonTest.dependencies {
       implementation(libs.ktor.client.mock)
       implementation(libs.kotlin.test)
       implementation(libs.kotlinx.coroutines.test)
       implementation(libs.turbine)
+      implementation(libs.multiplatform.settings.test)
     }
   }
 }

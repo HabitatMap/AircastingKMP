@@ -53,6 +53,16 @@ data class Strings(
   val appSettingCustomDataServer: String,
   val appSettingCustomDataServerSubtitle: String,
 
+  // App settings — trailing values on the picker rows
+  val appSettingValueFahrenheit: String,
+  val appSettingValueCelsius: String,
+  val appSettingValueRegionUs: String,
+  val appSettingValueRegionMetric: String,
+  val appSettingValueMapDefault: String,
+  val appSettingValueMapSatellite: String,
+  /** This locale's own name, as its speakers write it — "English", "Español", … */
+  val languageName: String,
+
   val accountChangeEmail: String,
   val accountChangeUsername: String,
   val accountResetPassword: String,

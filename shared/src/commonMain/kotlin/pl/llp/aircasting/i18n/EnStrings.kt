@@ -61,6 +61,15 @@ val EnStrings = Strings(
   appSettingWifiOnlySyncSubtitle = "Prevents mobile data usage during sync",
   appSettingCustomDataServer = "Custom data server",
   appSettingCustomDataServerSubtitle = "Choose where data is stored",
+
+  appSettingValueFahrenheit = "°F",
+  appSettingValueCelsius = "°C",
+  appSettingValueRegionUs = "US",
+  appSettingValueRegionMetric = "Metric",
+  appSettingValueMapDefault = "Default",
+  appSettingValueMapSatellite = "Satellite",
+  languageName = "English",
+
   openSettings = "Open settings",
   back = "Back",
   appLogo = "AirCasting",

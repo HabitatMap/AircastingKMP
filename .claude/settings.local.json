@@ -71,7 +71,13 @@
       "Bash(curl -s \"https://search.maven.org/solrsearch/select?q=g:com.russhwolf+AND+a:multiplatform-settings-coroutines&core=gav&rows=8&wt=json\")",
       "Bash(curl -s \"https://search.maven.org/solrsearch/select?q=g:com.russhwolf+AND+a:multiplatform-settings-test&core=gav&rows=6&wt=json\")",
       "Bash(grep -rn '^  fun `[^`]*,' shared/src/commonTest)",
-      "Bash(git -C /Users/kirillgetmanskii_1/AndroidStudioProjects/Aircasting log --oneline -3 --stat)"
+      "Bash(git -C /Users/kirillgetmanskii_1/AndroidStudioProjects/Aircasting log --oneline -3 --stat)",
+      "Bash(curl -s \"https://www.figma.com/api/mcp/asset/c7fc4aec-c0c1-46ce-9ec7-519910b2ff26.svg\")",
+      "Bash(curl -s \"https://www.figma.com/api/mcp/asset/d1ca2ae6-f007-4ca8-9cf3-8601e5bcba82.svg\")",
+      "Bash(awk 'NR>=4344 && NR<=4470' avfaudio.txt)",
+      "Bash(curl -sL -o \"/private/tmp/claude-503/-Users-kirillgetmanskii-1-AndroidStudioProjects-Aircasting/4bd5718b-13e7-4dab-8337-2dc0af3ffa31/scratchpad/dataserver.png\" \"https://www.figma.com/api/mcp/asset/d03653de-ae5e-4fad-92db-8fd7a97fd4af.png\")",
+      "Bash(curl -sL -o airbeam_settings.png \"https://www.figma.com/api/mcp/asset/56e12098-8c93-4925-8ab3-5f8b20f63a98.png\")",
+      "Read(//Users/kirillgetmanskii_1/AndroidStudioProjects/**)"
     ]
   },
   "hooks": {

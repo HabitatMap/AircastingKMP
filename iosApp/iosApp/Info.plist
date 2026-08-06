@@ -2,7 +2,9 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>CADisableMinimumFrameDurationOnPhone</key>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>AirCasting uses your microphone to measure sound levels in decibels.</string>
+    <key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
     <key>NSBluetoothAlwaysUsageDescription</key>
     <string>AirCasting connects to your AirBeam sensor over Bluetooth to record air quality measurements.</string>

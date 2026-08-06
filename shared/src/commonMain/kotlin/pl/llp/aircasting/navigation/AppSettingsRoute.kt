@@ -21,6 +21,7 @@ import pl.llp.aircasting.settings.app.regionalFormatOptions
 import pl.llp.aircasting.settings.app.resolveLanguage
 import pl.llp.aircasting.settings.app.temperatureOptions
 import pl.llp.aircasting.settings.app.toRows
+import pl.llp.aircasting.settings.mic.MicCalibrationSheet
 
 @Composable
 fun AppSettingsRoute(onBack: () -> Unit) {
@@ -80,8 +81,14 @@ fun AppSettingsRoute(onBack: () -> Unit) {
       onConfirm = { vm.chooseLanguage(it); dismiss() },
     )
 
-    // The toggles never call onOpen; microphone calibration and the custom data server are
-    // TODO(app-settings) — they are not radio pickers and get their own sheet/screen.
+    AppSetting.MicrophoneCalibration -> MicCalibrationSheet(
+      offset = preferences.microphoneCalibrationOffset,
+      onDismiss = dismiss,
+      onConfirm = { vm.chooseCalibrationOffset(it); dismiss() },
+    )
+
+    // The toggles never call onOpen; the custom data server is TODO(app-settings) — it is a text
+    // field, not a picker, and gets its own screen.
     else -> Unit
   }
 }

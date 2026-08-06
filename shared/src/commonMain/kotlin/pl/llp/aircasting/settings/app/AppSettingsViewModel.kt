@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import cafe.adriel.lyricist.LanguageTag
 import co.touchlab.kermit.Logger
 import kotlinx.coroutines.flow.StateFlow
+import pl.llp.aircasting.settings.mic.CalibrationOffsetRange
 
 class AppSettingsViewModel(private val repository: AppSettingsRepository) : ViewModel() {
 
@@ -37,4 +38,8 @@ class AppSettingsViewModel(private val repository: AppSettingsRepository) : View
   fun choose(type: MapType) = repository.update { it.copy(mapType = type) }
 
   fun chooseLanguage(tag: LanguageTag) = repository.update { it.copy(language = tag) }
+
+  fun chooseCalibrationOffset(offset: Int) = repository.update {
+    it.copy(microphoneCalibrationOffset = offset.coerceIn(CalibrationOffsetRange))
+  }
 }

@@ -23,6 +23,7 @@ class StoredAppSettingsRepository(private val settings: Settings) : AppSettingsR
   }
 }
 
+private const val KeyMicCalibrationOffset = "microphone_calibration_offset"
 private const val KeyCrowdMap = "crowd_map_enabled"
 private const val KeyLocationTracking = "location_tracking_enabled"
 private const val KeyDarkMode = "dark_mode"
@@ -36,6 +37,8 @@ private const val KeyLanguage = "language"
 private val Defaults = AppPreferences()
 
 private fun Settings.readPreferences() = AppPreferences(
+  microphoneCalibrationOffset =
+    getInt(KeyMicCalibrationOffset, Defaults.microphoneCalibrationOffset),
   language = getStringOrNull(KeyLanguage),
   crowdMapEnabled = getBoolean(KeyCrowdMap, Defaults.crowdMapEnabled),
   locationTrackingEnabled = getBoolean(KeyLocationTracking, Defaults.locationTrackingEnabled),
@@ -48,6 +51,7 @@ private fun Settings.readPreferences() = AppPreferences(
 )
 
 private fun Settings.writePreferences(prefs: AppPreferences) {
+  putInt(KeyMicCalibrationOffset, prefs.microphoneCalibrationOffset)
   prefs.language?.let { putString(KeyLanguage, it) } ?: remove(KeyLanguage)
   putBoolean(KeyCrowdMap, prefs.crowdMapEnabled)
   putBoolean(KeyLocationTracking, prefs.locationTrackingEnabled)

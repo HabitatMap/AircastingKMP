@@ -79,6 +79,15 @@ val EnStrings = Strings(
   appSettingValueMapDefault = "Default",
   appSettingValueMapSatellite = "Satellite",
   languageName = "English",
+  micLiveReading = "LIVE READING",
+  micDecibels = "db",
+  micCalibrationHint =
+    "Typical range: 80–100. Adjust the value below until the live reading matches it.",
+  micCalibrationOffset = "CALIBRATION OFFSET",
+  micResetOffset = { offset -> "Reset to default offset ($offset)" },
+  micDecreaseOffset = "Decrease offset",
+  micIncreaseOffset = "Increase offset",
+  micPermissionNeeded = "Allow microphone access to see a live reading.",
 
   openSettings = "Open settings",
   back = "Back",

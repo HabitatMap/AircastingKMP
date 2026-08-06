@@ -6,6 +6,7 @@ package pl.llp.aircasting.i18n
  * half-translated.
  */
 val FrStrings = Strings(
+
   settingsVersion = { version -> "AirCasting v$version" },
   settingsTagline = "HabitatMap · Qualité de l'air en open source",
   settingsTitle = "Réglages",
@@ -66,7 +67,17 @@ val FrStrings = Strings(
   appSettingValueFahrenheit = "°F",
   appSettingValueCelsius = "°C",
   appSettingValueRegionUs = "US",
-  appSettingValueRegionMetric = "Métrique",
+  done = "Terminé",
+  appSettingValueRegionUk = "Format britannique",
+  appSettingValueRegionCentralEuropean = "Europe centrale",
+  appSettingValueRegionNordic = "Nordique",
+  appSettingValueRegionEastAsian = "Asie de l'Est",
+  appSettingFahrenheit = "Fahrenheit",
+  appSettingFahrenheitDetail = "°F • ex. 72 °F",
+  appSettingCelsius = "Celsius",
+  appSettingCelsiusDetail = "°C • ex. 22 °C",
+  unitMiles = "Milles",
+  unitKilometers = "Kilomètres",
   appSettingValueMapDefault = "Par défaut",
   appSettingValueMapSatellite = "Satellite",
   languageName = "Français",

@@ -60,6 +60,26 @@ class AppSettingsViewModelTest {
     assertEquals(AppPreferences(), repo.preferences.value)
     assertEquals(0, repo.writes)
   }
+  @Test
+  fun `each picker writes only its own preference`() {
+    val repo = FakeAppSettingsRepository()
+    val vm = AppSettingsViewModel(repo)
+
+    vm.choose(TemperatureUnit.Celsius)
+    vm.choose(RegionalFormat.Nordic)
+    vm.choose(MapType.Satellite)
+    vm.chooseLanguage("fr")
+
+    assertEquals(
+      AppPreferences(
+        temperatureUnit = TemperatureUnit.Celsius,
+        regionalFormat = RegionalFormat.Nordic,
+        mapType = MapType.Satellite,
+        language = "fr",
+      ),
+      repo.preferences.value,
+    )
+  }
 }
 private class FakeAppSettingsRepository : AppSettingsRepository {
   private val _preferences = MutableStateFlow(AppPreferences())

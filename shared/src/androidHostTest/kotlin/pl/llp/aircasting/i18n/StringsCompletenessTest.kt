@@ -21,6 +21,8 @@ class StringsCompletenessTest {
     "appSettingsNotificationsHeader",
     "pollutantNo2",
     "pollutantOzone",
+    "appSettingFahrenheit",
+    "appSettingCelsius"
   )
 
   /** Only the plain `String` fields; the parameterised ones are lambdas and can't be compared. */

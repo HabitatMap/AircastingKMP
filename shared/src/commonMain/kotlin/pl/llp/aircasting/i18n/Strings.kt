@@ -12,6 +12,30 @@ package pl.llp.aircasting.i18n
  * in [AppStrings]. The field set here is the single source of truth every locale must fill in.
  */
 data class Strings(
+  // Custom data server wizard
+  val customServerTitle: String,
+  val customServerIntroBody: String,
+  val customServerStep1: String,
+  val customServerStep2: String,
+  val customServerStep3: String,
+  val customServerFormBody: String,
+  val customServerUrlLabel: String,
+  val customServerUrlHint: String,
+  val customServerPortLabel: String,
+  val customServerPortHint: String,
+  val customServerUseOfficial: String,
+  val customServerNext: String,
+  val customServerTestingTitle: String,
+  val customServerTestingBody: String,
+  val customServerTooLong: String,
+  val customServerVerifiedTitle: String,
+  val customServerVerifiedBody: (server: String) -> String,
+  val customServerFailedTitle: String,
+  val customServerFailedBody: (server: String) -> String,
+  val customServerSave: String,
+  val customServerEdit: String,
+  val customServerClearField: String,
+
   // Settings
   val settingsVersion: (version: String) -> String,
   val settingsTagline: String,

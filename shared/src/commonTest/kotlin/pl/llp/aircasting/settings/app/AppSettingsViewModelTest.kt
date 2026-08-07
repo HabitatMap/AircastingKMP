@@ -95,8 +95,10 @@ class AppSettingsViewModelTest {
     )
   }
 }
-private class FakeAppSettingsRepository : AppSettingsRepository {
-  private val _preferences = MutableStateFlow(AppPreferences())
+class FakeAppSettingsRepository(
+  initial: AppPreferences = AppPreferences(),
+) : AppSettingsRepository {
+  private val _preferences = MutableStateFlow(initial)
   override val preferences: StateFlow<AppPreferences> = _preferences
   var writes = 0
 

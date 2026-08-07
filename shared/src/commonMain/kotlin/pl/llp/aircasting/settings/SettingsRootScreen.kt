@@ -114,6 +114,7 @@ internal fun SettingsRoute.icon(): DrawableResource? = when (this) {
   SettingsRoute.AirBeams -> Res.drawable.ic_airbeam
   SettingsRoute.AppSettings -> Res.drawable.ic_settings
   SettingsRoute.Help -> Res.drawable.ic_info
+  SettingsRoute.CustomDataServer -> null
 }
 
 @Composable

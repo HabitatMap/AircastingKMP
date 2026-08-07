@@ -16,6 +16,8 @@ data class AppPreferences(
   /** `null` = follow the system locale */
   val language: LanguageTag? = null,
   val microphoneCalibrationOffset: Int = DefaultCalibrationOffset,
+  /** `null` = the official AirCasting server */
+  val dataServerUrl: String? = null,
 )
 enum class TemperatureUnit { Fahrenheit, Celsius }
 

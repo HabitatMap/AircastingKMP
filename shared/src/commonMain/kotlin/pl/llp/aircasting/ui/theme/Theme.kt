@@ -1,5 +1,6 @@
 package pl.llp.aircasting.ui.theme
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
@@ -24,6 +25,7 @@ internal val LightColors = lightColorScheme(
   tertiary = Color(0xFF725C00),
   onTertiary = Color(0xFFFFFFFF),
   tertiaryContainer = Color(0xFFE0BD3E),
+  surfaceTint = Color(0xFF7BD0FF),
   onTertiaryContainer = Color(0xFF5E4C00),
   error = Color(0xFF9C3D3D),
   onError = Color(0xFFFFFFFF),
@@ -71,6 +73,7 @@ internal val DarkColors = darkColorScheme(
   surface = Color(0xFF141313),
   onSurface = Color(0xFFE5E2E1),
   onSurfaceVariant = Color(0xFFC5C6CA),
+  surfaceTint = Color(0xFF7BD0FF),
   surfaceDim = Color(0xFF141313),
   surfaceBright = Color(0xFF3A3939),
   surfaceContainerLowest = Color(0xFF242323),
@@ -88,7 +91,10 @@ internal val DarkColors = darkColorScheme(
 @Composable
 fun AircastingTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
   CompositionLocalProvider(LocalAqColors provides if (darkTheme) DarkAqColors else LightAqColors) {
-    MaterialTheme(colorScheme = if (darkTheme) DarkColors else LightColors) {
+    MaterialTheme(
+      colorScheme = if (darkTheme) DarkColors else LightColors,
+      typography = rememberAircastingTypography(),
+    ) {
       Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background,

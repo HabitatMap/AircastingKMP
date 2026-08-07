@@ -24,6 +24,8 @@ class StringsCompletenessTest {
     "appSettingFahrenheit",
     "appSettingCelsius",
     "micDecibels",
+    "customServerUrlLabel",
+    "customServerPortLabel"
   )
 
   /** Only the plain `String` fields; the parameterised ones are lambdas and can't be compared. */
@@ -37,8 +39,6 @@ class StringsCompletenessTest {
 
   @Test
   fun `reflection actually sees the copy`() {
-    // Without this, a rename or a change to how the data class is compiled would empty the field
-    // list and make every other assertion here pass vacuously.
     assertTrue(textOf(EnStrings).size > 50, "Only found ${textOf(EnStrings).size} text fields")
   }
 

@@ -17,18 +17,17 @@ import org.koin.dsl.module
 import pl.llp.aircasting.data.auth.AuthTokenStore
 import pl.llp.aircasting.data.auth.InMemoryAuthTokenStore
 import pl.llp.aircasting.data.network.AccountApi
+import pl.llp.aircasting.data.network.HttpServerProbe
+import pl.llp.aircasting.data.network.ServerProbe
 import pl.llp.aircasting.settings.account.AccountRepository
 import pl.llp.aircasting.settings.account.AccountViewModel
 import pl.llp.aircasting.settings.account.NetworkAccountRepository
 import pl.llp.aircasting.settings.app.AppSettingsRepository
 import pl.llp.aircasting.settings.app.AppSettingsViewModel
 import pl.llp.aircasting.settings.app.StoredAppSettingsRepository
+import pl.llp.aircasting.settings.server.CustomDataServerViewModel
+import pl.llp.aircasting.data.network.DefaultBackendUrl
 import kotlin.time.Clock
-
-val appSettingsModule = module {
-  single<AppSettingsRepository> { StoredAppSettingsRepository(get()) }
-  viewModelOf(::AppSettingsViewModel)
-}
 
 val bleModule = module {
   single<AirBeamCredentials> { StubAirBeamCredentials }
@@ -36,7 +35,20 @@ val bleModule = module {
   viewModelOf(::ScanViewModel)
 }
 
+val appSettingsModule = module {
+  single<AppSettingsRepository> { StoredAppSettingsRepository(get()) }
+  viewModelOf(::AppSettingsViewModel)
+  viewModelOf(::CustomDataServerViewModel)
+}
+
 val networkModule = module {
+  single {
+    val settings = get<AppSettingsRepository>()
+    createAircastingHttpClient(platformHttpEngine()) {
+      settings.preferences.value.dataServerUrl ?: DefaultBackendUrl
+    }
+  }
+  single { HttpServerProbe(platformHttpEngine()) as ServerProbe }
   single { createAircastingHttpClient(platformHttpEngine()) }
   single { FixedStationsApi(get()) }
   single<Clock> { Clock.System }

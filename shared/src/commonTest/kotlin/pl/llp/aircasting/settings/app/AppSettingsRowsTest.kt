@@ -1,11 +1,29 @@
 package pl.llp.aircasting.settings.app
 
+import pl.llp.aircasting.data.network.DefaultBackendUrl
 import pl.llp.aircasting.i18n.EnStrings
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNull
 
 class AppSettingsRowsTest {
+  @Test
+  fun `the custom data server row shows the host in use, scheme stripped`() {
+    val rows = AppPreferences(dataServerUrl = "https://my.server:8080").toRows(EnStrings, false)
+
+    assertEquals(
+      AppSettingRow.Link(AppSetting.CustomDataServer, "my.server:8080"),
+      rows.single { it.setting == AppSetting.CustomDataServer },
+    )
+  }
+  @Test
+  fun `with no custom server the row says aircasting dot org`() {
+    val rows = AppPreferences().toRows(EnStrings, false)
+
+    assertEquals(
+      AppSettingRow.Link(AppSetting.CustomDataServer, "aircasting.org"),
+      rows.single { it.setting == AppSetting.CustomDataServer },
+    )
+  }
   @Test
   fun `every setting gets exactly one row in design order`() {
     val rows = AppPreferences().toRows(EnStrings, systemDarkMode = false)
@@ -30,9 +48,6 @@ class AppSettingsRowsTest {
 
   @Test
   fun `Disable mapping shows the inverse of the stored flag`() {
-    // The pref is stored positive (locationTrackingEnabled); the row is phrased as a negative.
-    // Getting this backwards silently turns location recording off for everyone, so it is the
-    // single most important assertion on this screen.
     fun checked(tracking: Boolean) =
       AppPreferences(locationTrackingEnabled = tracking)
         .toRows(EnStrings, systemDarkMode = false)
@@ -81,10 +96,16 @@ class AppSettingsRowsTest {
   }
 
   @Test
-  fun `rows that only navigate carry no value`() {
-    val rows = AppPreferences().toRows(EnStrings, systemDarkMode = false)
-      .associateBy { it.setting }
-    assertNull((rows[AppSetting.CustomDataServer] as AppSettingRow.Link).value)
+  fun `the data server row shows the server in use, official by default`() {
+    fun value(url: String?) =
+      AppPreferences(dataServerUrl = url)
+        .toRows(EnStrings, systemDarkMode = false)
+        .filterIsInstance<AppSettingRow.Link>()
+        .single { it.setting == AppSetting.CustomDataServer }
+        .value
+
+    assertEquals("aircasting.org", value(null))
+    assertEquals("my.server:8080", value("https://my.server:8080"))
   }
 
   @Test

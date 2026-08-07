@@ -23,6 +23,7 @@ class StoredAppSettingsRepository(private val settings: Settings) : AppSettingsR
   }
 }
 
+private const val KeyDataServerUrl = "data_server_url"
 private const val KeyMicCalibrationOffset = "microphone_calibration_offset"
 private const val KeyCrowdMap = "crowd_map_enabled"
 private const val KeyLocationTracking = "location_tracking_enabled"
@@ -37,6 +38,7 @@ private const val KeyLanguage = "language"
 private val Defaults = AppPreferences()
 
 private fun Settings.readPreferences() = AppPreferences(
+  dataServerUrl = getStringOrNull(KeyDataServerUrl),
   microphoneCalibrationOffset =
     getInt(KeyMicCalibrationOffset, Defaults.microphoneCalibrationOffset),
   language = getStringOrNull(KeyLanguage),
@@ -51,6 +53,7 @@ private fun Settings.readPreferences() = AppPreferences(
 )
 
 private fun Settings.writePreferences(prefs: AppPreferences) {
+  prefs.dataServerUrl?.let { putString(KeyDataServerUrl, it) } ?: remove(KeyDataServerUrl)
   putInt(KeyMicCalibrationOffset, prefs.microphoneCalibrationOffset)
   prefs.language?.let { putString(KeyLanguage, it) } ?: remove(KeyLanguage)
   putBoolean(KeyCrowdMap, prefs.crowdMapEnabled)

@@ -1,6 +1,7 @@
 package pl.llp.aircasting.settings.mic
 
 import co.touchlab.kermit.Logger
+import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -13,16 +14,17 @@ import platform.AVFAudio.AVSampleRateKey
 import platform.AVFAudio.setActive
 import platform.CoreAudioTypes.kAudioFormatLinearPCM
 import platform.Foundation.NSURL
+import kotlin.time.Duration.Companion.milliseconds
 
-private const val PollIntervalMs = 1_000L / 10
+private val PollInterval = 500.milliseconds
 
 class IosMicrophoneLevelSource : MicrophoneLevelSource {
 
   private val log = Logger.withTag("MicLevel")
 
+  @OptIn(ExperimentalForeignApi::class)
   override fun levels(): Flow<Double> = flow {
     val session = AVAudioSession.sharedInstance()
-    // Metering needs a live recording session; /dev/null keeps it meter-only with no file.
     session.setCategory(AVAudioSessionCategoryRecord, null)
     session.setActive(true, null)
     val recorder = AVAudioRecorder(
@@ -43,12 +45,11 @@ class IosMicrophoneLevelSource : MicrophoneLevelSource {
     try {
       while (true) {
         recorder.updateMeters()
-        // averagePowerForChannel is already dBFS (-160..0), so no PCM maths is needed here.
         emit(
           recorder.averagePowerForChannel(0u)
             .toDouble()
         )
-        delay(PollIntervalMs)
+        delay(PollInterval)
       }
     } finally {
       recorder.stop()

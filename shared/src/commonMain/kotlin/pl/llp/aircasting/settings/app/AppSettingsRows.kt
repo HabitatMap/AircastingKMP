@@ -1,5 +1,6 @@
 package pl.llp.aircasting.settings.app
 
+import pl.llp.aircasting.data.network.DefaultBackendUrl
 import pl.llp.aircasting.i18n.Strings
 
 fun AppPreferences.toRows(strings: Strings, systemDarkMode: Boolean): List<AppSettingRow> =
@@ -14,9 +15,14 @@ fun AppPreferences.toRows(strings: Strings, systemDarkMode: Boolean): List<AppSe
       AppSetting.RegionalFormats -> AppSettingRow.Link(setting, strings.display(regionalFormat))
       AppSetting.MapType -> AppSettingRow.Link(setting, strings.display(mapType))
       AppSetting.Language -> AppSettingRow.Link(setting, strings.languageName)
+      AppSetting.CustomDataServer ->
+        AppSettingRow.Link(
+          setting,
+          null
+        )
+
       AppSetting.MicrophoneCalibration ->
         AppSettingRow.Link(setting, microphoneCalibrationOffset.toString())
-      AppSetting.CustomDataServer -> AppSettingRow.Link(setting)
     }
   }
 

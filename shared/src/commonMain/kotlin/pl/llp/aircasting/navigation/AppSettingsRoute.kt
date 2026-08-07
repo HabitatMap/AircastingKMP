@@ -24,7 +24,7 @@ import pl.llp.aircasting.settings.app.toRows
 import pl.llp.aircasting.settings.mic.MicCalibrationSheet
 
 @Composable
-fun AppSettingsRoute(onBack: () -> Unit) {
+fun AppSettingsRoute(onBack: () -> Unit, onOpenCustomServer: () -> Unit) {
   val vm = koinViewModel<AppSettingsViewModel>()
   val preferences by vm.preferences.collectAsStateWithLifecycle()
   val strings = LocalStrings.current
@@ -41,7 +41,12 @@ fun AppSettingsRoute(onBack: () -> Unit) {
     rows = rows,
     onBack = onBack,
     onToggle = vm::toggle,
-    onOpen = { picker = it },
+    onOpen = { setting ->
+      if (setting == AppSetting.CustomDataServer)
+        onOpenCustomServer()
+      else
+        picker = setting
+    },
   )
   when (picker) {
     AppSetting.TemperatureUnits -> SingleChoiceSheet(
@@ -67,6 +72,7 @@ fun AppSettingsRoute(onBack: () -> Unit) {
       onDismiss = dismiss,
       onConfirm = { vm.choose(it); dismiss() },
     )
+
     AppSetting.Language -> SingleChoiceSheet(
       title = strings.appSettingLanguage,
       options = languageOptions(AppStrings),

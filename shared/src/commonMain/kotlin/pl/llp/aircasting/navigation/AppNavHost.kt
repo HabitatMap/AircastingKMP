@@ -58,7 +58,11 @@ private fun NavGraphBuilder.settingsGraph(nav: NavHostController) {
   composable<SettingsRoute.Account> { AccountRoute(onBack = pop) }
   composable<SettingsRoute.AirBeams> { SettingsPlaceholderScreen(SettingsRoute.AirBeams, pop) }
   composable<SettingsRoute.Help> { SettingsPlaceholderScreen(SettingsRoute.Help, pop) }
-  composable<SettingsRoute.AppSettings> { AppSettingsRoute(onBack = pop) }
+  composable<SettingsRoute.AppSettings> {
+    AppSettingsRoute(onBack = pop, onOpenCustomServer = { nav.navigateOnce(SettingsRoute.CustomDataServer) })
+  }
+  composable<SettingsRoute.CustomDataServer> { CustomDataServerRoute(onExit = pop) }
+
 }
 
 private fun NavController.navigateOnce(route: Any) {

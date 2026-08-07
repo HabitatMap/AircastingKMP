@@ -5,6 +5,34 @@ import cafe.adriel.lyricist.LanguageTag
 
 /** English copy — the source-of-truth locale. Add `es`/`fr` as sibling values and map them below. */
 val EnStrings = Strings(
+  customServerTitle = "Use a custom data server",
+  customServerIntroBody = "If you're running your own AirCasting server (self-hosted or " +
+    "organizational), point the app to it here. Your existing measurements stay on the " +
+    "current server — only new data will sync to the new one.",
+  customServerStep1 = "Enter your server's URL and port",
+  customServerStep2 = "You'll be logged out to apply the change",
+  customServerStep3 = "Log back in. New measurements sync automatically",
+  customServerFormBody = "Enter the address of your custom or self-hosted server. " +
+    "We'll test the connection before saving anything.",
+  customServerUrlLabel = "URL",
+  customServerUrlHint = "Enter a valid URL, e.g. https://aircasting.org",
+  customServerPortLabel = "Port",
+  customServerPortHint = "Port must be a number between 1–65535",
+  customServerUseOfficial = "Use official AirCasting server instead",
+  customServerNext = "Next",
+  customServerTestingTitle = "Testing connection...",
+  customServerTestingBody = "Checking if your server responds correctly. This may take a moment.",
+  customServerTooLong = "Taking too long? Cancel!",
+  customServerVerifiedTitle = "Connection verified",
+  customServerVerifiedBody = { server ->
+    "$server responded successfully. Your measurements will sync there going forward. " +
+      "Existing data will remain on our current server."
+  },
+  customServerFailedTitle = "Connection failed",
+  customServerFailedBody = { server -> "Couldn't reach $server. Check the URL and port, then try again." },
+  customServerSave = "Save and log out",
+  customServerEdit = "Go back and edit",
+  customServerClearField = "Clear",
   settingsVersion = { version -> "AirCasting v$version" },
   settingsTagline = "HabitatMap · Open source air quality",
   settingsTitle = "Settings",

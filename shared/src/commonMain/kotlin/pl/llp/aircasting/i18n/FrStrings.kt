@@ -6,7 +6,34 @@ package pl.llp.aircasting.i18n
  * half-translated.
  */
 val FrStrings = Strings(
-
+  customServerTitle = "Utiliser un serveur de données personnalisé",
+  customServerIntroBody = "Si vous hébergez votre propre serveur AirCasting (auto-hébergé ou " +
+    "d'organisation), indiquez-le ici. Vos mesures existantes restent sur le serveur actuel — " +
+    "seules les nouvelles données seront synchronisées vers le nouveau.",
+  customServerStep1 = "Saisissez l'URL et le port de votre serveur",
+  customServerStep2 = "Vous serez déconnecté pour appliquer le changement",
+  customServerStep3 = "Reconnectez-vous. Les nouvelles mesures se synchronisent automatiquement",
+  customServerFormBody = "Saisissez l'adresse de votre serveur personnalisé ou auto-hébergé. " +
+    "Nous testerons la connexion avant d'enregistrer quoi que ce soit.",
+  customServerUrlLabel = "URL",
+  customServerUrlHint = "Saisissez une URL valide, p. ex. https://aircasting.org",
+  customServerPortLabel = "Port",
+  customServerPortHint = "Le port doit être un nombre entre 1 et 65535",
+  customServerUseOfficial = "Utiliser le serveur officiel AirCasting",
+  customServerNext = "Suivant",
+  customServerTestingTitle = "Test de la connexion...",
+  customServerTestingBody = "Nous vérifions que votre serveur répond correctement. Cela peut prendre un moment.",
+  customServerTooLong = "Cela prend trop de temps ? Annuler !",
+  customServerVerifiedTitle = "Connexion vérifiée",
+  customServerVerifiedBody = { server ->
+    "$server a répondu correctement. Vos mesures y seront synchronisées désormais. " +
+      "Les données existantes resteront sur le serveur actuel."
+  },
+  customServerFailedTitle = "Échec de la connexion",
+  customServerFailedBody = { server -> "Impossible de joindre $server. Vérifiez l'URL et le port, puis réessayez." },
+  customServerSave = "Enregistrer et se déconnecter",
+  customServerEdit = "Revenir et modifier",
+  customServerClearField = "Effacer",
   settingsVersion = { version -> "AirCasting v$version" },
   settingsTagline = "HabitatMap · Qualité de l'air en open source",
   settingsTitle = "Réglages",

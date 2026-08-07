@@ -3,8 +3,22 @@ package pl.llp.aircasting.settings.app
 import com.russhwolf.settings.MapSettings
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
 class StoredAppSettingsRepositoryTest {
+  @Test
+  fun `the custom data server survives a restart, and clearing it returns to the official one`() {
+    // null is not "" — absent means "use the official server", and the two must not collapse,
+    // because the row's value line and the Ktor base URL both branch on it.
+    val storage = MapSettings()
+    StoredAppSettingsRepository(storage).update { it.copy(dataServerUrl = "https://my.server") }
+
+    assertEquals("https://my.server", StoredAppSettingsRepository(storage).preferences.value.dataServerUrl)
+
+    StoredAppSettingsRepository(storage).update { it.copy(dataServerUrl = null) }
+    assertNull(StoredAppSettingsRepository(storage).preferences.value.dataServerUrl)
+  }
+
   @Test
   fun `a first launch reads the design defaults`() {
     // These are the states drawn in Figma 163:12617, and they are what a new user gets.

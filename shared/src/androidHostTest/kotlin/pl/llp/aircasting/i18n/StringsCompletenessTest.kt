@@ -22,7 +22,8 @@ class StringsCompletenessTest {
     "pollutantNo2",
     "pollutantOzone",
     "appSettingFahrenheit",
-    "appSettingCelsius"
+    "appSettingCelsius",
+    "micDecibels",
   )
 
   /** Only the plain `String` fields; the parameterised ones are lambdas and can't be compared. */

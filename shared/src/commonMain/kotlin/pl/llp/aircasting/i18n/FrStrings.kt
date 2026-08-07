@@ -82,6 +82,17 @@ val FrStrings = Strings(
   appSettingValueMapSatellite = "Satellite",
   languageName = "Français",
 
+  micLiveReading = "LECTURE EN DIRECT",
+  micDecibels = "db",
+  micCalibrationHint =
+    "Plage typique : 80–100. Ajustez la valeur ci-dessous jusqu'à ce que la lecture en direct " +
+      "y corresponde.",
+  micCalibrationOffset = "DÉCALAGE DE CALIBRAGE",
+  micResetOffset = { offset -> "Rétablir le décalage par défaut ($offset)" },
+  micDecreaseOffset = "Diminuer le décalage",
+  micIncreaseOffset = "Augmenter le décalage",
+  micPermissionNeeded = "Autorisez l'accès au microphone pour voir une lecture en direct.",
+
   openSettings = "Ouvrir les réglages",
   back = "Retour",
   appLogo = "AirCasting",

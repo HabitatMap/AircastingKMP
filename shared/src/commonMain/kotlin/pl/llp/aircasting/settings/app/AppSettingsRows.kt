@@ -14,7 +14,8 @@ fun AppPreferences.toRows(strings: Strings, systemDarkMode: Boolean): List<AppSe
       AppSetting.RegionalFormats -> AppSettingRow.Link(setting, strings.display(regionalFormat))
       AppSetting.MapType -> AppSettingRow.Link(setting, strings.display(mapType))
       AppSetting.Language -> AppSettingRow.Link(setting, strings.languageName)
-      AppSetting.MicrophoneCalibration,
+      AppSetting.MicrophoneCalibration ->
+        AppSettingRow.Link(setting, microphoneCalibrationOffset.toString())
       AppSetting.CustomDataServer -> AppSettingRow.Link(setting)
     }
   }

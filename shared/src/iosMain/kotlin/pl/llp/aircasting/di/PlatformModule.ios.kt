@@ -11,11 +11,14 @@ import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.darwin.Darwin
 import org.koin.dsl.module
 import pl.llp.aircasting.AppVersion
+import pl.llp.aircasting.settings.mic.IosMicrophoneLevelSource
+import pl.llp.aircasting.settings.mic.MicrophoneLevelSource
 import platform.Foundation.NSBundle
 import platform.Foundation.NSUserDefaults
 
 actual fun platformModule() = module {
   single<Settings> { NSUserDefaultsSettings(NSUserDefaults.standardUserDefaults) }
+  single<MicrophoneLevelSource> { IosMicrophoneLevelSource() }
   single<AirBeamConnector> { CompositeAirBeamConnector(listOf(get<BleAirBeamConnector>())) }
   single<LocationProvider> { IosLocationProvider() }
   single {

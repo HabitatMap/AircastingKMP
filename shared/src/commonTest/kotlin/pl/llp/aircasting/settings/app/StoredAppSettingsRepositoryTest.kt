@@ -69,4 +69,23 @@ class StoredAppSettingsRepositoryTest {
 
     assertEquals(null, StoredAppSettingsRepository(store).preferences.value.language)
   }
+
+  @Test
+  fun `a first launch starts at the default microphone offset`() {
+    assertEquals(
+      100,
+      StoredAppSettingsRepository(MapSettings()).preferences.value.microphoneCalibrationOffset,
+    )
+  }
+
+  @Test
+  fun `the microphone offset survives a restart`() {
+    val store = MapSettings()
+    StoredAppSettingsRepository(store).update { it.copy(microphoneCalibrationOffset = 92) }
+
+    assertEquals(
+      92,
+      StoredAppSettingsRepository(store).preferences.value.microphoneCalibrationOffset,
+    )
+  }
 }

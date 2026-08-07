@@ -87,6 +87,15 @@ data class Strings(
   val deleteAccountCodeLabel: String,
   val deleteAccountCodeInvalid: String,
   val deleteAccountResend: String,
+  // Microphone calibration sheet
+  val micLiveReading: String,
+  val micDecibels: String,
+  val micCalibrationHint: String,
+  val micCalibrationOffset: String,
+  val micResetOffset: (offset: Int) -> String,
+  val micDecreaseOffset: String,
+  val micIncreaseOffset: String,
+  val micPermissionNeeded: String,
 
   // Accessibility labels for icon-only controls
   val openSettings: String,

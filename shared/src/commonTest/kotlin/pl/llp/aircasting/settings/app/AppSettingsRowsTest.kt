@@ -84,7 +84,18 @@ class AppSettingsRowsTest {
   fun `rows that only navigate carry no value`() {
     val rows = AppPreferences().toRows(EnStrings, systemDarkMode = false)
       .associateBy { it.setting }
-    assertNull((rows[AppSetting.MicrophoneCalibration] as AppSettingRow.Link).value)
     assertNull((rows[AppSetting.CustomDataServer] as AppSettingRow.Link).value)
+  }
+
+  @Test
+  fun `microphone calibration shows the stored offset`() {
+    val rows = AppPreferences(microphoneCalibrationOffset = 92)
+      .toRows(EnStrings, systemDarkMode = false)
+      .associateBy { it.setting }
+
+    assertEquals(
+      AppSettingRow.Link(AppSetting.MicrophoneCalibration, "92"),
+      rows[AppSetting.MicrophoneCalibration],
+    )
   }
 }

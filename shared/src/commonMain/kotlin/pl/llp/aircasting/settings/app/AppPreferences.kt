@@ -1,6 +1,7 @@
 package pl.llp.aircasting.settings.app
 
 import cafe.adriel.lyricist.LanguageTag
+import pl.llp.aircasting.settings.mic.DefaultCalibrationOffset
 
 data class AppPreferences(
   val crowdMapEnabled: Boolean = true,
@@ -14,6 +15,7 @@ data class AppPreferences(
   val mapType: MapType = MapType.Default,
   /** `null` = follow the system locale */
   val language: LanguageTag? = null,
+  val microphoneCalibrationOffset: Int = DefaultCalibrationOffset,
 )
 enum class TemperatureUnit { Fahrenheit, Celsius }
 

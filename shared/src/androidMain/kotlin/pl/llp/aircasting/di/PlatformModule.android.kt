@@ -14,8 +14,11 @@ import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.okhttp.OkHttp
 import org.koin.dsl.module
 import pl.llp.aircasting.AppVersion
+import pl.llp.aircasting.settings.mic.AndroidMicrophoneLevelSource
+import pl.llp.aircasting.settings.mic.MicrophoneLevelSource
 
 actual fun platformModule() = module {
+  single<MicrophoneLevelSource> { AndroidMicrophoneLevelSource(get()) }
   single<AirBeamConnector> {
     CompositeAirBeamConnector(listOf(get<BleAirBeamConnector>(), get<ClassicAirBeamConnector>()))
   }

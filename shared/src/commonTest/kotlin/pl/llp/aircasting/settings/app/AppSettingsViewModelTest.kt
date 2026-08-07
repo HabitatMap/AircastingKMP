@@ -2,6 +2,7 @@ package pl.llp.aircasting.settings.app
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import pl.llp.aircasting.settings.mic.CalibrationOffsetRange
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -49,8 +50,6 @@ class AppSettingsViewModelTest {
 
   @Test
   fun `a row that is not a switch cannot be toggled`() {
-    // onToggle is keyed by AppSetting, so a mis-wired row would otherwise fall through to a
-    // silent write. The `when` must be exhaustive and inert for these.
     val repo = FakeAppSettingsRepository()
     val vm = AppSettingsViewModel(repo)
 
@@ -78,6 +77,21 @@ class AppSettingsViewModelTest {
         language = "fr",
       ),
       repo.preferences.value,
+    )
+  }
+
+  @Test
+  fun `the calibration offset is clamped on the way to storage`() {
+    // The stepper already clamps, but the write is the last line of defence: a value outside the
+    // range would persist and then be unreachable by the +/- buttons.
+    val repo = FakeAppSettingsRepository()
+    val vm = AppSettingsViewModel(repo)
+
+    vm.chooseCalibrationOffset(9_000)
+
+    assertEquals(
+      CalibrationOffsetRange.last,
+      repo.preferences.value.microphoneCalibrationOffset,
     )
   }
 }

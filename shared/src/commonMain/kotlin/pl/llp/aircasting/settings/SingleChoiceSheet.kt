@@ -35,7 +35,6 @@ import androidx.compose.ui.unit.dp
 import pl.llp.aircasting.i18n.LocalStrings
 import pl.llp.aircasting.settings.app.ChoiceOption
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun <T> SingleChoiceSheet(
   title: String,
@@ -44,59 +43,23 @@ fun <T> SingleChoiceSheet(
   onDismiss: () -> Unit,
   onConfirm: (T) -> Unit,
 ) {
-  val strings = LocalStrings.current
   // Keyed on the committed value so reopening the sheet after a change starts from the new one
   // rather than resurrecting the previous draft.
   var draft by remember(selected) { mutableStateOf(selected) }
-  ModalBottomSheet(
-    onDismissRequest = onDismiss,
-    containerColor = MaterialTheme.colorScheme.background,
-    shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-    dragHandle = { BottomSheetDefaults.DragHandle(color = MaterialTheme.colorScheme.outline) },
-  ) {
-    Column(Modifier.verticalScroll(rememberScrollState())) {
-      // Box, not a Row with weights: the title is centred on the sheet in the design, and
-      // "Cancel" is wider than "Done", so weighted space would push it off-centre.
-      Box(Modifier.fillMaxWidth().padding(horizontal = 8.dp).padding(bottom = 16.dp)) {
-        TextButton(onClick = onDismiss, modifier = Modifier.align(Alignment.CenterStart)) {
-          Text(
-            strings.cancel,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-          )
-        }
-        Text(
-          title,
-          modifier = Modifier.align(Alignment.Center),
-          style = MaterialTheme.typography.titleMedium,
-          color = MaterialTheme.colorScheme.onBackground,
-          maxLines = 1,
-        )
-        TextButton(
-          onClick = { onConfirm(draft) },
-          modifier = Modifier.align(Alignment.CenterEnd),
-        ) {
-          Text(
-            strings.done,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onPrimaryContainer,
-          )
-        }
-      }
-      Column(
-        Modifier
-          .padding(horizontal = 16.dp)
-          .padding(bottom = 48.dp)
-          .fillMaxWidth()
-          .clip(RoundedCornerShape(16.dp))
-          .background(MaterialTheme.colorScheme.surfaceContainerLowest)
-          .padding(horizontal = 16.dp)
-          // Reports the rows to screen readers as one group of N, not N unrelated radios.
-          .selectableGroup(),
-      ) {
-        options.forEach { option ->
-          ChoiceRow(option, selected = option.value == draft) { draft = option.value }
-        }
+  SettingsSheet(title, onDismiss = onDismiss, onConfirm = { onConfirm(draft) }) {
+    Column(
+      Modifier
+        .padding(horizontal = 16.dp)
+        .padding(bottom = 48.dp)
+        .fillMaxWidth()
+        .clip(RoundedCornerShape(16.dp))
+        .background(MaterialTheme.colorScheme.surfaceContainerLowest)
+        .padding(horizontal = 16.dp)
+        // Reports the rows to screen readers as one group of N, not N unrelated radios.
+        .selectableGroup(),
+    ) {
+      options.forEach { option ->
+        ChoiceRow(option, selected = option.value == draft) { draft = option.value }
       }
     }
   }
@@ -129,8 +92,6 @@ private fun <T> ChoiceRow(option: ChoiceOption<T>, selected: Boolean, onSelect: 
         )
       }
     }
-    // onClick = null: the whole row is the target via `selectable`, so the radio must not be a
-    // second, competing one — same shape as ToggleRow's `Switch(onCheckedChange = null)`.
     RadioButton(
       selected = selected,
       onClick = null,
@@ -141,4 +102,3 @@ private fun <T> ChoiceRow(option: ChoiceOption<T>, selected: Boolean, onSelect: 
     )
   }
 }
-

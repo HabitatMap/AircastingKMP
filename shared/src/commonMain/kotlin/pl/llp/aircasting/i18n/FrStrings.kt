@@ -6,6 +6,37 @@ package pl.llp.aircasting.i18n
  * half-translated.
  */
 val FrStrings = Strings(
+  authWelcomeTitle = "Bienvenue sur AirCasting !",
+  authWelcomeSubtitle =
+    "Connectez-vous ou créez un compte ci-dessous pour surveiller la qualité de l'air.",
+  authSignInSheetSubtitle = "Connectez-vous pour continuer à surveiller la qualité de l'air.",
+  authSignUpSheetSubtitle = "Surveillez et enregistrez la qualité de l'air autour de vous",
+  authTabSignIn = "Se connecter",
+  authTabSignUp = "Créer un compte",
+  authSignInAction = "Se connecter",
+  authSignUpAction = "S'inscrire",
+  authNoAccountPrompt = "Vous n'avez pas de compte ?",
+  authHaveAccountPrompt = "Vous avez déjà un compte ?",
+  authLoginLabel = "Saisissez l'e-mail ou le nom de profil",
+  authEmailLabel = "Saisissez l'e-mail",
+  authUsernameLabel = "Saisissez le nom de profil",
+  authPasswordLabel = "Saisissez le mot de passe",
+  authNewPasswordLabel = "Créez un mot de passe",
+  authInvalidCredentials = "E-mail, nom de profil ou mot de passe incorrect.",
+  authUnexpectedError = "Une erreur s'est produite. Veuillez réessayer.",
+  authShowPassword = "Afficher le mot de passe",
+  authHidePassword = "Masquer le mot de passe",
+  authClearField = "Effacer",
+  authForgotPassword = "Mot de passe oublié ?",
+  forgotPasswordTitle = "Mot de passe oublié ?",
+  forgotPasswordBody =
+    "Saisissez l'e-mail associé à votre compte et nous vous enverrons un lien de " +
+      "réinitialisation.",
+  forgotPasswordEmailLabel = "E-mail",
+  forgotPasswordSubmit = "Envoyer le lien",
+  forgotPasswordBackToSignIn = "Retour à la connexion",
+  forgotPasswordSent = "Lien envoyé. Consultez votre boîte de réception.",
+  forgotPasswordFailed = "Impossible d'envoyer le lien. Veuillez réessayer.",
   customServerTitle = "Utiliser un serveur de données personnalisé",
   customServerIntroBody = "Si vous hébergez votre propre serveur AirCasting (auto-hébergé ou " +
     "d'organisation), indiquez-le ici. Vos mesures existantes restent sur le serveur actuel — " +

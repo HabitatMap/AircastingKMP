@@ -7,8 +7,10 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
-import pl.llp.aircasting.data.auth.AuthTokenStore
-import pl.llp.aircasting.data.auth.InMemoryAuthTokenStore
+import com.russhwolf.settings.MapSettings
+import pl.llp.aircasting.data.auth.AuthSession
+import pl.llp.aircasting.data.auth.AuthState
+import pl.llp.aircasting.data.auth.StoredAuthSession
 import pl.llp.aircasting.data.network.AccountApi
 import pl.llp.aircasting.data.network.createAircastingHttpClient
 import kotlin.io.encoding.Base64
@@ -34,12 +36,12 @@ class NetworkAccountRepositoryTest {
 
   @Test
   fun sign_out_clears_the_token() = runTest {
-    val tokens = InMemoryAuthTokenStore("tok-123")
-    val repo = repository(USER_JSON, tokens = tokens)
+    val session = signedIn()
+    val repo = repository(USER_JSON, session = session)
 
     repo.signOut()
 
-    assertNull(tokens.token())
+    assertEquals(AuthState.SignedOut, session.state.value)
   }
 
   @Test
@@ -59,25 +61,25 @@ class NetworkAccountRepositoryTest {
 
   @Test
   fun deletion_confirm_keeps_the_token_when_the_code_is_rejected() = runTest {
-    val tokens = InMemoryAuthTokenStore("tok-123")
+    val session = signedIn()
     val repo = repository(
       """{"error":"Invalid or expired confirmation code."}""",
       status = HttpStatusCode.Unauthorized,
-      tokens = tokens,
+      session = session,
     )
 
     assertFailsWith<ClientRequestException> { repo.confirmAccountDeletion("0000") }
-    assertEquals("tok-123", tokens.token())
+    assertEquals(AuthState.SignedIn("tok-123"), session.state.value)
   }
 
   @Test
   fun deletion_confirm_clears_the_token_on_success() = runTest {
-    val tokens = InMemoryAuthTokenStore("tok-123")
-    val repo = repository("""{"error":null,"message":"deleted"}""", tokens = tokens)
+    val session = signedIn()
+    val repo = repository("""{"error":null,"message":"deleted"}""", session = session)
 
     repo.confirmAccountDeletion("1234")
 
-    assertNull(tokens.token())
+    assertEquals(AuthState.SignedOut, session.state.value)
   }
 
   @Test
@@ -93,15 +95,19 @@ class NetworkAccountRepositoryTest {
     responseJson: String = EMPTY_JSON,
     status: HttpStatusCode = HttpStatusCode.OK,
     token: String? = "tok-123",
-    tokens: AuthTokenStore = InMemoryAuthTokenStore(token),
+    session: AuthSession = signedIn(token),
     onRequest: (io.ktor.client.request.HttpRequestData) -> Unit = {},
   ): AccountRepository {
     val engine = MockEngine { request ->
       onRequest(request)
       respond(responseJson, status, headersOf(HttpHeaders.ContentType, "application/json"))
     }
-    return NetworkAccountRepository(AccountApi(createAircastingHttpClient(engine)), tokens)
+    return NetworkAccountRepository(AccountApi(createAircastingHttpClient(engine)), session)
   }
+
+  /** A fresh session, signed in with [token] unless it is null. */
+  private fun signedIn(token: String? = "tok-123") =
+    StoredAuthSession(MapSettings()).apply { token?.let(::start) }
   private fun io.ktor.http.content.OutgoingContent.toByteReadPacketString(): String =
     (this as io.ktor.http.content.OutgoingContent.ByteArrayContent).bytes().decodeToString()
 

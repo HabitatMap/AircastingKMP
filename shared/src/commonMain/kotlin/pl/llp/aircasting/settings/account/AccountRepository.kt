@@ -1,7 +1,6 @@
 package pl.llp.aircasting.settings.account
 
 import pl.llp.aircasting.data.auth.AuthSession
-import pl.llp.aircasting.data.auth.AuthTokenStore
 import pl.llp.aircasting.data.auth.tokenOrNull
 import pl.llp.aircasting.data.network.AccountApi
 import pl.llp.aircasting.data.network.UserDto

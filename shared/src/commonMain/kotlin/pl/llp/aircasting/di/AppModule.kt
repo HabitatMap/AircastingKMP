@@ -1,24 +1,28 @@
 package pl.llp.aircasting.di
 
-import pl.llp.aircasting.bluetooth.AirBeamCredentials
-import pl.llp.aircasting.bluetooth.transport.ble.BleAirBeamConnector
-import pl.llp.aircasting.data.network.FixedStationsApi
-import pl.llp.aircasting.data.network.FixedStationsRepository
-import pl.llp.aircasting.data.network.createAircastingHttpClient
-import pl.llp.aircasting.home.FakeHomeRepository
-import pl.llp.aircasting.home.HomeRepository
-import pl.llp.aircasting.home.HomeViewModel
-import pl.llp.aircasting.home.NetworkHomeRepository
-import pl.llp.aircasting.scan.ScanViewModel
 import org.koin.core.context.startKoin
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.KoinAppDeclaration
 import org.koin.dsl.module
-import pl.llp.aircasting.data.auth.AuthTokenStore
-import pl.llp.aircasting.data.auth.InMemoryAuthTokenStore
+import pl.llp.aircasting.auth.AuthRepository
+import pl.llp.aircasting.auth.AuthViewModel
+import pl.llp.aircasting.auth.NetworkAuthRepository
+import pl.llp.aircasting.bluetooth.AirBeamCredentials
+import pl.llp.aircasting.bluetooth.transport.ble.BleAirBeamConnector
+import pl.llp.aircasting.data.auth.AuthSession
+import pl.llp.aircasting.data.auth.StoredAuthSession
 import pl.llp.aircasting.data.network.AccountApi
+import pl.llp.aircasting.data.network.AuthApi
+import pl.llp.aircasting.data.network.DefaultBackendUrl
+import pl.llp.aircasting.data.network.FixedStationsApi
+import pl.llp.aircasting.data.network.FixedStationsRepository
 import pl.llp.aircasting.data.network.HttpServerProbe
 import pl.llp.aircasting.data.network.ServerProbe
+import pl.llp.aircasting.data.network.createAircastingHttpClient
+import pl.llp.aircasting.home.FakeHomeRepository
+import pl.llp.aircasting.home.HomeRepository
+import pl.llp.aircasting.home.HomeViewModel
+import pl.llp.aircasting.scan.ScanViewModel
 import pl.llp.aircasting.settings.account.AccountRepository
 import pl.llp.aircasting.settings.account.AccountViewModel
 import pl.llp.aircasting.settings.account.NetworkAccountRepository
@@ -26,7 +30,6 @@ import pl.llp.aircasting.settings.app.AppSettingsRepository
 import pl.llp.aircasting.settings.app.AppSettingsViewModel
 import pl.llp.aircasting.settings.app.StoredAppSettingsRepository
 import pl.llp.aircasting.settings.server.CustomDataServerViewModel
-import pl.llp.aircasting.data.network.DefaultBackendUrl
 import kotlin.time.Clock
 
 val bleModule = module {
@@ -59,9 +62,11 @@ val networkModule = module {
 }
 
 val accountModule = module {
-  // TODO(login): swap for a persistent store once a login screen writes a real token.
-  single<AuthTokenStore> { InMemoryAuthTokenStore() }
+  single<AuthSession> { StoredAuthSession(get()) }
   single { AccountApi(get()) }
+  single { AuthApi(get()) }
+  single<AuthRepository> { NetworkAuthRepository(get(), get()) }
+  viewModelOf(::AuthViewModel)
   single<AccountRepository> { NetworkAccountRepository(get(), get()) }
   viewModelOf(::AccountViewModel)
 }

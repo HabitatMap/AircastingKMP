@@ -38,3 +38,5 @@ private const val KeyToken = "auth_token"
 
 private fun Settings.readState(): AuthState =
   getStringOrNull(KeyToken)?.let(AuthState::SignedIn) ?: AuthState.SignedOut
+
+val AuthState.isSignedIn: Boolean get() = this is AuthState.SignedIn

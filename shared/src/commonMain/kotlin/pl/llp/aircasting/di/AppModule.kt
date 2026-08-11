@@ -6,6 +6,7 @@ import org.koin.dsl.KoinAppDeclaration
 import org.koin.dsl.module
 import pl.llp.aircasting.auth.AuthRepository
 import pl.llp.aircasting.auth.AuthViewModel
+import pl.llp.aircasting.auth.ForgotPasswordViewModel
 import pl.llp.aircasting.auth.NetworkAuthRepository
 import pl.llp.aircasting.bluetooth.AirBeamCredentials
 import pl.llp.aircasting.bluetooth.transport.ble.BleAirBeamConnector
@@ -69,6 +70,7 @@ val accountModule = module {
   viewModelOf(::AuthViewModel)
   single<AccountRepository> { NetworkAccountRepository(get(), get()) }
   viewModelOf(::AccountViewModel)
+  viewModelOf(::ForgotPasswordViewModel)
 }
 
 fun initKoin(extra: KoinAppDeclaration = {}) = startKoin {

@@ -12,7 +12,10 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
@@ -28,15 +31,24 @@ import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.painterResource
 import pl.llp.aircasting.i18n.LocalStrings
 
+private val ScreenPadding = 24.dp
+
 @Composable
 fun AuthScreen(state: AuthFormState, actions: AuthFormActions) {
   val strings = LocalStrings.current
-  Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+  Column(
+    Modifier
+      .fillMaxSize()
+      .background(MaterialTheme.colorScheme.background)
+      .navigationBarsPadding()
+      .imePadding()
+      .verticalScroll(rememberScrollState()),
+  ) {
     Surface(
       color = MaterialTheme.colorScheme.surfaceContainerLowest,
       shadowElevation = 3.dp,          // Figma "M3/Elevation Light/1"
     ) {
-      Column(Modifier.fillMaxWidth()) {
+      Column(Modifier.fillMaxWidth().statusBarsPadding()) {
         Box(Modifier.fillMaxWidth().height(64.dp), contentAlignment = Alignment.Center) {
           Icon(
             painterResource(Res.drawable.ic_aircasting_wordmark),
@@ -48,14 +60,15 @@ fun AuthScreen(state: AuthFormState, actions: AuthFormActions) {
         AuthHeader(
           title = strings.authWelcomeTitle,
           subtitle = strings.authWelcomeSubtitle,
-          titleStyle = MaterialTheme.typography.headlineLarge,
+          titleStyle = MaterialTheme.typography.headlineLargeEmphasized,
+          modifier = Modifier.padding(horizontal = ScreenPadding),
         )
         Spacer(Modifier.height(24.dp))
         AuthTabs(state.mode, actions.onSwitchMode)
       }
     }
     Spacer(Modifier.height(80.dp))
-    AuthForm(state, actions, Modifier.padding(horizontal = 24.dp))
+    AuthForm(state, actions, Modifier.padding(horizontal = ScreenPadding))
     Spacer(Modifier.height(32.dp))
   }
 }
@@ -63,7 +76,7 @@ fun AuthScreen(state: AuthFormState, actions: AuthFormActions) {
 @Composable
 private fun AuthTabs(mode: AuthMode, onSelect: (AuthMode) -> Unit) {
   val strings = LocalStrings.current
-  Row(Modifier.fillMaxWidth().padding(horizontal = 24.dp).height(48.dp)) {
+  Row(Modifier.fillMaxWidth().padding(horizontal = ScreenPadding).height(48.dp)) {
     AuthMode.entries.forEach { tab ->
       val selected = tab == mode
       Column(

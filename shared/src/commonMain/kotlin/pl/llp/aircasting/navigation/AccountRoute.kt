@@ -21,8 +21,6 @@ fun AccountRoute(onBack: () -> Unit) {
 
   LaunchedEffect(vm) {
     vm.sessionEnded.collect {
-      // TODO(login): navigate to the login screen and clear the whole back stack. Until that
-      // screen exists, leaving Account is the most we can do — the app has no signed-out shell.
       Logger.withTag("Account").i { "session ended" }
       onBack()
     }

@@ -102,7 +102,7 @@ fun AuthForm(state: AuthFormState, actions: AuthFormActions, modifier: Modifier 
         textAlign = TextAlign.Center,
       )
     }
-    Spacer(Modifier.height(48.dp))
+    Spacer(Modifier.height(if (state.mode == AuthMode.SignIn) 80.dp else 56.dp))
     SubmitButton(state, actions.onSubmit)
     Spacer(Modifier.height(24.dp))
     ModeSwitchPrompt(state.mode, actions.onSwitchMode)
@@ -110,8 +110,13 @@ fun AuthForm(state: AuthFormState, actions: AuthFormActions, modifier: Modifier 
 }
 
 @Composable
-internal fun AuthHeader(title: String, subtitle: String, titleStyle: TextStyle) {
-  Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+internal fun AuthHeader(
+  title: String,
+  subtitle: String,
+  titleStyle: TextStyle,
+  modifier: Modifier = Modifier,
+) {
+  Column(modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
     Text(
       title,
       style = titleStyle,

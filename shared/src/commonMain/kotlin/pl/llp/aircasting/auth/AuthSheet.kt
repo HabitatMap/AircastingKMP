@@ -3,6 +3,8 @@ package pl.llp.aircasting.auth
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -23,22 +25,22 @@ fun AuthSheet(state: AuthFormState, actions: AuthFormActions, onDismiss: () -> U
     onConfirm = actions.onSubmit,
     confirmEnabled = state.canSubmit,
   ) {
-  }
-
-  Column(Modifier.padding(horizontal = 16.dp)) {
-    AuthHeader(
-      title = when (state.mode) {
-        AuthMode.SignIn -> strings.authWelcomeTitle
-        AuthMode.SignUp -> strings.authTabSignUp
-      },
-      subtitle = when (state.mode) {
-        AuthMode.SignIn -> strings.authSignInSheetSubtitle
-        AuthMode.SignUp -> strings.authSignUpSheetSubtitle
-      },
-      titleStyle = MaterialTheme.typography.headlineSmall,
-    )
-    Spacer(Modifier.height(40.dp))
-    AuthForm(state, actions)
-    Spacer(Modifier.height(32.dp))
+    Column(Modifier.padding(horizontal = 16.dp).navigationBarsPadding().imePadding()) {
+      Spacer(Modifier.height(24.dp))
+      AuthHeader(
+        title = when (state.mode) {
+          AuthMode.SignIn -> strings.authWelcomeTitle
+          AuthMode.SignUp -> strings.authTabSignUp
+        },
+        subtitle = when (state.mode) {
+          AuthMode.SignIn -> strings.authSignInSheetSubtitle
+          AuthMode.SignUp -> strings.authSignUpSheetSubtitle
+        },
+        titleStyle = MaterialTheme.typography.headlineSmallEmphasized,
+      )
+      Spacer(Modifier.height(40.dp))
+      AuthForm(state, actions)
+      Spacer(Modifier.height(32.dp))
+    }
   }
 }

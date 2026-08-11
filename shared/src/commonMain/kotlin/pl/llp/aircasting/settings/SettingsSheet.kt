@@ -18,7 +18,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import kotlinx.serialization.json.JsonNull.content
 import pl.llp.aircasting.i18n.LocalStrings
 
 @OptIn(ExperimentalMaterial3Api::class)

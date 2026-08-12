@@ -9,13 +9,9 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.content.ContextCompat
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 
 private val LOCATION_PERMISSIONS = arrayOf(
   Manifest.permission.ACCESS_FINE_LOCATION,
@@ -24,6 +20,7 @@ private val LOCATION_PERMISSIONS = arrayOf(
 
 class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
+    installSplashScreen()
     enableEdgeToEdge()
     super.onCreate(savedInstanceState)
 
@@ -32,16 +29,14 @@ class MainActivity : ComponentActivity() {
         ActivityResultContracts.RequestMultiplePermissions()
       ) { /* result picked up by App's ON_RESUME reload — nothing to do here */ }
 
-      LaunchedEffect(Unit) {
-        val granted = LOCATION_PERMISSIONS.any {
-          ContextCompat.checkSelfPermission(this@MainActivity, it) == PackageManager.PERMISSION_GRANTED
-        }
-        if (!granted) launcher.launch(LOCATION_PERMISSIONS)   // the already-granted guard from before
-      }
       App(
-        onRequestLocation = { launcher.launch(LOCATION_PERMISSIONS) },
+        onRequestLocation = { if (!hasLocationPermission()) launcher.launch(LOCATION_PERMISSIONS) },
       )
     }
+  }
+
+  private fun hasLocationPermission() = LOCATION_PERMISSIONS.any {
+    ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED
   }
 }
 

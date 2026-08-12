@@ -3,8 +3,26 @@ package pl.llp.aircasting.i18n
 import androidx.compose.runtime.staticCompositionLocalOf
 import cafe.adriel.lyricist.LanguageTag
 
+/**
+ * The lorem ipsum the Figma onboarding frames still carry. Locale-neutral, so every locale points
+ * at it — translating placeholder Latin would only have to be undone.
+ */
+internal const val OnboardingPlaceholderBody =
+  "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt " +
+    "ut labore et dolore magna aliqua."
+
 /** English copy — the source-of-truth locale. Add `es`/`fr` as sibling values and map them below. */
 val EnStrings = Strings(
+  // TODO(design): placeholder copy, verbatim from Figma — identical on all three pages until
+  // the real copy lands. The per-page fields exist so that swap is a value change, nothing more.
+  onboardingMeasureTitle = "Placeholder heading",
+  onboardingMeasureBody = OnboardingPlaceholderBody,
+  onboardingMapTitle = "Placeholder heading",
+  onboardingMapBody = OnboardingPlaceholderBody,
+  onboardingShareTitle = "Placeholder heading",
+  onboardingShareBody = OnboardingPlaceholderBody,
+  onboardingNext = "Next step",
+  onboardingSkip = "Skip",
   authWelcomeTitle = "Welcome to AirCasting!",
   authWelcomeSubtitle = "Sign in or create an account below to monitor your air quality.",
   authSignInSheetSubtitle = "Sign in to continue monitoring your air quality.",

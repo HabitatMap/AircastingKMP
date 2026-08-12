@@ -6,6 +6,16 @@ package pl.llp.aircasting.i18n
  * half-translated.
  */
 val FrStrings = Strings(
+  // TODO(design): placeholder copy, verbatim from Figma. Only the two buttons are real UI, so
+  // only they are translated.
+  onboardingMeasureTitle = "Placeholder heading",
+  onboardingMeasureBody = OnboardingPlaceholderBody,
+  onboardingMapTitle = "Placeholder heading",
+  onboardingMapBody = OnboardingPlaceholderBody,
+  onboardingShareTitle = "Placeholder heading",
+  onboardingShareBody = OnboardingPlaceholderBody,
+  onboardingNext = "Étape suivante",
+  onboardingSkip = "Passer",
   authWelcomeTitle = "Bienvenue sur AirCasting !",
   authWelcomeSubtitle =
     "Connectez-vous ou créez un compte ci-dessous pour surveiller la qualité de l'air.",

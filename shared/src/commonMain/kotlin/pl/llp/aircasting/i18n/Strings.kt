@@ -12,6 +12,15 @@ package pl.llp.aircasting.i18n
  * in [AppStrings]. The field set here is the single source of truth every locale must fill in.
  */
 data class Strings(
+  // Onboarding — TODO(design): Figma still has lorem ipsum, this copy needs sign-off
+  val onboardingMeasureTitle: String,
+  val onboardingMeasureBody: String,
+  val onboardingMapTitle: String,
+  val onboardingMapBody: String,
+  val onboardingShareTitle: String,
+  val onboardingShareBody: String,
+  val onboardingNext: String,
+  val onboardingSkip: String,
   // Auth — headers
   val authWelcomeTitle: String,
   val authWelcomeSubtitle: String,

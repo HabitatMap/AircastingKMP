@@ -98,7 +98,16 @@
       "Bash(mkdir -p /Users/kirillgetmanskii_1/AndroidStudioProjects/Aircasting/shared/src/commonMain/composeResources/font)",
       "Bash(cp fonts/Roboto-Regular.ttf /Users/kirillgetmanskii_1/AndroidStudioProjects/Aircasting/shared/src/commonMain/composeResources/font/roboto_regular.ttf)",
       "Bash(cp fonts/Roboto-Medium.ttf /Users/kirillgetmanskii_1/AndroidStudioProjects/Aircasting/shared/src/commonMain/composeResources/font/roboto_medium.ttf)",
-      "Bash(cp fonts/Roboto-Bold.ttf /Users/kirillgetmanskii_1/AndroidStudioProjects/Aircasting/shared/src/commonMain/composeResources/font/roboto_bold.ttf)"
+      "Bash(cp fonts/Roboto-Bold.ttf /Users/kirillgetmanskii_1/AndroidStudioProjects/Aircasting/shared/src/commonMain/composeResources/font/roboto_bold.ttf)",
+      "Bash(pkill -f 'grep -rhoE \"command\"')",
+      "Bash(open /Users/kirillgetmanskii_1/.claude/skills)",
+      "Bash(unzip -l \"/Users/kirillgetmanskii_1/.gradle/caches/modules-2/files-2.1/org.jetbrains.compose.ui/ui/1.11.1/c35f3b5f1a2b4964c96cbc9c9288ac0f630d089b/ui-1.11.1-sources.jar\")",
+      "Bash(unzip -l \"/Users/kirillgetmanskii_1/.gradle/caches/modules-2/files-2.1/org.jetbrains.compose.ui/ui-backhandler-desktop/1.11.1/bd3540bb1d6abd60c5e58f32663b2f3e89406cd1/ui-backhandler-desktop-1.11.1.jar\")",
+      "Bash(rm -f f_*.png)",
+      "Bash(ffmpeg -loglevel error -i splash.mp4 -vf \"fps=15,scale=270:-1\" f_%03d.png)",
+      "Bash(ffmpeg -loglevel error -i splash.mp4 -vf \"fps=15,scale=200:-1,tile=8x5\" -frames:v 1 grid.png)",
+      "Bash(adb pull *)",
+      "Bash(ffmpeg -loglevel error -i /private/tmp/claude-503/-Users-kirillgetmanskii-1-AndroidStudioProjects-Aircasting/c45604c5-9e55-4f63-bc53-d54cab6d9055/scratchpad/splash2.mp4 -vf fps=30,scale=1:1 -f rawvideo -pix_fmt rgb24 -)"
     ]
   },
   "hooks": {

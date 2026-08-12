@@ -1,0 +1,19 @@
+<!--
+  Deliberately empty: a fully transparent icon, so the system splash is nothing but the brand
+  plate.
+
+  Android 12+ always draws *something* in the splash icon slot — leaving the theme attribute
+  out falls back to the launcher icon. The slot also masks its drawable to a circle whose safe
+  area caps the art at roughly 150dp, so the wordmark would render at about half the size it
+  has in SplashGate and visibly pop when the two swap. An empty icon avoids that: the plate
+  holds, and the wordmark appears exactly once, at its designed size.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="288dp"
+    android:height="288dp"
+    android:viewportWidth="288"
+    android:viewportHeight="288">
+  <path
+      android:pathData="M0,0h288v288h-288z"
+      android:fillColor="#00000000"/>
+</vector>

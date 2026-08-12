@@ -5,6 +5,36 @@ import cafe.adriel.lyricist.LanguageTag
 
 /** English copy — the source-of-truth locale. Add `es`/`fr` as sibling values and map them below. */
 val EnStrings = Strings(
+  authWelcomeTitle = "Welcome to AirCasting!",
+  authWelcomeSubtitle = "Sign in or create an account below to monitor your air quality.",
+  authSignInSheetSubtitle = "Sign in to continue monitoring your air quality.",
+  authSignUpSheetSubtitle = "Monitor and record air quality around you",
+  authTabSignIn = "Sign in",
+  authTabSignUp = "Create an account",
+  authSignInAction = "Sign in",
+  authSignUpAction = "Sign up",
+  authNoAccountPrompt = "Don't have an account?",
+  authHaveAccountPrompt = "Already have an account?",
+  authLoginLabel = "Enter email or profile name",
+  authEmailLabel = "Enter email",
+  authUsernameLabel = "Enter profile name",
+  authPasswordLabel = "Enter password",
+  authNewPasswordLabel = "Create a password",
+  authInvalidCredentials = "Wrong email, profile name or password.",
+  authUnexpectedError = "Something went wrong. Please try again.",
+  authShowPassword = "Show password",
+  authHidePassword = "Hide password",
+  authClearField = "Clear",
+  authForgotPassword = "Forgot password?",
+  forgotPasswordTitle = "Forgot password?",
+  forgotPasswordBody =
+    "Enter the email associated with your account and we'll send you a reset link.",
+  forgotPasswordEmailLabel = "Email",
+  forgotPasswordSubmit = "Send reset link",
+  forgotPasswordBackToSignIn = "Back to Sign in",
+  forgotPasswordSent = "Reset link sent. Check your inbox.",
+  forgotPasswordFailed = "Couldn't send the reset link. Please try again.",
+
   customServerTitle = "Use a custom data server",
   customServerIntroBody = "If you're running your own AirCasting server (self-hosted or " +
     "organizational), point the app to it here. Your existing measurements stay on the " +

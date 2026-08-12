@@ -26,6 +26,7 @@ fun SettingsSheet(
   title: String,
   onDismiss: () -> Unit,
   onConfirm: () -> Unit,
+  confirmEnabled: Boolean = true,
   content: @Composable ColumnScope.() -> Unit,
 ) {
   ModalBottomSheet(
@@ -35,17 +36,15 @@ fun SettingsSheet(
     dragHandle = { BottomSheetDefaults.DragHandle(color = MaterialTheme.colorScheme.outline) },
   ) {
     Column(Modifier.verticalScroll(rememberScrollState())) {
-      SheetHeader(title, onCancel = onDismiss, onConfirm = onConfirm)
+      SheetHeader(title, onCancel = onDismiss, onConfirm = onConfirm, confirmEnabled = confirmEnabled)
       content()
     }
   }
 }
 
 @Composable
-private fun SheetHeader(title: String, onCancel: () -> Unit, onConfirm: () -> Unit) {
+private fun SheetHeader(title: String, onCancel: () -> Unit, onConfirm: () -> Unit, confirmEnabled: Boolean) {
   val strings = LocalStrings.current
-  // Box, not a Row with weights: the title is centred on the sheet in the design, and "Cancel" is
-  // wider than "Done", so weighted space would push it off-centre.
   Box(Modifier.fillMaxWidth().padding(horizontal = 8.dp).padding(bottom = 16.dp)) {
     TextButton(onClick = onCancel, modifier = Modifier.align(Alignment.CenterStart)) {
       Text(
@@ -61,7 +60,11 @@ private fun SheetHeader(title: String, onCancel: () -> Unit, onConfirm: () -> Un
       color = MaterialTheme.colorScheme.onBackground,
       maxLines = 1,
     )
-    TextButton(onClick = onConfirm, modifier = Modifier.align(Alignment.CenterEnd)) {
+    TextButton(
+      onClick = onConfirm,
+      enabled = confirmEnabled,
+      modifier = Modifier.align(Alignment.CenterEnd),
+    ) {
       Text(
         strings.done,
         style = MaterialTheme.typography.bodyLarge,

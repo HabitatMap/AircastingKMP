@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import pl.llp.aircasting.data.auth.AuthTokenStore
+import pl.llp.aircasting.data.auth.AuthSession
 import pl.llp.aircasting.data.network.ServerProbe
 import pl.llp.aircasting.settings.app.AppSettingsRepository
 import kotlin.time.Duration.Companion.seconds
@@ -36,7 +36,7 @@ val CustomServerStep.progress: Float
 class CustomDataServerViewModel(
   private val settings: AppSettingsRepository,
   private val probe: ServerProbe,
-  private val tokens: AuthTokenStore,
+  private val session: AuthSession,
 ) : ViewModel() {
   private val _step = MutableStateFlow<CustomServerStep>(CustomServerStep.Intro)
   val step: StateFlow<CustomServerStep> = _step.asStateFlow()
@@ -88,7 +88,8 @@ class CustomDataServerViewModel(
 
   private suspend fun applyServer(baseUrl: String?) {
     settings.update { it.copy(dataServerUrl = baseUrl) }
-    tokens.clear()
+    // A token is only valid against the server that issued it.
+    session.end()
     _finished.emit(Unit)
   }
 

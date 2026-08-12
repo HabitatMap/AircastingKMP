@@ -12,6 +12,41 @@ package pl.llp.aircasting.i18n
  * in [AppStrings]. The field set here is the single source of truth every locale must fill in.
  */
 data class Strings(
+  // Auth — headers
+  val authWelcomeTitle: String,
+  val authWelcomeSubtitle: String,
+  val authSignInSheetSubtitle: String,
+  val authSignUpSheetSubtitle: String,
+  // Auth — tabs & actions
+  val authTabSignIn: String,
+  val authTabSignUp: String,
+  val authSignInAction: String,
+  val authSignUpAction: String,
+  val authNoAccountPrompt: String,
+  val authHaveAccountPrompt: String,
+  // Auth — field labels (they float above the input, so they read as instructions)
+  val authLoginLabel: String,
+  val authEmailLabel: String,
+  val authUsernameLabel: String,
+  val authPasswordLabel: String,
+  val authNewPasswordLabel: String,
+  // Auth — errors the backend can't phrase for us
+  val authInvalidCredentials: String,
+  val authUnexpectedError: String,
+  // Auth — accessibility labels for icon-only controls
+  val authShowPassword: String,
+  val authHidePassword: String,
+  val authClearField: String,
+  // Forgot password
+  val authForgotPassword: String,
+  val forgotPasswordTitle: String,
+  val forgotPasswordBody: String,
+  val forgotPasswordEmailLabel: String,
+  val forgotPasswordSubmit: String,
+  val forgotPasswordBackToSignIn: String,
+  val forgotPasswordSent: String,
+  val forgotPasswordFailed: String,
+
   // Custom data server wizard
   val customServerTitle: String,
   val customServerIntroBody: String,

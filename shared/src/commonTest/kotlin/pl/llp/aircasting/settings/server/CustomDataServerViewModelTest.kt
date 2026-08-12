@@ -9,7 +9,9 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import pl.llp.aircasting.data.auth.InMemoryAuthTokenStore
+import com.russhwolf.settings.MapSettings
+import pl.llp.aircasting.data.auth.AuthState
+import pl.llp.aircasting.data.auth.StoredAuthSession
 import pl.llp.aircasting.data.network.ServerProbe
 import pl.llp.aircasting.settings.app.AppPreferences
 import pl.llp.aircasting.settings.app.FakeAppSettingsRepository
@@ -111,8 +113,8 @@ class CustomDataServerViewModelTest {
     // "You'll be logged out to apply the change": the token belongs to the *old* server and is
     // meaningless — worse, replayable — against the new one, so it must go with the switch.
     val repo = FakeAppSettingsRepository()
-    val tokens = InMemoryAuthTokenStore(initial = "old-server-token")
-    val vm = viewModel(repo, tokens = tokens, probe = { true })
+    val session = StoredAuthSession(MapSettings()).apply { start("old-server-token") }
+    val vm = viewModel(repo, session = session, probe = { true })
     vm.next()
     vm.edit(CustomServerForm(host = "https://my.server"))
     vm.next(); advanceUntilIdle()
@@ -120,7 +122,7 @@ class CustomDataServerViewModelTest {
     vm.save(); advanceUntilIdle()
 
     assertEquals("https://my.server", repo.preferences.value.dataServerUrl)
-    assertNull(tokens.token())
+    assertEquals(AuthState.SignedOut, session.state.value)
   }
 
   @Test
@@ -154,18 +156,18 @@ class CustomDataServerViewModelTest {
   @Test
   fun `choosing the official server clears the custom one and logs out`() = runTest {
     val repo = FakeAppSettingsRepository(AppPreferences(dataServerUrl = "https://my.server"))
-    val tokens = InMemoryAuthTokenStore(initial = "token")
-    val vm = viewModel(repo, tokens = tokens)
+    val session = StoredAuthSession(MapSettings()).apply { start("token") }
+    val vm = viewModel(repo, session = session)
 
     vm.useOfficialServer(); advanceUntilIdle()
 
     assertNull(repo.preferences.value.dataServerUrl)
-    assertNull(tokens.token())
+    assertEquals(AuthState.SignedOut, session.state.value)
   }
 
   private fun viewModel(
     repo: FakeAppSettingsRepository = FakeAppSettingsRepository(),
-    tokens: InMemoryAuthTokenStore = InMemoryAuthTokenStore(),
+    session: StoredAuthSession = StoredAuthSession(MapSettings()),
     probe: ServerProbe = ServerProbe { true },
-  ) = CustomDataServerViewModel(repo, probe, tokens)
+  ) = CustomDataServerViewModel(repo, probe, session)
 }

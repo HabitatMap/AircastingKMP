@@ -1,29 +1,20 @@
 package pl.llp.aircasting.settings.app
 
-import pl.llp.aircasting.data.network.DefaultBackendUrl
 import pl.llp.aircasting.i18n.EnStrings
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class AppSettingsRowsTest {
   @Test
-  fun `the custom data server row shows the host in use, scheme stripped`() {
+  fun `the custom data server row does not show host`() {
     val rows = AppPreferences(dataServerUrl = "https://my.server:8080").toRows(EnStrings, false)
 
     assertEquals(
-      AppSettingRow.Link(AppSetting.CustomDataServer, "my.server:8080"),
+      AppSettingRow.Link(AppSetting.CustomDataServer, null),
       rows.single { it.setting == AppSetting.CustomDataServer },
     )
   }
-  @Test
-  fun `with no custom server the row says aircasting dot org`() {
-    val rows = AppPreferences().toRows(EnStrings, false)
 
-    assertEquals(
-      AppSettingRow.Link(AppSetting.CustomDataServer, "aircasting.org"),
-      rows.single { it.setting == AppSetting.CustomDataServer },
-    )
-  }
   @Test
   fun `every setting gets exactly one row in design order`() {
     val rows = AppPreferences().toRows(EnStrings, systemDarkMode = false)
@@ -93,19 +84,6 @@ class AppSettingsRowsTest {
     )
     assertEquals(AppSettingRow.Link(AppSetting.MapType, "Satellite"), rows[AppSetting.MapType])
     assertEquals(AppSettingRow.Link(AppSetting.Language, "English"), rows[AppSetting.Language])
-  }
-
-  @Test
-  fun `the data server row shows the server in use, official by default`() {
-    fun value(url: String?) =
-      AppPreferences(dataServerUrl = url)
-        .toRows(EnStrings, systemDarkMode = false)
-        .filterIsInstance<AppSettingRow.Link>()
-        .single { it.setting == AppSetting.CustomDataServer }
-        .value
-
-    assertEquals("aircasting.org", value(null))
-    assertEquals("my.server:8080", value("https://my.server:8080"))
   }
 
   @Test

@@ -23,6 +23,8 @@ import pl.llp.aircasting.data.network.createAircastingHttpClient
 import pl.llp.aircasting.home.FakeHomeRepository
 import pl.llp.aircasting.home.HomeRepository
 import pl.llp.aircasting.home.HomeViewModel
+import pl.llp.aircasting.onboarding.OnboardingRepository
+import pl.llp.aircasting.onboarding.StoredOnboardingRepository
 import pl.llp.aircasting.scan.ScanViewModel
 import pl.llp.aircasting.settings.account.AccountRepository
 import pl.llp.aircasting.settings.account.AccountViewModel
@@ -32,6 +34,10 @@ import pl.llp.aircasting.settings.app.AppSettingsViewModel
 import pl.llp.aircasting.settings.app.StoredAppSettingsRepository
 import pl.llp.aircasting.settings.server.CustomDataServerViewModel
 import kotlin.time.Clock
+
+val onboardingModule = module {
+  single<OnboardingRepository> { StoredOnboardingRepository(get()) }
+}
 
 val bleModule = module {
   single<AirBeamCredentials> { StubAirBeamCredentials }
@@ -75,5 +81,7 @@ val accountModule = module {
 
 fun initKoin(extra: KoinAppDeclaration = {}) = startKoin {
   extra()
-  modules(platformModule(), bleModule, networkModule, accountModule, appSettingsModule)
+  modules(
+    platformModule(), bleModule, networkModule, accountModule, appSettingsModule, onboardingModule,
+  )
 }

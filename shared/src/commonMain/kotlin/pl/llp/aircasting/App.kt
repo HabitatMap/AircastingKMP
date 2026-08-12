@@ -13,6 +13,7 @@ import pl.llp.aircasting.i18n.AppStrings
 import pl.llp.aircasting.i18n.LocalStrings
 import pl.llp.aircasting.navigation.AppNavHost
 import pl.llp.aircasting.settings.app.AppSettingsRepository
+import pl.llp.aircasting.ui.SplashGate
 import pl.llp.aircasting.ui.theme.AircastingTheme
 
 @Composable
@@ -25,7 +26,9 @@ fun App(onRequestLocation: () -> Unit = {}) {
   )
   ProvideStrings(lyricist, LocalStrings) {
     AircastingTheme(darkTheme = preferences.darkMode ?: isSystemInDarkTheme()) {
-      AppNavHost(onRequestLocation)
+      SplashGate {
+        AppNavHost(onRequestLocation)
+      }
     }
   }
 }

@@ -56,6 +56,9 @@ kotlin {
       implementation(libs.compose.foundation)
       implementation(libs.compose.material3)
       implementation(libs.compose.ui)
+      // Common `BackHandler`: Android's system back on one side, iOS' back-swipe gesture on the
+      // other. Ships as its own artifact, so `compose.ui` alone does not bring it in.
+      implementation(libs.compose.ui.backhandler)
       implementation(libs.compose.components.resources)
       implementation(libs.compose.uiToolingPreview)
       implementation(libs.androidx.lifecycle.viewmodelCompose)

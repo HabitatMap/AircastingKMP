@@ -14,17 +14,20 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 
 @Composable
-fun ShellScreen(onRequestLocation: () -> Unit, onOpenSettings: () -> Unit) {
+fun ShellScreen(
+  onRequestLocation: () -> Unit,
+  onOpenSettings: () -> Unit,
+  onStartNewSession: () -> Unit,
+) {
   LaunchedEffect(Unit) { onRequestLocation() }
 
   var selected by rememberSaveable { mutableStateOf(AppTab.Home) }
   Scaffold(
     containerColor = MaterialTheme.colorScheme.background,
     bottomBar = { AircastingNavBar(selected, onSelect = { selected = it }) },
-    contentWindowInsets = WindowInsets(0),
   ) { padding ->
     Box(Modifier.padding(padding)) {
-      TabContent(selected, onRequestLocation, onOpenSettings)
+      TabContent(selected, onRequestLocation, onOpenSettings, onStartNewSession)
     }
   }
 }

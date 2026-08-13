@@ -13,6 +13,56 @@ internal const val OnboardingPlaceholderBody =
 
 /** English copy — the source-of-truth locale. Add `es`/`fr` as sibling values and map them below. */
 val EnStrings = Strings(
+  newSessionConfirmTitle = "Ready to start?",
+  summaryTypeLabel = "SESSION TYPE",
+  summaryNameLabel = "SESSION NAME",
+  summaryTagsLabel = "TAGS",
+  summaryIntervalLabel = "SAMPLING INTERVAL",
+  startRecording = "Start recording",
+  latestTagsHeader = "LATEST TAGS",
+  addTagLabel = { tag -> "Add tag $tag" },
+  samplingIntervalHeader = "SAMPLING INTERVAL",
+  samplingIntervalHint =
+    "Choosing a longer measurement interval will help conserve your device's battery.",
+  samplingSeconds = { count -> "$count s" },
+  samplingMinutes = { count -> "$count min" },
+  newSessionDetailsTitle = "Name your session",
+  newSessionDetailsBody = "Add details so you can find and share it later.",
+  sessionNameLabel = "Session name",
+  sessionNamePlaceholder = "eg. \u201CSchool noise pollution\u201D",
+  sessionTagsLabel = "Tags",
+  sessionTagsPlaceholder = "Add tags, e.g. \u201Cschool\u201D, \u201Ctraffic\u201D",
+  methodMobileName = "AirBeam Mobile",
+  methodFixedName = "AirBeam Fixed",
+  methodMicName = "Phone Microphone",
+  methodMobileConfirm = "Review your session details before starting. Keep your AirBeam with you, " +
+    "then tap \"Start recording\" below.",
+  methodFixedConfirm = "Review your session details before starting. Hang your AirBeam in a secure " +
+    "position, then tap \"Start recording\" below.",
+  // TODO(design): Figma only draws the AirBeam wording; this mic variant needs sign-off.
+  methodMicConfirm = "Review your session details before starting. Keep your phone where it can hear " +
+    "what you want to measure, then tap \"Start recording\" below.",
+  recordStartTitle = "Start a new recording",
+  recordStartBody = "Capture air quality and sound levels with AirBeam or your phone.",
+  recordNewSessionTitle = "Start new session",
+  recordNewSessionBody = "Capture air quality and sound levels with AirBeam or your phone.",
+  recordRecoverTitle = "Recover & sync data",
+  recordRecoverBody = "Import stored sessions from your AirBeam 3 or AirBeam Mini device.",
+  newSessionMethodTitle = "How will you record?",
+  newSessionMethodBody = "Choose the method that fits your setup and session goal.",
+  methodMobileTag = "AIRBEAM MOBILE",
+  // Figma reads "Air measurment" — typo, fixed here.
+  methodMobileTitle = "Air measurement on the go",
+  methodMobileBody =
+    "Walk around and capture air pollution in real time with a Bluetooth-connected AirBeam.",
+  methodFixedTag = "AIRBEAM FIXED",
+  methodFixedTitle = "Air measurement in one place",
+  methodFixedBody =
+    "Monitor a single location continuously, for home, school, or work. Connect via Wi-Fi.",
+  methodMicTag = "PHONE MICROPHONE",
+  methodMicTitle = "Noise measurement with your phone",
+  methodMicBody = "Measure noise levels anywhere using your phone's built-in microphone.",
+  next = "Next",
   // TODO(design): placeholder copy, verbatim from Figma — identical on all three pages until
   // the real copy lands. The per-page fields exist so that swap is a value change, nothing more.
   onboardingMeasureTitle = "Placeholder heading",

@@ -15,15 +15,21 @@ import pl.llp.aircasting.home.HomeScreen
 import pl.llp.aircasting.home.HomeViewModel
 import pl.llp.aircasting.i18n.LocalStrings
 import org.koin.compose.viewmodel.koinViewModel
+import pl.llp.aircasting.record.RecordStartScreen
 
 @Composable
 fun TabContent(
   tab: AppTab,
   onRequestLocation: () -> Unit = {},
   onOpenSettings: () -> Unit = {},
+  onStartNewSession: () -> Unit = {},
 ) {
   when (tab) {
     AppTab.Home -> HomeRoute(onRequestLocation, onOpenSettings)
+    AppTab.Record -> RecordStartScreen(
+      onStartNewSession = onStartNewSession,
+      onRecoverData = { /* TODO: recover & sync flow */ },
+    )
     else -> Placeholder(LocalStrings.current.label(tab))
   }
 }

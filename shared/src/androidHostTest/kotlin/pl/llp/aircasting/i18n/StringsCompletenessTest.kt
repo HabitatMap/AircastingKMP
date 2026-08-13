@@ -23,6 +23,7 @@ class StringsCompletenessTest {
     "onboardingMapBody",
     "onboardingShareTitle",
     "onboardingShareBody",
+    "methodMobileTag"
   )
 
   /** Copy that is legitimately identical in every locale: symbols, brand and chemical names. */

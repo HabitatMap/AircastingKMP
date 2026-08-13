@@ -1,4 +1,4 @@
-package pl.llp.aircasting.settings.server
+package pl.llp.aircasting.ui.wizard
 
 import aircasting.shared.generated.resources.Res
 import aircasting.shared.generated.resources.ic_arrow_forward_ios
@@ -27,7 +27,7 @@ import org.jetbrains.compose.resources.painterResource
 import pl.llp.aircasting.i18n.LocalStrings
 
 @Composable
-fun CustomDataServerScaffold(
+fun WizardScaffold(
   progress: Float,
   onBack: () -> Unit,
   onCancel: () -> Unit,

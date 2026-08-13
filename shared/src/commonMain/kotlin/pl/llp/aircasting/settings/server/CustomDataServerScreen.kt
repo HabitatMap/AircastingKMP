@@ -11,6 +11,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import pl.llp.aircasting.i18n.LocalStrings
+import pl.llp.aircasting.ui.wizard.WizardButton
+import pl.llp.aircasting.ui.wizard.WizardScaffold
 
 @Composable
 fun CustomDataServerScreen(
@@ -24,7 +26,7 @@ fun CustomDataServerScreen(
   onCancelTest: () -> Unit,
 ) {
   val strings = LocalStrings.current
-  CustomDataServerScaffold(
+  WizardScaffold(
     progress = step.progress,
     onBack = onBack,
     onCancel = onExit,

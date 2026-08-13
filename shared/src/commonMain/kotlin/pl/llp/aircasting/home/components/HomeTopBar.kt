@@ -4,6 +4,7 @@ import aircasting.shared.generated.resources.Res
 import aircasting.shared.generated.resources.ic_aircasting_wordmark
 import aircasting.shared.generated.resources.ic_settings
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -41,5 +42,6 @@ fun HomeTopBar(onOpenSettings: () -> Unit) {
       }
     },
     colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+    windowInsets = WindowInsets(0),
   )
 }

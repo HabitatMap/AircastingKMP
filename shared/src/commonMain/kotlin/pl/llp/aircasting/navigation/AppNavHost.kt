@@ -66,8 +66,10 @@ fun AppNavHost(onRequestLocation: () -> Unit = {}) {
       ShellScreen(
         onRequestLocation = onRequestLocation,
         onOpenSettings = { nav.navigateOnce(SettingsRoute.Root) },
+        onStartNewSession = { nav.navigateOnce(NewSessionRoute) },
       )
     }
+    composable<NewSessionRoute> { NewSessionDestination(onExit = { nav.popBackStack() }) }
     composable<OnboardingRoute> { OnboardingDestination() }
     composable<AuthRoute> {
       AuthDestination(onForgotPassword = { nav.navigateOnce(ForgotPasswordRoute) })

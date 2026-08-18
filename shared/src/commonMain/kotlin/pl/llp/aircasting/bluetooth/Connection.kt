@@ -3,6 +3,7 @@ package pl.llp.aircasting.bluetooth
 import pl.llp.aircasting.bluetooth.v2_firmware_specific.DeviceReportedState
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
+import kotlin.uuid.Uuid
 
 interface AirBeamConnector {
   val supportedTransports: Set<Transport>
@@ -30,4 +31,34 @@ sealed interface FailureReason {
   data object WrongCommunicationSurface: FailureReason
   data object HandshakeFailed: FailureReason
   data object RadioOrPermissionMissing: FailureReason
+}
+
+sealed interface ConfigResult {
+  data object Success: ConfigResult
+  data object UnknownFailure: ConfigResult
+  data object WifiPassFailure: ConfigResult
+  data object BadConfigFailure: ConfigResult
+  data object NotSyncedFailure: ConfigResult
+}
+
+sealed interface SessionConfig {
+  data class Mobile(val uuid: Uuid) : SessionConfig
+  data class FixedWiFi(
+    val uuid: Uuid,
+    val authToken: String?,
+    val latitude: Double,
+    val longitude: Double,
+    val ssid: String,
+    val password: String,
+    val zoneOffset: Int,
+    val pm1Index: Int = 0,
+    val pm25Index: Int = 1
+  ) : SessionConfig
+
+  data class FixedCellular(
+    val uuid: Uuid,
+    val authToken: String,
+    val latitude: Double,
+    val longitude: Double
+  ) : SessionConfig
 }

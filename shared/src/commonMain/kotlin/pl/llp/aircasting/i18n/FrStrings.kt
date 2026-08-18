@@ -6,6 +6,64 @@ package pl.llp.aircasting.i18n
  * half-translated.
  */
 val FrStrings = Strings(
+  newSessionConfirmTitle = "Prêt à commencer ?",
+  summaryTypeLabel = "TYPE DE SESSION",
+  summaryNameLabel = "NOM DE LA SESSION",
+  summaryTagsLabel = "ÉTIQUETTES",
+  summaryIntervalLabel = "INTERVALLE DE MESURE",
+  startRecording = "Démarrer l'enregistrement",
+  newSessionDetailsTitle = "Nommez votre session",
+  newSessionDetailsBody = "Ajoutez des détails pour la retrouver et la partager plus tard.",
+  sessionNameLabel = "Nom de la session",
+  sessionNamePlaceholder = "ex. « Bruit de l'école »",
+  sessionTagsLabel = "Étiquettes",
+  sessionTagsPlaceholder = "Ajoutez des étiquettes, ex. « école », « trafic »",
+  latestTagsHeader = "ÉTIQUETTES RÉCENTES",
+  addTagLabel = { tag -> "Ajouter l'étiquette $tag" },
+  samplingIntervalHeader = "INTERVALLE DE MESURE",
+  samplingIntervalHint =
+    "Un intervalle plus long permet d'économiser la batterie de votre appareil.",
+  samplingSeconds = { count -> "$count s" },
+  samplingMinutes = { count -> "$count min" },
+  methodMobileName = "AirBeam mobile",
+  methodFixedName = "AirBeam fixe",
+  methodMicName = "Microphone du téléphone",
+  methodMobileConfirm = "Vérifiez les détails de la session avant de commencer. Gardez votre AirBeam " +
+    "avec vous, puis touchez « Démarrer l'enregistrement ».",
+  methodFixedConfirm = "Vérifiez les détails de la session avant de commencer. Installez votre AirBeam " +
+    "dans un endroit sûr, puis touchez « Démarrer l'enregistrement ».",
+  methodMicConfirm = "Vérifiez les détails de la session avant de commencer. Placez votre téléphone " +
+    "là où il capte ce que vous voulez mesurer, puis touchez « Démarrer l'enregistrement ».",
+  recordStartTitle = "Démarrer un nouvel enregistrement",
+  recordStartBody = "Mesurez la qualité de l'air et le niveau sonore avec l'AirBeam ou votre téléphone.",
+  recordNewSessionTitle = "Nouvelle session",
+  recordNewSessionBody = "Mesurez la qualité de l'air et le niveau sonore avec l'AirBeam ou votre téléphone.",
+  recordRecoverTitle = "Récupérer et synchroniser",
+  recordRecoverBody = "Importez les sessions stockées sur votre AirBeam 3 ou AirBeam Mini.",
+  newSessionMethodTitle = "Comment souhaitez-vous mesurer ?",
+  newSessionMethodBody = "Choisissez la méthode adaptée à votre matériel et à votre objectif.",
+  methodMobileTag = "AIRBEAM MOBILE",
+  methodMobileTitle = "Mesure de l'air en déplacement",
+  methodMobileBody =
+    "Déplacez-vous et mesurez la pollution de l'air en temps réel avec un AirBeam connecté en Bluetooth.",
+  methodFixedTag = "AIRBEAM FIXE",
+  methodFixedTitle = "Mesure de l'air en un seul lieu",
+  methodFixedBody =
+    "Surveillez un lieu en continu : maison, école ou travail. Connexion en Wi-Fi.",
+  methodMicTag = "MICROPHONE DU TÉLÉPHONE",
+  methodMicTitle = "Mesure du bruit avec votre téléphone",
+  methodMicBody = "Mesurez le niveau sonore partout avec le microphone intégré de votre téléphone.",
+  next = "Suivant",
+  // TODO(design): placeholder copy, verbatim from Figma. Only the two buttons are real UI, so
+  // only they are translated.
+  onboardingMeasureTitle = "Placeholder heading",
+  onboardingMeasureBody = OnboardingPlaceholderBody,
+  onboardingMapTitle = "Placeholder heading",
+  onboardingMapBody = OnboardingPlaceholderBody,
+  onboardingShareTitle = "Placeholder heading",
+  onboardingShareBody = OnboardingPlaceholderBody,
+  onboardingNext = "Étape suivante",
+  onboardingSkip = "Passer",
   authWelcomeTitle = "Bienvenue sur AirCasting !",
   authWelcomeSubtitle =
     "Connectez-vous ou créez un compte ci-dessous pour surveiller la qualité de l'air.",

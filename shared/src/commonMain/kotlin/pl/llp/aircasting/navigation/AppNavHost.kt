@@ -30,6 +30,7 @@ import org.koin.compose.koinInject
 import pl.llp.aircasting.auth.AuthGate
 import pl.llp.aircasting.auth.AuthRepository
 import pl.llp.aircasting.data.auth.isSignedIn
+import pl.llp.aircasting.onboarding.OnboardingRepository
 import pl.llp.aircasting.settings.SettingsPlaceholderScreen
 import pl.llp.aircasting.settings.SettingsRootScreen
 import pl.llp.aircasting.settings.account.SettingsAccountScreen
@@ -41,20 +42,21 @@ data object ShellRoute
 fun AppNavHost(onRequestLocation: () -> Unit = {}) {
   val nav = rememberNavController()
   val auth = koinInject<AuthRepository>()
+  val onboarding = koinInject<OnboardingRepository>()
   val session by auth.state.collectAsStateWithLifecycle()
-  val startedSignedIn = remember(auth) { auth.state.value.isSignedIn }
-  val startDestination: Any = if (startedSignedIn) ShellRoute else AuthRoute
-  var wasSignedIn by remember { mutableStateOf(startedSignedIn) }
-  LaunchedEffect(session) {
-    val signedIn = session.isSignedIn
-    if (signedIn == wasSignedIn) return@LaunchedEffect
-    wasSignedIn = signedIn
-    nav.navigate(if (signedIn) ShellRoute else AuthRoute) { popUpTo(0) { inclusive = true } }
-  }
+  val onboarded by onboarding.completed.collectAsStateWithLifecycle()
 
+  val entry = appEntry(onboarded = onboarded, signedIn = session.isSignedIn)
+  val startEntry = remember { entry }
+  var shownEntry by remember { mutableStateOf(startEntry) }
+  LaunchedEffect(entry) {
+    if (entry == shownEntry) return@LaunchedEffect
+    shownEntry = entry
+    nav.navigate(entry.route) { popUpTo(0) { inclusive = true } }
+  }
   NavHost(
     navController = nav,
-    startDestination = startDestination,
+    startDestination = startEntry.route,
     enterTransition = enterTransition,
     exitTransition = exitTransition,
     popEnterTransition = popEnterTransition,
@@ -64,8 +66,11 @@ fun AppNavHost(onRequestLocation: () -> Unit = {}) {
       ShellScreen(
         onRequestLocation = onRequestLocation,
         onOpenSettings = { nav.navigateOnce(SettingsRoute.Root) },
+        onStartNewSession = { nav.navigateOnce(NewSessionRoute) },
       )
     }
+    composable<NewSessionRoute> { NewSessionDestination(onExit = { nav.popBackStack() }) }
+    composable<OnboardingRoute> { OnboardingDestination() }
     composable<AuthRoute> {
       AuthDestination(onForgotPassword = { nav.navigateOnce(ForgotPasswordRoute) })
     }
@@ -74,6 +79,12 @@ fun AppNavHost(onRequestLocation: () -> Unit = {}) {
     settingsGraph(nav)
   }
 }
+private val AppEntry.route: Any
+  get() = when (this) {
+    AppEntry.Onboarding -> OnboardingRoute
+    AppEntry.Auth -> AuthRoute
+    AppEntry.Shell -> ShellRoute
+  }
 
 private fun NavGraphBuilder.settingsGraph(nav: NavHostController) {
   val pop: () -> Unit = { nav.popBackStack() }
@@ -93,7 +104,9 @@ private fun NavGraphBuilder.settingsGraph(nav: NavHostController) {
   composable<SettingsRoute.AirBeams> { SettingsPlaceholderScreen(SettingsRoute.AirBeams, pop) }
   composable<SettingsRoute.Help> { SettingsPlaceholderScreen(SettingsRoute.Help, pop) }
   composable<SettingsRoute.AppSettings> {
-    AppSettingsRoute(onBack = pop, onOpenCustomServer = { nav.navigateOnce(SettingsRoute.CustomDataServer) })
+    AppSettingsRoute(
+      onBack = pop,
+      onOpenCustomServer = { nav.navigateOnce(SettingsRoute.CustomDataServer) })
   }
   composable<SettingsRoute.CustomDataServer> { CustomDataServerRoute(onExit = pop) }
 

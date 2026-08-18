@@ -1,0 +1,9 @@
+<resources>
+    <style name="Theme.Aircasting" parent="@android:style/Theme.Material.Light.NoActionBar" />
+
+    <style name="Theme.Aircasting.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_none</item>
+        <item name="postSplashScreenTheme">@style/Theme.Aircasting</item>
+    </style>
+</resources>

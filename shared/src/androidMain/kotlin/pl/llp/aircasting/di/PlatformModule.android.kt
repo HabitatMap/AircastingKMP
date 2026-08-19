@@ -27,7 +27,7 @@ actual fun platformModule() = module {
       get<Context>().getSharedPreferences("aircasting_settings", Context.MODE_PRIVATE),
     )
   }
-  single { ClassicAirBeamConnector(get(), get<BluetoothManager>().adapter, get()) }
+  single { ClassicAirBeamConnector(get(), get<BluetoothManager>().adapter) }
   single { get<Context>().getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager }
   single<LocationProvider> { AndroidLocationProvider(get()) }
   single {

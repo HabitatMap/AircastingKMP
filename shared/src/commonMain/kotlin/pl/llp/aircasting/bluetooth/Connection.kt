@@ -14,6 +14,7 @@ interface AirBeamConnector {
 interface AirBeamConnection {
   val status: StateFlow<ConnectionStatus>
   val deviceState: StateFlow<DeviceReportedState>?
+  suspend fun configure(config: SessionConfig): ConfigResult
   suspend fun disconnect()
 }
 
@@ -42,10 +43,15 @@ sealed interface ConfigResult {
 }
 
 sealed interface SessionConfig {
-  data class Mobile(val uuid: Uuid) : SessionConfig
+  val uuid: Uuid
+
+  data class Mobile(
+    override val uuid: Uuid
+  ) : SessionConfig
+
   data class FixedWiFi(
-    val uuid: Uuid,
-    val authToken: String?,
+    override val uuid: Uuid,
+    val authToken: String,
     val latitude: Double,
     val longitude: Double,
     val ssid: String,
@@ -56,7 +62,7 @@ sealed interface SessionConfig {
   ) : SessionConfig
 
   data class FixedCellular(
-    val uuid: Uuid,
+    override val uuid: Uuid,
     val authToken: String,
     val latitude: Double,
     val longitude: Double

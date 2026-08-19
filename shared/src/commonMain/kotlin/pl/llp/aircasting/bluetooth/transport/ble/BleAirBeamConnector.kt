@@ -1,5 +1,6 @@
 package pl.llp.aircasting.bluetooth.transport.ble
 
+import co.touchlab.kermit.Logger
 import com.juul.kable.Peripheral
 import com.juul.kable.Scanner
 import com.juul.kable.State
@@ -7,7 +8,6 @@ import com.juul.kable.WriteType
 import com.juul.kable.characteristicOf
 import pl.llp.aircasting.bluetooth.AirBeamConnection
 import pl.llp.aircasting.bluetooth.AirBeamConnector
-import pl.llp.aircasting.bluetooth.AirBeamCredentials
 import pl.llp.aircasting.bluetooth.AirBeamDevice
 import pl.llp.aircasting.bluetooth.ConnectionStatus
 import pl.llp.aircasting.bluetooth.DeviceId
@@ -15,10 +15,8 @@ import pl.llp.aircasting.bluetooth.DiscoveredAirBeam
 import pl.llp.aircasting.bluetooth.FailureReason
 import pl.llp.aircasting.bluetooth.Transport
 import pl.llp.aircasting.bluetooth.detection.airBeamFrom
-import pl.llp.aircasting.bluetooth.handshake.HandshakeMessages
 import pl.llp.aircasting.bluetooth.transport.accumulateDistinct
 import pl.llp.aircasting.bluetooth.v2_firmware_specific.DeviceReportedState
-import pl.llp.aircasting.bluetooth.v2_firmware_specific.MINI_V2_SERVICE
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -35,6 +33,15 @@ import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.number
+import kotlinx.datetime.toLocalDateTime
+import pl.llp.aircasting.bluetooth.ConfigResult
+import pl.llp.aircasting.bluetooth.SessionConfig
+import kotlin.math.abs
+import kotlin.math.pow
+import kotlin.math.roundToLong
+import kotlin.time.Clock
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
@@ -42,34 +49,9 @@ import kotlin.uuid.Uuid
 private val SCAN_TIMEOUT_DURATION = 10.seconds
 private val CONNECT_TIMEOUT_DURATION = 30.seconds
 private val HANDSHAKE_SETTLE_DURATION = 500.milliseconds
-
-// AB3 + Mini V1 share this GATT service + config (write) characteristic.
-private val configCharacteristic = characteristicOf(
-  Uuid.parse("0000ffdd-0000-1000-8000-00805f9b34fb"),
-  Uuid.parse("0000ffde-0000-1000-8000-00805f9b34fb")
-)
-
-// Mini V2: dedicated Status characteristic (notify)
-private val statusCharacteristic = characteristicOf(
-  MINI_V2_SERVICE,
-  Uuid.parse("a0e1f000-0002-4b3c-8e9a-1f2d3c4b5a60"),
-)
-
-private val responseCharacteristic = characteristicOf(
-  MINI_V2_SERVICE, Uuid.parse("a0e1f000-0004-4b3c-8e9a-1f2d3c4b5a60"),
-)
-private val measurementCharacteristic = characteristicOf(
-  MINI_V2_SERVICE, Uuid.parse("a0e1f000-0005-4b3c-8e9a-1f2d3c4b5a60"),
-)
-private val syncCharacteristic = characteristicOf(
-  MINI_V2_SERVICE, Uuid.parse("a0e1f000-0006-4b3c-8e9a-1f2d3c4b5a60"),
-)
-
 private val STATUS_SETTLE_TIMEOUT = 5.seconds
 
-class BleAirBeamConnector(
-  private val credentials: AirBeamCredentials,
-) : AirBeamConnector {
+class BleAirBeamConnector() : AirBeamConnector {
   override val supportedTransports = setOf(Transport.BLE)
 
   override fun scan() = Scanner().advertisements
@@ -105,12 +87,12 @@ class BleAirBeamConnector(
     }
 
     return try {
-      if (target.device.requiresHandshake) {
-        handshake(peripheral)
-        BleConnection(peripheral, target.device)
-      } else {
+      if (target.device is AirBeamDevice.Mini.V2) {
         connectV2(peripheral, target.device)
+      } else {
+        BleConnection(peripheral, target.device)
       }
+
     } catch (_: TimeoutCancellationException) {
       peripheral.disconnectQuietly()
       failedConnection(FailureReason.HandshakeFailed)
@@ -126,10 +108,11 @@ class BleAirBeamConnector(
   private suspend fun connectV2(peripheral: Peripheral, device: AirBeamDevice): AirBeamConnection {
     // Scope outlives connect(): keeps observing Status for later transitions (Idle -> Running, etc.).
     val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
-    listOf(responseCharacteristic, measurementCharacteristic, syncCharacteristic).forEach { ch ->
+    listOf(AirBeamGatt.MiniV2.response, AirBeamGatt.MiniV2.measurement,
+      AirBeamGatt.MiniV2.sync).forEach { ch ->
       peripheral.observe(ch).launchIn(scope)
     }
-    val states = peripheral.observe(statusCharacteristic)
+    val states = peripheral.observe(AirBeamGatt.MiniV2.status,)
       .mapNotNull { DeviceReportedState.from(it) }
     // stateIn (suspend overload) subscribes, then suspends until the first frame — that IS the settle.
     val deviceState = withTimeoutOrNull(STATUS_SETTLE_TIMEOUT) { states.stateIn(scope) }
@@ -142,36 +125,70 @@ class BleAirBeamConnector(
 
     return BleConnection(peripheral, device, deviceState, scope)
   }
-
-  private suspend fun handshake(peripheral: Peripheral) {
-    peripheral.write(
-      configCharacteristic,
-      HandshakeMessages.uuidMessage(credentials.sessionUuid()),
-      WriteType.WithResponse,
-    )
-    delay(HANDSHAKE_SETTLE_DURATION)
-    peripheral.write(
-      configCharacteristic,
-      HandshakeMessages.authTokenMessage(credentials.authToken()),
-      WriteType.WithResponse,
-    )
-  }
 }
 
 
 private class BleConnection(
   private val peripheral: Peripheral,
-  device: AirBeamDevice,
+  val device: AirBeamDevice,
   override val deviceState: StateFlow<DeviceReportedState>? = null,
   private val scope: CoroutineScope? = null,
 ) : AirBeamConnection {
   private val _status = MutableStateFlow<ConnectionStatus>(ConnectionStatus.Ready(device))
   override val status: StateFlow<ConnectionStatus> = _status.asStateFlow()
+  private val log = Logger.withTag("BleConnection")
+
+  override suspend fun configure(config: SessionConfig): ConfigResult {
+    log.i { "Configuring device: $device with config: $config" }
+    return try {
+      when (device) {
+        AirBeamDevice.AirBeam3, AirBeamDevice.Mini.V1 -> {
+          oldSetup(config)
+        }
+        AirBeamDevice.Mini.V2 -> {
+          //TOOD: configure abm2
+          ConfigResult.Success
+        }
+        AirBeamDevice.AirBeam2 -> {
+          log.e { "BLE connection configure method attempted to configure AirBeam2" }
+          ConfigResult.UnknownFailure
+        }
+      }
+    } catch (e: Exception) {
+      log.e(e) { "Configuration failed for $device" }
+      ConfigResult.UnknownFailure
+    }
+  }
 
   override suspend fun disconnect() {
     scope?.cancel()
     peripheral.disconnect()
     _status.value = ConnectionStatus.Disconnected
+  }
+
+  private suspend fun oldSetup(config: SessionConfig): ConfigResult {
+    sendCommand(AirBeamProtocol.Standard.setTimeCommand())
+    sendCommand(AirBeamProtocol.Standard.setUuidCommand(config.uuid))
+    when (config) {
+      is SessionConfig.Mobile -> {
+        sendCommand(AirBeamProtocol.Standard.startMobileCommand())
+      }
+      is SessionConfig.FixedWiFi -> {
+        sendCommand(AirBeamProtocol.Standard.setAuthCommand(config.authToken))
+        sendCommand(AirBeamProtocol.Standard.setLocationCommand(config.latitude, config.longitude))
+        sendCommand(AirBeamProtocol.Standard.startFixedCommand(config.ssid, config.password, config.zoneOffset))
+      }
+      is SessionConfig.FixedCellular -> {
+        sendCommand(AirBeamProtocol.Standard.setAuthCommand(config.authToken))
+        sendCommand(AirBeamProtocol.Standard.setLocationCommand(config.latitude, config.longitude))
+        sendCommand(AirBeamProtocol.Standard.startFixedCellCommand())
+      }
+    }
+    return ConfigResult.Success
+  }
+  private suspend fun sendCommand(command: ByteArray) {
+    peripheral.write(AirBeamGatt.Standard.config, command, WriteType.WithResponse)
+    delay(500.milliseconds) //give time to AirBeam to process the command as in the old app
   }
 }
 
@@ -179,6 +196,7 @@ private fun failedConnection(reason: FailureReason): AirBeamConnection =
   object : AirBeamConnection {
     override val status = MutableStateFlow<ConnectionStatus>(ConnectionStatus.Failed(reason))
     override val deviceState = null
+    override suspend fun configure(config: SessionConfig) = ConfigResult.UnknownFailure
     override suspend fun disconnect() {}
   }
 
@@ -187,4 +205,91 @@ private suspend fun Peripheral.disconnectQuietly() {
     disconnect()
   } catch (_: Exception) {
   }
+}
+
+
+object AirBeamGatt {
+  // AB3 and Mini V1 share the same protocol/characteristics
+  object Standard {
+    private const val BASE = "-0000-1000-8000-00805f9b34fb"
+    val service = Uuid.parse("0000ffdd$BASE")
+    val config = characteristicOf(service, Uuid.parse("0000ffde$BASE"))
+    val sdSync = characteristicOf(service, Uuid.parse("0000ffdf$BASE"))
+    val temperatureC = characteristicOf(service, Uuid.parse("0000ffe0$BASE"))
+    val temperatureF = characteristicOf(service, Uuid.parse("0000ffe1$BASE"))
+    val humidity = characteristicOf(service, Uuid.parse("0000ffe3$BASE"))
+    val PM1 = characteristicOf(service, Uuid.parse("0000ffe4$BASE"))
+    val PM2_5 = characteristicOf(service, Uuid.parse("0000ffe5$BASE"))
+    val PM10 = characteristicOf(service, Uuid.parse("0000ffe6$BASE"))
+  }
+
+  object MiniV2 {
+    private const val BASE = "-4b3c-8e9a-1f2d3c4b5a60"
+    val service = Uuid.parse("a0e1f000-0001$BASE")
+    val status = characteristicOf(service, Uuid.parse("a0e1f000-0002$BASE"))
+    val command = characteristicOf(service, Uuid.parse("a0e1f000-0004$BASE"))
+    val response = characteristicOf(service, Uuid.parse("a0e1f000-0004$BASE"))
+    val measurement = characteristicOf(service, Uuid.parse("a0e1f000-0005$BASE"))
+    val sync = characteristicOf(service, Uuid.parse("a0e1f000-0006$BASE"))
+  }
+}
+
+
+sealed class AirBeamProtocol {
+  object Standard {
+    private const val BEGIN = 0xFE.toByte()
+    private const val END = 0xFF.toByte()
+    private const val START_MOBILE = 0x01.toByte()
+    private const val START_FIXED_WIFI = 0x02.toByte()
+    private const val START_FIXED_CELL = 0x03.toByte()
+    private const val SET_UUID = 0x04.toByte()
+    private const val SET_AUTH = 0x05.toByte()
+    private const val SET_LOCATION = 0x06.toByte()
+    private const val SET_TIME = 0x08.toByte()
+    private const val START_SYNC = 0x09.toByte()
+    private const val DELETE_MEMORY = 0x0A.toByte()
+
+    fun setTimeCommand(): ByteArray {
+      val dateTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+      // Format: dd/MM/yy-HH:mm:ss
+      val year = (dateTime.year % 100).toString().padStart(2, '0')
+      val month = dateTime.month.number.toString().padStart(2, '0')
+      val day = dateTime.day.toString().padStart(2, '0')
+      val hour = dateTime.hour.toString().padStart(2, '0')
+      val minute = dateTime.minute.toString().padStart(2, '0')
+      val second = dateTime.second.toString().padStart(2, '0')
+      val timeString = "$day/$month/$year-$hour:$minute:$second"
+
+      return byteArrayOf(BEGIN, SET_TIME) + timeString.encodeToByteArray() + byteArrayOf(END)
+    }
+
+    fun setUuidCommand(uuid: Uuid) =
+      byteArrayOf(BEGIN, SET_UUID) + uuid.toString().encodeToByteArray() + byteArrayOf(END)
+
+    fun setAuthCommand(token: String) =
+      byteArrayOf(BEGIN, SET_AUTH) + token.encodeToByteArray() + byteArrayOf(END)
+
+    fun setLocationCommand(lat: Double, long: Double) =
+      byteArrayOf(BEGIN, SET_LOCATION) +
+      "${lat.toAirbeamPayload()},${long.toAirbeamPayload()}".encodeToByteArray() +
+      byteArrayOf(END)
+
+    fun startFixedCommand(ssid: String, pass: String, zoneOffset: Int): ByteArray {
+      val payload = "$ssid,$pass,$zoneOffset".encodeToByteArray()
+      return byteArrayOf(BEGIN, SET_UUID) + payload + byteArrayOf(END)
+    }
+    fun startMobileCommand() = byteArrayOf(BEGIN, START_MOBILE, END)
+    fun startFixedCellCommand() = byteArrayOf(BEGIN, START_FIXED_CELL, END)
+    fun startSyncCommand() = byteArrayOf(BEGIN, START_SYNC, END)
+    fun clearMemoryCommand() = byteArrayOf(BEGIN, DELETE_MEMORY, END)
+  }
+}
+private fun Double.toAirbeamPayload(): String {
+  //airbeam expects <1-2digits><dot><6digits>
+  val factor = 10.0.pow(6)
+  val rounded = (abs(this) * factor).roundToLong()
+  val integerPart = rounded / factor.toLong()
+  val fractionPart = (rounded % factor.toLong()).toString().padStart(6, '0')
+  val sign = if (this < 0) "-" else ""
+  return "$sign$integerPart.$fractionPart"
 }

@@ -12,7 +12,6 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.IntentCompat
 import pl.llp.aircasting.bluetooth.AirBeamConnection
 import pl.llp.aircasting.bluetooth.AirBeamConnector
-import pl.llp.aircasting.bluetooth.AirBeamCredentials
 import pl.llp.aircasting.bluetooth.AirBeamDevice
 import pl.llp.aircasting.bluetooth.ConnectionStatus
 import pl.llp.aircasting.bluetooth.DeviceId
@@ -33,6 +32,8 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import kotlinx.io.IOException
+import pl.llp.aircasting.bluetooth.ConfigResult
+import pl.llp.aircasting.bluetooth.SessionConfig
 import java.util.UUID
 import kotlin.let
 import kotlin.run
@@ -45,7 +46,6 @@ private const val HANDSHAKE_SETTLE_MS = 3_000L
 class ClassicAirBeamConnector(
   private val context: Context,
   private val adapter: BluetoothAdapter?,
-  private val credentials: AirBeamCredentials,
 ) : AirBeamConnector {
   override val supportedTransports = setOf(Transport.CLASSIC_SERIAL)
 
@@ -96,7 +96,6 @@ class ClassicAirBeamConnector(
       try {
         withTimeout(CONNECT_TIMEOUT_MS.milliseconds) {
           socket.connect()      // blocking until linked or IOException
-          handshake(socket)     // identity → settle → auth
         }
         ClassicConnection(socket, target.device)
       } catch (e: TimeoutCancellationException) {
@@ -108,22 +107,6 @@ class ClassicAirBeamConnector(
       }
     }
   }
-
-  private suspend fun handshake(socket: BluetoothSocket) {
-    val output = socket.outputStream
-
-    withContext(Dispatchers.IO) {
-      output.write(HandshakeMessages.uuidMessage(credentials.sessionUuid()))
-      output.flush()
-    }
-
-    delay(HANDSHAKE_SETTLE_MS.milliseconds)
-
-    withContext(Dispatchers.IO) {
-      output.write(HandshakeMessages.authTokenMessage(credentials.authToken()))
-      output.flush()
-    }
-  }
 }
 
 private class ClassicConnection(
@@ -133,7 +116,9 @@ private class ClassicConnection(
   private val _status = MutableStateFlow<ConnectionStatus>(ConnectionStatus.Ready(device))
   override val status: StateFlow<ConnectionStatus> = _status.asStateFlow()
   override val deviceState = null // AB2 does not report its own state
-
+  override suspend fun configure(config: SessionConfig): ConfigResult {
+    TODO("Not yet implemented")
+  }
   override suspend fun disconnect() {
     withContext(Dispatchers.IO) { socket.safeClose() }
     _status.value = ConnectionStatus.Disconnected
@@ -143,6 +128,7 @@ private class ClassicConnection(
 private fun failed(reason: FailureReason): AirBeamConnection = object : AirBeamConnection {
   override val status = MutableStateFlow<ConnectionStatus>(ConnectionStatus.Failed(reason))
   override val deviceState = null
+  override suspend fun configure(config: SessionConfig) = ConfigResult.UnknownFailure
   override suspend fun disconnect() {}
 }
 

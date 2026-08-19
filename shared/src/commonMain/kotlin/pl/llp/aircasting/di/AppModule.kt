@@ -8,7 +8,6 @@ import pl.llp.aircasting.auth.AuthRepository
 import pl.llp.aircasting.auth.AuthViewModel
 import pl.llp.aircasting.auth.ForgotPasswordViewModel
 import pl.llp.aircasting.auth.NetworkAuthRepository
-import pl.llp.aircasting.bluetooth.AirBeamCredentials
 import pl.llp.aircasting.bluetooth.transport.ble.BleAirBeamConnector
 import pl.llp.aircasting.data.auth.AuthSession
 import pl.llp.aircasting.data.auth.StoredAuthSession
@@ -45,8 +44,7 @@ val onboardingModule = module {
 }
 
 val bleModule = module {
-  single<AirBeamCredentials> { StubAirBeamCredentials }
-  single { BleAirBeamConnector(get()) }
+  single { BleAirBeamConnector() }
   viewModelOf(::ScanViewModel)
 }
 

@@ -5,7 +5,7 @@ import pl.llp.aircasting.bluetooth.AirBeamDevice
 import pl.llp.aircasting.bluetooth.DeviceId
 import pl.llp.aircasting.bluetooth.DiscoveredAirBeam
 import pl.llp.aircasting.bluetooth.transport.accumulateDistinct
-import pl.llp.aircasting.bluetooth.v2_firmware_specific.MINI_V2_SERVICE
+import pl.llp.aircasting.bluetooth.transport.ble.AirBeamGatt
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -17,7 +17,7 @@ class AirBeamDetectionTest {
   fun v2_uuid_present_wins_over_name() {
     assertEquals(
       AirBeamDevice.Mini.V2,
-      airBeamFrom("airbeammini", listOf(MINI_V2_SERVICE))
+      airBeamFrom("airbeammini", listOf(AirBeamGatt.MiniV2.service))
     )
   }
 
@@ -39,7 +39,7 @@ class AirBeamDetectionTest {
 
   @Test
   fun null_name_is_null() {
-    assertNull(airBeamFrom(null, listOf(MINI_V2_SERVICE)))
+    assertNull(airBeamFrom(null, listOf(AirBeamGatt.MiniV2.service)))
   }
 
   @Test

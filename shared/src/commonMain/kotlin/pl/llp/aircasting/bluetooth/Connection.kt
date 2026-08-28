@@ -46,7 +46,8 @@ sealed interface SessionConfig {
   val uuid: Uuid
 
   data class Mobile(
-    override val uuid: Uuid
+    override val uuid: Uuid,
+    val authToken: String? = null
   ) : SessionConfig
 
   data class FixedWiFi(

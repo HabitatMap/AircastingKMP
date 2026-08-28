@@ -33,11 +33,11 @@ import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
-import kotlinx.datetime.TimeZone
 import kotlinx.datetime.number
 import kotlinx.datetime.toLocalDateTime
 import pl.llp.aircasting.bluetooth.ConfigResult
 import pl.llp.aircasting.bluetooth.SessionConfig
+import pl.llp.aircasting.bluetooth.protocol.AirBeamProtocol
 import kotlin.math.abs
 import kotlin.math.pow
 import kotlin.math.roundToLong
@@ -232,64 +232,4 @@ object AirBeamGatt {
     val measurement = characteristicOf(service, Uuid.parse("a0e1f000-0005$BASE"))
     val sync = characteristicOf(service, Uuid.parse("a0e1f000-0006$BASE"))
   }
-}
-
-
-sealed class AirBeamProtocol {
-  object Standard {
-    private const val BEGIN = 0xFE.toByte()
-    private const val END = 0xFF.toByte()
-    private const val START_MOBILE = 0x01.toByte()
-    private const val START_FIXED_WIFI = 0x02.toByte()
-    private const val START_FIXED_CELL = 0x03.toByte()
-    private const val SET_UUID = 0x04.toByte()
-    private const val SET_AUTH = 0x05.toByte()
-    private const val SET_LOCATION = 0x06.toByte()
-    private const val SET_TIME = 0x08.toByte()
-    private const val START_SYNC = 0x09.toByte()
-    private const val DELETE_MEMORY = 0x0A.toByte()
-
-    fun setTimeCommand(): ByteArray {
-      val dateTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
-      // Format: dd/MM/yy-HH:mm:ss
-      val year = (dateTime.year % 100).toString().padStart(2, '0')
-      val month = dateTime.month.number.toString().padStart(2, '0')
-      val day = dateTime.day.toString().padStart(2, '0')
-      val hour = dateTime.hour.toString().padStart(2, '0')
-      val minute = dateTime.minute.toString().padStart(2, '0')
-      val second = dateTime.second.toString().padStart(2, '0')
-      val timeString = "$day/$month/$year-$hour:$minute:$second"
-
-      return byteArrayOf(BEGIN, SET_TIME) + timeString.encodeToByteArray() + byteArrayOf(END)
-    }
-
-    fun setUuidCommand(uuid: Uuid) =
-      byteArrayOf(BEGIN, SET_UUID) + uuid.toString().encodeToByteArray() + byteArrayOf(END)
-
-    fun setAuthCommand(token: String) =
-      byteArrayOf(BEGIN, SET_AUTH) + token.encodeToByteArray() + byteArrayOf(END)
-
-    fun setLocationCommand(lat: Double, long: Double) =
-      byteArrayOf(BEGIN, SET_LOCATION) +
-      "${lat.toAirbeamPayload()},${long.toAirbeamPayload()}".encodeToByteArray() +
-      byteArrayOf(END)
-
-    fun startFixedCommand(ssid: String, pass: String, zoneOffset: Int): ByteArray {
-      val payload = "$ssid,$pass,$zoneOffset".encodeToByteArray()
-      return byteArrayOf(BEGIN, SET_UUID) + payload + byteArrayOf(END)
-    }
-    fun startMobileCommand() = byteArrayOf(BEGIN, START_MOBILE, END)
-    fun startFixedCellCommand() = byteArrayOf(BEGIN, START_FIXED_CELL, END)
-    fun startSyncCommand() = byteArrayOf(BEGIN, START_SYNC, END)
-    fun clearMemoryCommand() = byteArrayOf(BEGIN, DELETE_MEMORY, END)
-  }
-}
-private fun Double.toAirbeamPayload(): String {
-  //airbeam expects <1-2digits><dot><6digits>
-  val factor = 10.0.pow(6)
-  val rounded = (abs(this) * factor).roundToLong()
-  val integerPart = rounded / factor.toLong()
-  val fractionPart = (rounded % factor.toLong()).toString().padStart(6, '0')
-  val sign = if (this < 0) "-" else ""
-  return "$sign$integerPart.$fractionPart"
 }

@@ -10,6 +10,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 
+import pl.llp.aircasting.bluetooth.ConfigResult
+import pl.llp.aircasting.bluetooth.SessionConfig
+
 class FakeConnector(
   override val supportedTransports: Set<Transport>,
   private val scanFlow: Flow<List<DiscoveredAirBeam>> = flowOf(emptyList()),
@@ -26,6 +29,7 @@ class FakeConnector(
 object FakeConnection : AirBeamConnection {
   override val status = MutableStateFlow<ConnectionStatus>(ConnectionStatus.Disconnected)
   override val deviceState = null
+  override suspend fun configure(config: SessionConfig): ConfigResult = ConfigResult.Success
   override suspend fun disconnect() {}
 }
 
@@ -34,6 +38,11 @@ class ControllableConnection(
   override val deviceState: MutableStateFlow<DeviceReportedState>? = null,
 ) : AirBeamConnection {
   var disconnectCalled = false
+  var configuredConfig: SessionConfig? = null
+  override suspend fun configure(config: SessionConfig): ConfigResult {
+    configuredConfig = config
+    return ConfigResult.Success
+  }
   override suspend fun disconnect() {
     disconnectCalled = true
   }

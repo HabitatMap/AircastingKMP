@@ -10,15 +10,18 @@ import android.content.Intent
 import android.content.IntentFilter
 import androidx.core.content.ContextCompat
 import androidx.core.content.IntentCompat
+import co.touchlab.kermit.Logger
 import pl.llp.aircasting.bluetooth.AirBeamConnection
 import pl.llp.aircasting.bluetooth.AirBeamConnector
 import pl.llp.aircasting.bluetooth.AirBeamDevice
+import pl.llp.aircasting.bluetooth.ConfigResult
 import pl.llp.aircasting.bluetooth.ConnectionStatus
 import pl.llp.aircasting.bluetooth.DeviceId
 import pl.llp.aircasting.bluetooth.DiscoveredAirBeam
 import pl.llp.aircasting.bluetooth.FailureReason
+import pl.llp.aircasting.bluetooth.SessionConfig
 import pl.llp.aircasting.bluetooth.Transport
-import pl.llp.aircasting.bluetooth.handshake.HandshakeMessages
+import pl.llp.aircasting.bluetooth.protocol.AirBeamProtocol
 import pl.llp.aircasting.bluetooth.transport.accumulateDistinct
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.TimeoutCancellationException
@@ -31,9 +34,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
-import kotlinx.io.IOException
-import pl.llp.aircasting.bluetooth.ConfigResult
-import pl.llp.aircasting.bluetooth.SessionConfig
+import java.io.IOException
 import java.util.UUID
 import kotlin.let
 import kotlin.run
@@ -41,6 +42,7 @@ import kotlin.time.Duration.Companion.milliseconds
 
 private val SPP_UUID: UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
 private const val CONNECT_TIMEOUT_MS = 30_000L
+private const val ESTIMATED_CONNECTING_TIME_MS = 5_000L
 private const val HANDSHAKE_SETTLE_MS = 3_000L
 
 class ClassicAirBeamConnector(
@@ -97,6 +99,7 @@ class ClassicAirBeamConnector(
         withTimeout(CONNECT_TIMEOUT_MS.milliseconds) {
           socket.connect()      // blocking until linked or IOException
         }
+        delay(ESTIMATED_CONNECTING_TIME_MS.milliseconds)
         ClassicConnection(socket, target.device)
       } catch (e: TimeoutCancellationException) {
         socket.safeClose()
@@ -111,14 +114,76 @@ class ClassicAirBeamConnector(
 
 private class ClassicConnection(
   private val socket: BluetoothSocket,
-  device: AirBeamDevice,
+  val device: AirBeamDevice,
 ) : AirBeamConnection {
   private val _status = MutableStateFlow<ConnectionStatus>(ConnectionStatus.Ready(device))
   override val status: StateFlow<ConnectionStatus> = _status.asStateFlow()
   override val deviceState = null // AB2 does not report its own state
+  private val log = Logger.withTag("ClassicConnection")
+
   override suspend fun configure(config: SessionConfig): ConfigResult {
-    TODO("Not yet implemented")
+    log.i { "Configuring AirBeam2 ($device) with config: $config" }
+    return try {
+      when (config) {
+        is SessionConfig.Mobile -> configureMobile()
+        is SessionConfig.FixedWiFi -> configureFixedWiFi(config)
+        is SessionConfig.FixedCellular -> configureFixedCellular(config)
+      }
+    } catch (e: Exception) {
+      log.e(e) { "Configuration failed for AirBeam2" }
+      ConfigResult.UnknownFailure
+    }
   }
+
+  private suspend fun configureMobile(): ConfigResult {
+    // Mobile Session (Bluetooth): Send [0x01, 0xFF]
+    sendCommand(AirBeamProtocol.AirBeam2.startMobileCommand())
+    return ConfigResult.Success
+  }
+
+  private suspend fun configureFixedWiFi(config: SessionConfig.FixedWiFi): ConfigResult {
+    // 1. Send [0x04] + "<UUID>" + [0xFF]
+    sendCommand(AirBeamProtocol.AirBeam2.setUuidCommand(config.uuid))
+    delay(HANDSHAKE_SETTLE_MS.milliseconds)
+
+    // 2. Send [0x05] + "<UUID_AUTH>" + [0xFF]
+    sendCommand(AirBeamProtocol.AirBeam2.setAuthCommand(config.authToken))
+    delay(HANDSHAKE_SETTLE_MS.milliseconds)
+
+    // 3. Send [0x06] + "<LONGITUDE>,<LATITUDE>" + [0xFF]
+    sendCommand(AirBeamProtocol.AirBeam2.setLocationCommand(config.latitude, config.longitude))
+    delay(HANDSHAKE_SETTLE_MS.milliseconds)
+
+    // 4. Send [0x02] + "<SSID>,<PASSWORD>,<ZONE_OFFSET>" + [0xFF]
+    sendCommand(AirBeamProtocol.AirBeam2.startFixedWifiCommand(config.ssid, config.password, config.zoneOffset))
+    return ConfigResult.Success
+  }
+
+  private suspend fun configureFixedCellular(config: SessionConfig.FixedCellular): ConfigResult {
+    // 1. Send [0x04] + "<UUID>" + [0xFF]
+    sendCommand(AirBeamProtocol.AirBeam2.setUuidCommand(config.uuid))
+    delay(HANDSHAKE_SETTLE_MS.milliseconds)
+
+    // 2. Send [0x05] + "<UUID_AUTH>" + [0xFF]
+    sendCommand(AirBeamProtocol.AirBeam2.setAuthCommand(config.authToken))
+    delay(HANDSHAKE_SETTLE_MS.milliseconds)
+
+    // 3. Send [0x06] + "<LONGITUDE>,<LATITUDE>" + [0xFF]
+    sendCommand(AirBeamProtocol.AirBeam2.setLocationCommand(config.latitude, config.longitude))
+    delay(HANDSHAKE_SETTLE_MS.milliseconds)
+
+    // 4. Send [0x03, 0xFF]
+    sendCommand(AirBeamProtocol.AirBeam2.startFixedCellCommand())
+    return ConfigResult.Success
+  }
+
+  private suspend fun sendCommand(command: ByteArray) {
+    withContext(Dispatchers.IO) {
+      socket.outputStream.write(command)
+      socket.outputStream.flush()
+    }
+  }
+
   override suspend fun disconnect() {
     withContext(Dispatchers.IO) { socket.safeClose() }
     _status.value = ConnectionStatus.Disconnected

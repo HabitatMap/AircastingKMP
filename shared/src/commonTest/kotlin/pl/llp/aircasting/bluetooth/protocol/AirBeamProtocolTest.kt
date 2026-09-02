@@ -1,6 +1,7 @@
 package pl.llp.aircasting.bluetooth.protocol
 
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertContentEquals
 import kotlin.uuid.Uuid
 
@@ -54,6 +55,99 @@ class AirBeamProtocolTest {
       expectedPayload.encodeToByteArray() +
       byteArrayOf(0xFF.toByte())
     assertContentEquals(expected, AirBeamProtocol.Standard.setLocationCommand(52.2297, 21.0122))
+  }
+
+  // --- AirBeam Mini V2 Protocol Tests ---
+
+  @Test
+  fun miniV2_time_sync_command_returns_0x15_and_8byte_LE_timestamp() {
+    val timestamp = 1700000000L
+    val command = AirBeamProtocol.MiniV2.timeSyncCommand(timestamp)
+    assertEquals(9, command.size)
+    assertEquals(0x15.toByte(), command[0])
+    // Verify LE encoding of timestamp
+    val expectedTimestampBytes = byteArrayOf(
+      (timestamp and 0xFF).toByte(),
+      ((timestamp shr 8) and 0xFF).toByte(),
+      ((timestamp shr 16) and 0xFF).toByte(),
+      ((timestamp shr 24) and 0xFF).toByte(),
+      ((timestamp shr 32) and 0xFF).toByte(),
+      ((timestamp shr 40) and 0xFF).toByte(),
+      ((timestamp shr 48) and 0xFF).toByte(),
+      ((timestamp shr 56) and 0xFF).toByte()
+    )
+    assertContentEquals(expectedTimestampBytes, command.copyOfRange(1, 9))
+  }
+
+  @Test
+  fun miniV2_mobile_session_config_returns_20_bytes() {
+    val uuid = Uuid.parse("12345678-1234-1234-1234-123456789abc")
+    val command = AirBeamProtocol.MiniV2.mobileSessionConfigCommand(uuid, intervalSeconds = 1)
+    assertEquals(20, command.size)
+    assertEquals(0x13.toByte(), command[0])
+    assertEquals(0x01.toByte(), command[19]) // SessionType::MOBILE
+    // Interval 1 -> u16 LE -> [0x01, 0x00] at indices 17, 18
+    assertEquals(0x01.toByte(), command[17])
+    assertEquals(0x00.toByte(), command[18])
+  }
+
+  @Test
+  fun miniV2_fixed_wifi_session_config_returns_134_bytes() {
+    val uuid = Uuid.parse("12345678-1234-1234-1234-123456789abc")
+    val command = AirBeamProtocol.MiniV2.fixedWifiSessionConfigCommand(
+      uuid = uuid,
+      intervalSeconds = 60,
+      pm1Index = 0,
+      pm25Index = 1,
+      authToken = "my_token",
+      ssid = "MySSID",
+      password = "MyPassword"
+    )
+    assertEquals(134, command.size)
+    assertEquals(0x13.toByte(), command[0])
+    assertEquals(0x00.toByte(), command[19]) // SessionType::FIXED
+    assertEquals(0.toByte(), command[20])   // pm1Index
+    assertEquals(1.toByte(), command[21])   // pm25Index
+    // Interval 60 -> u16 LE -> [0x3C, 0x00]
+    assertEquals(0x3C.toByte(), command[17])
+    assertEquals(0x00.toByte(), command[18])
+  }
+
+  @Test
+  fun miniV2_control_commands_return_expected_single_byte() {
+    assertContentEquals(byteArrayOf(0x10.toByte()), AirBeamProtocol.MiniV2.continueSessionCommand())
+    assertContentEquals(byteArrayOf(0x11.toByte()), AirBeamProtocol.MiniV2.discardSessionCommand())
+    assertContentEquals(byteArrayOf(0x12.toByte()), AirBeamProtocol.MiniV2.startWifiSyncCommand())
+    assertContentEquals(byteArrayOf(0x14.toByte()), AirBeamProtocol.MiniV2.getSensorsCommand())
+    assertContentEquals(byteArrayOf(0x16.toByte()), AirBeamProtocol.MiniV2.startBleSyncCommand())
+  }
+
+  @Test
+  fun miniV2_parses_command_responses() {
+    assertEquals(
+      AirBeamProtocol.MiniV2.CommandResponse.Ack,
+      AirBeamProtocol.MiniV2.CommandResponse.parse(byteArrayOf(0x20.toByte()))
+    )
+    assertEquals(
+      AirBeamProtocol.MiniV2.CommandResponse.Ready,
+      AirBeamProtocol.MiniV2.CommandResponse.parse(byteArrayOf(0x22.toByte()))
+    )
+    assertEquals(
+      AirBeamProtocol.MiniV2.CommandResponse.SensorInfo("PM1,μg/m3;PM2.5,μg/m3"),
+      AirBeamProtocol.MiniV2.CommandResponse.parse(byteArrayOf(0x23.toByte()) + "PM1,μg/m3;PM2.5,μg/m3".encodeToByteArray())
+    )
+    assertEquals(
+      AirBeamProtocol.MiniV2.CommandResponse.Nack(AirBeamProtocol.MiniV2.NackErrorCode.InvalidWifiCredentials),
+      AirBeamProtocol.MiniV2.CommandResponse.parse(byteArrayOf(0x21.toByte(), 0x05.toByte()))
+    )
+  }
+
+  @Test
+  fun miniV2_parses_status_notifications() {
+    assertEquals(
+      AirBeamProtocol.MiniV2.StatusNotification.Idle(batteryLevel = 85.toByte()),
+      AirBeamProtocol.MiniV2.StatusNotification.parse(byteArrayOf(0x00.toByte(), 85.toByte()))
+    )
   }
 
   // --- AirBeam 2 Protocol Tests ---

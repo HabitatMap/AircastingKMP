@@ -33,7 +33,6 @@ import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
-import kotlinx.datetime.number
 import kotlinx.datetime.toLocalDateTime
 import pl.llp.aircasting.bluetooth.ConfigResult
 import pl.llp.aircasting.bluetooth.SessionConfig
@@ -146,8 +145,7 @@ private class BleConnection(
           oldSetup(config)
         }
         AirBeamDevice.Mini.V2 -> {
-          //TOOD: configure abm2
-          ConfigResult.Success
+          miniV2Setup(config)
         }
         AirBeamDevice.AirBeam2 -> {
           log.e { "BLE connection configure method attempted to configure AirBeam2" }
@@ -186,6 +184,88 @@ private class BleConnection(
     }
     return ConfigResult.Success
   }
+
+  private suspend fun miniV2Setup(config: SessionConfig): ConfigResult {
+    // 1. Time Sync (Prerequisite - 0x15 + 8-byte LE timestamp)
+    sendV2Command(AirBeamProtocol.MiniV2.timeSyncCommand())
+
+    // 2. Configure Session
+    when (config) {
+      is SessionConfig.Mobile -> {
+        sendV2Command(AirBeamProtocol.MiniV2.mobileSessionConfigCommand(config.uuid))
+
+        val response = withTimeoutOrNull(10.seconds) {
+          peripheral.observe(AirBeamGatt.MiniV2.response)
+            .mapNotNull { AirBeamProtocol.MiniV2.CommandResponse.parse(it) }
+            .first { it !is AirBeamProtocol.MiniV2.CommandResponse.Ack }
+        }
+
+        return when (response) {
+          is AirBeamProtocol.MiniV2.CommandResponse.Ready -> ConfigResult.Success
+          is AirBeamProtocol.MiniV2.CommandResponse.Nack -> {
+            log.e { "Mini V2 mobile setup failed with Nack: ${response.errorCode}" }
+            mapNackToConfigResult(response.errorCode)
+          }
+          else -> {
+            log.i { "Mini V2 mobile setup completed (no Nack received)" }
+            ConfigResult.Success
+          }
+        }
+      }
+
+      is SessionConfig.FixedWiFi -> {
+        sendV2Command(
+          AirBeamProtocol.MiniV2.fixedWifiSessionConfigCommand(
+            uuid = config.uuid,
+            authToken = config.authToken,
+            ssid = config.ssid,
+            password = config.password,
+            pm1Index = config.pm1Index,
+            pm25Index = config.pm25Index,
+          )
+        )
+
+        // Device attempts to connect to WiFi: WiFi OK -> session starts; WiFi Failed -> Nack(0x05 InvalidWifiCredentials)
+        val response = withTimeoutOrNull(15.seconds) {
+          peripheral.observe(AirBeamGatt.MiniV2.response)
+            .mapNotNull { AirBeamProtocol.MiniV2.CommandResponse.parse(it) }
+            .first { it !is AirBeamProtocol.MiniV2.CommandResponse.Ack }
+        }
+
+        return when (response) {
+          is AirBeamProtocol.MiniV2.CommandResponse.Ready -> ConfigResult.Success
+          is AirBeamProtocol.MiniV2.CommandResponse.Nack -> {
+            log.e { "Mini V2 fixed WiFi setup failed with Nack: ${response.errorCode}" }
+            mapNackToConfigResult(response.errorCode)
+          }
+          else -> {
+            log.i { "Mini V2 fixed WiFi setup completed (no Nack received)" }
+            ConfigResult.Success
+          }
+        }
+      }
+
+      is SessionConfig.FixedCellular -> {
+        log.e { "Mini V2 does not support FixedCellular configuration" }
+        return ConfigResult.BadConfigFailure
+      }
+    }
+  }
+
+  private fun mapNackToConfigResult(errorCode: AirBeamProtocol.MiniV2.NackErrorCode): ConfigResult {
+    return when (errorCode) {
+      AirBeamProtocol.MiniV2.NackErrorCode.InvalidConfig -> ConfigResult.BadConfigFailure
+      AirBeamProtocol.MiniV2.NackErrorCode.InvalidWifiCredentials -> ConfigResult.WifiPassFailure
+      AirBeamProtocol.MiniV2.NackErrorCode.StorageHasMeasurements -> ConfigResult.NotSyncedFailure
+      else -> ConfigResult.UnknownFailure
+    }
+  }
+
+  private suspend fun sendV2Command(command: ByteArray) {
+    peripheral.write(AirBeamGatt.MiniV2.command, command, WriteType.WithResponse)
+    delay(100.milliseconds)
+  }
+
   private suspend fun sendCommand(command: ByteArray) {
     peripheral.write(AirBeamGatt.Standard.config, command, WriteType.WithResponse)
     delay(500.milliseconds) //give time to AirBeam to process the command as in the old app
@@ -227,7 +307,7 @@ object AirBeamGatt {
     private const val BASE = "-4b3c-8e9a-1f2d3c4b5a60"
     val service = Uuid.parse("a0e1f000-0001$BASE")
     val status = characteristicOf(service, Uuid.parse("a0e1f000-0002$BASE"))
-    val command = characteristicOf(service, Uuid.parse("a0e1f000-0004$BASE"))
+    val command = characteristicOf(service, Uuid.parse("a0e1f000-0003$BASE"))
     val response = characteristicOf(service, Uuid.parse("a0e1f000-0004$BASE"))
     val measurement = characteristicOf(service, Uuid.parse("a0e1f000-0005$BASE"))
     val sync = characteristicOf(service, Uuid.parse("a0e1f000-0006$BASE"))

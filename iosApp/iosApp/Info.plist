@@ -8,6 +8,10 @@
 	<true/>
     <key>NSBluetoothAlwaysUsageDescription</key>
     <string>AirCasting connects to your AirBeam sensor over Bluetooth to record air quality measurements.</string>
+    <key>UIBackgroundModes</key>
+    <array>
+        <string>bluetooth-central</string>
+    </array>
     <key>NSLocationWhenInUseUsageDescription</key>
     <string>Aircasting uses your location to show nearby air-quality stations.</string>
     <key>UILaunchScreen</key>

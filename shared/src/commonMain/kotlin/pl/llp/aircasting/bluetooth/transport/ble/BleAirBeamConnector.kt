@@ -131,11 +131,25 @@ private class BleConnection(
   private val peripheral: Peripheral,
   val device: AirBeamDevice,
   override val deviceState: StateFlow<DeviceReportedState>? = null,
-  private val scope: CoroutineScope? = null,
+  passedScope: CoroutineScope? = null,
 ) : AirBeamConnection {
+  private val scope: CoroutineScope = passedScope ?: CoroutineScope(Dispatchers.Default + SupervisorJob())
   private val _status = MutableStateFlow<ConnectionStatus>(ConnectionStatus.Ready(device))
   override val status: StateFlow<ConnectionStatus> = _status.asStateFlow()
   private val log = Logger.withTag("BleConnection")
+  private var isDisconnectingExplicitly = false
+
+  init {
+    peripheral.state
+      .onEach { state ->
+        log.d { "Peripheral state changed: $state" }
+        if (state is State.Disconnected && !isDisconnectingExplicitly && _status.value !is ConnectionStatus.Disconnected) {
+          log.w { "Peripheral disconnected unexpectedly" }
+          _status.value = ConnectionStatus.DisconnectedUnexpectedly
+        }
+      }
+      .launchIn(scope)
+  }
 
   override suspend fun configure(config: SessionConfig): ConfigResult {
     log.i { "Configuring device: $device with config: $config" }
@@ -159,7 +173,8 @@ private class BleConnection(
   }
 
   override suspend fun disconnect() {
-    scope?.cancel()
+    isDisconnectingExplicitly = true
+    scope.cancel()
     peripheral.disconnect()
     _status.value = ConnectionStatus.Disconnected
   }

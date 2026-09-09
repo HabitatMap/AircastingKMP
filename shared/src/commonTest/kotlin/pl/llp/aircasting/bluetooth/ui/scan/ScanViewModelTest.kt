@@ -3,6 +3,7 @@ package pl.llp.aircasting.bluetooth.ui.scan
 import app.cash.turbine.test
 import pl.llp.aircasting.bluetooth.AirBeamDevice
 import pl.llp.aircasting.bluetooth.ConnectionStatus
+import pl.llp.aircasting.bluetooth.DefaultAirBeamSessionController
 import pl.llp.aircasting.bluetooth.DeviceId
 import pl.llp.aircasting.bluetooth.DiscoveredAirBeam
 import pl.llp.aircasting.bluetooth.FailureReason
@@ -35,14 +36,17 @@ class ScanViewModelTest {
 
   @Test
   fun connection_state_starts_as_None() = runTest {
-    val vm = ScanViewModel(FakeConnector(setOf(Transport.BLE)))
+    val connector = FakeConnector(setOf(Transport.BLE))
+    val controller = DefaultAirBeamSessionController(connector)
+    val vm = ScanViewModel(connector, controller)
     assertEquals(ConnectionUiState.None, vm.connection.value)
   }
 
   @Test
   fun onConnectClicked_routes_the_target_to_the_connector() = runTest {
     val connector = FakeConnector(setOf(Transport.BLE))
-    val vm = ScanViewModel(connector)
+    val controller = DefaultAirBeamSessionController(connector)
+    val vm = ScanViewModel(connector, controller)
 
     vm.onConnectClicked(ab3)
     testScheduler.advanceUntilIdle()
@@ -52,15 +56,18 @@ class ScanViewModelTest {
 
   @Test
   fun onConnectClicked_emits_Connecting_then_Connected_on_Ready() = runTest {
-    val conn = ControllableConnection(
-      status = MutableStateFlow(ConnectionStatus.Ready(AirBeamDevice.AirBeam3)),
-    )
-    val vm = ScanViewModel(FakeConnector(setOf(Transport.BLE), connection = conn))
+    val connStatus = MutableStateFlow<ConnectionStatus>(ConnectionStatus.Connecting)
+    val conn = ControllableConnection(status = connStatus)
+    val connector = FakeConnector(setOf(Transport.BLE), connection = conn)
+    val controller = DefaultAirBeamSessionController(connector)
+    val vm = ScanViewModel(connector, controller)
 
     vm.connection.test {
       assertEquals(ConnectionUiState.None, awaitItem())
       vm.onConnectClicked(ab3)
       assertEquals(ConnectionUiState.Connecting, awaitItem())
+
+      connStatus.value = ConnectionStatus.Ready(AirBeamDevice.AirBeam3)
       assertEquals(
         ConnectionUiState.Connected(AirBeamDevice.AirBeam3),
         awaitItem(),
@@ -71,15 +78,18 @@ class ScanViewModelTest {
 
   @Test
   fun onConnectClicked_emits_Failed_when_connection_reports_Failure() = runTest {
-    val conn = ControllableConnection(
-      status = MutableStateFlow(ConnectionStatus.Failed(FailureReason.HandshakeFailed)),
-    )
-    val vm = ScanViewModel(FakeConnector(setOf(Transport.BLE), connection = conn))
+    val connStatus = MutableStateFlow<ConnectionStatus>(ConnectionStatus.Connecting)
+    val conn = ControllableConnection(status = connStatus)
+    val connector = FakeConnector(setOf(Transport.BLE), connection = conn)
+    val controller = DefaultAirBeamSessionController(connector)
+    val vm = ScanViewModel(connector, controller)
 
     vm.connection.test {
       assertEquals(ConnectionUiState.None, awaitItem())
       vm.onConnectClicked(ab3)
       assertEquals(ConnectionUiState.Connecting, awaitItem())
+
+      connStatus.value = ConnectionStatus.Failed(FailureReason.HandshakeFailed)
       assertEquals(ConnectionUiState.Failed(FailureReason.HandshakeFailed), awaitItem())
       cancelAndIgnoreRemainingEvents()
     }

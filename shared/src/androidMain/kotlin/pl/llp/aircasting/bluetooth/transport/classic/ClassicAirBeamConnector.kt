@@ -23,8 +23,11 @@ import pl.llp.aircasting.bluetooth.SessionConfig
 import pl.llp.aircasting.bluetooth.Transport
 import pl.llp.aircasting.bluetooth.protocol.AirBeamProtocol
 import pl.llp.aircasting.bluetooth.transport.accumulateDistinct
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -32,6 +35,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import java.io.IOException
@@ -116,10 +120,31 @@ private class ClassicConnection(
   private val socket: BluetoothSocket,
   val device: AirBeamDevice,
 ) : AirBeamConnection {
+  private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
   private val _status = MutableStateFlow<ConnectionStatus>(ConnectionStatus.Ready(device))
   override val status: StateFlow<ConnectionStatus> = _status.asStateFlow()
   override val deviceState = null // AB2 does not report its own state
   private val log = Logger.withTag("ClassicConnection")
+  private var isDisconnectingExplicitly = false
+
+  init {
+    scope.launch {
+      val buffer = ByteArray(1024)
+      try {
+        while (!isDisconnectingExplicitly && socket.isConnected) {
+          val bytesRead = socket.inputStream.read(buffer)
+          if (bytesRead == -1) break
+        }
+      } catch (e: IOException) {
+        log.d { "Classic socket read loop ended: ${e.message}" }
+      } finally {
+        if (!isDisconnectingExplicitly && _status.value !is ConnectionStatus.Disconnected) {
+          log.w { "Classic connection dropped unexpectedly" }
+          _status.value = ConnectionStatus.DisconnectedUnexpectedly
+        }
+      }
+    }
+  }
 
   override suspend fun configure(config: SessionConfig): ConfigResult {
     log.i { "Configuring AirBeam2 ($device) with config: $config" }
@@ -185,6 +210,8 @@ private class ClassicConnection(
   }
 
   override suspend fun disconnect() {
+    isDisconnectingExplicitly = true
+    scope.cancel()
     withContext(Dispatchers.IO) { socket.safeClose() }
     _status.value = ConnectionStatus.Disconnected
   }

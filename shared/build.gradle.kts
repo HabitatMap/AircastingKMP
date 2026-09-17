@@ -1,3 +1,4 @@
+import org.gradle.declarative.dsl.schema.FqName.Empty.packageName
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -6,6 +7,7 @@ plugins {
   alias(libs.plugins.composeMultiplatform)
   alias(libs.plugins.composeCompiler)
   alias(libs.plugins.kotlinSerialization)
+  alias(libs.plugins.sqldelight)
 }
 
 kotlin {
@@ -19,7 +21,7 @@ kotlin {
     }
   }
 
-  androidLibrary {
+  android {
     namespace = "pl.llp.aircasting.shared"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
     minSdk = libs.versions.android.minSdk.get().toInt()
@@ -38,6 +40,7 @@ kotlin {
   sourceSets {
     iosMain.dependencies {
       implementation(libs.ktor.client.darwin)
+      implementation(libs.sqldelight.native.driver)
     }
     androidMain.dependencies {
       implementation(libs.compose.uiToolingPreview)
@@ -45,6 +48,7 @@ kotlin {
       implementation(libs.androidx.activity.compose)
       implementation(libs.ktor.client.okhttp)
       implementation(libs.play.services.location)
+      implementation(libs.sqldelight.android.driver)
     }
     commonMain.dependencies {
       implementation(libs.ktor.client.core)
@@ -72,6 +76,8 @@ kotlin {
       implementation(libs.kermit)
       implementation(libs.lyricist)
       implementation(libs.multiplatform.settings)
+      implementation(libs.sqldelight.coroutines.extensions)
+      implementation(libs.sqldelight.primitive.adapters)
     }
     commonTest.dependencies {
       implementation(libs.ktor.client.mock)
@@ -85,4 +91,12 @@ kotlin {
 
 dependencies {
   androidRuntimeClasspath(libs.compose.uiTooling)
+}
+
+sqldelight {
+  databases {
+    create("AircastingDatabase") {
+      packageName.set("pl.llp.aircasting.data.local.db")
+    }
+  }
 }

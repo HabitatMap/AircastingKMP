@@ -1,0 +1,29 @@
+CREATE TABLE sensor_thresholds (
+    sensor_name TEXT NOT NULL PRIMARY KEY,
+    very_low INTEGER NOT NULL,
+    low INTEGER NOT NULL,
+    medium INTEGER NOT NULL,
+    high INTEGER NOT NULL,
+    very_high INTEGER NOT NULL
+);
+selectAllThresholds:
+SELECT *
+FROM sensor_thresholds;
+selectThresholdBySensorName:
+SELECT *
+FROM sensor_thresholds
+WHERE sensor_name = :sensorName;
+insertOrReplaceThreshold:
+INSERT OR REPLACE INTO sensor_thresholds (
+    sensor_name,
+    very_low,
+    low,
+    medium,
+    high,
+    very_high
+) VALUES (?, ?, ?, ?, ?, ?);
+deleteThresholdBySensorName:
+DELETE FROM sensor_thresholds
+WHERE sensor_name = :sensorName;
+deleteAllThresholds:
+DELETE FROM sensor_thresholds;

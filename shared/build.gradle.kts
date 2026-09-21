@@ -1,4 +1,3 @@
-import org.gradle.declarative.dsl.schema.FqName.Empty.packageName
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -95,7 +94,7 @@ dependencies {
 
 sqldelight {
   databases {
-    create("AircastingDatabase") {
+    create("AppDatabase") {
       packageName.set("pl.llp.aircasting.data.local.db")
     }
   }

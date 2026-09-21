@@ -14,6 +14,8 @@ import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.okhttp.OkHttp
 import org.koin.dsl.module
 import pl.llp.aircasting.AppVersion
+import pl.llp.aircasting.data.local.AndroidDatabaseDriverFactory
+import pl.llp.aircasting.data.local.DatabaseDriverFactory
 import pl.llp.aircasting.settings.mic.AndroidMicrophoneLevelSource
 import pl.llp.aircasting.settings.mic.MicrophoneLevelSource
 
@@ -30,6 +32,7 @@ actual fun platformModule() = module {
   single { ClassicAirBeamConnector(get(), get<BluetoothManager>().adapter) }
   single { get<Context>().getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager }
   single<LocationProvider> { AndroidLocationProvider(get()) }
+  single<DatabaseDriverFactory> { AndroidDatabaseDriverFactory(get()) }
   single {
     val ctx = get<Context>()
     @Suppress("DEPRECATION") // PackageInfoFlags overload needs API 33; minSdk here is 28

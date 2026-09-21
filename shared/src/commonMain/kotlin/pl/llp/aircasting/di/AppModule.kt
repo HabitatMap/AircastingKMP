@@ -90,6 +90,7 @@ fun initKoin(extra: KoinAppDeclaration = {}) = startKoin {
   extra()
   modules(
     platformModule(),
+    databaseModule,
     bleModule,
     networkModule,
     accountModule,

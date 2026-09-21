@@ -11,6 +11,8 @@ import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.darwin.Darwin
 import org.koin.dsl.module
 import pl.llp.aircasting.AppVersion
+import pl.llp.aircasting.data.local.DatabaseDriverFactory
+import pl.llp.aircasting.data.local.IosDatabaseDriverFactory
 import pl.llp.aircasting.settings.mic.IosMicrophoneLevelSource
 import pl.llp.aircasting.settings.mic.MicrophoneLevelSource
 import platform.Foundation.NSBundle
@@ -21,6 +23,7 @@ actual fun platformModule() = module {
   single<MicrophoneLevelSource> { IosMicrophoneLevelSource() }
   single<AirBeamConnector> { CompositeAirBeamConnector(listOf(get<BleAirBeamConnector>())) }
   single<LocationProvider> { IosLocationProvider() }
+  single<DatabaseDriverFactory> { IosDatabaseDriverFactory() }
   single {
     AppVersion(
       NSBundle.mainBundle.objectForInfoDictionaryKey("CFBundleShortVersionString") as? String ?: "",

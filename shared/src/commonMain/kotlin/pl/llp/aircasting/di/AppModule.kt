@@ -58,6 +58,7 @@ val appSettingsModule = module {
   viewModelOf(::CustomDataServerViewModel)
 }
 
+
 val networkModule = module {
   single {
     val settings = get<AppSettingsRepository>()
@@ -65,12 +66,19 @@ val networkModule = module {
       settings.preferences.value.dataServerUrl ?: DefaultBackendUrl
     }
   }
-  single { HttpServerProbe(platformHttpEngine()) as ServerProbe }
-  single { createAircastingHttpClient(platformHttpEngine()) }
+  single<ServerProbe> { HttpServerProbe(platformHttpEngine()) }
+  // Modern v3 APIs
+  single { MobileSessionsApi(get()) }
+  single { FixedSessionsApi(get()) }
+  // Search & Regional Exploration (Home screen)
   single { FixedStationsApi(get()) }
-  single<Clock> { Clock.System }
   single { FixedStationsRepository(get(), get()) }
-//  single<HomeRepository> { NetworkHomeRepository(get()) } TODO: restore
+  // Alerts & Export
+  single { ThresholdAlertsApi(get()) }
+  single { ExportApi(get()) }
+  // Deprecated Sync Fallback
+  single { LegacySessionsApi(get()) }
+  single<Clock> { Clock.System }
   single<HomeRepository> { FakeHomeRepository() }
   viewModelOf(::HomeViewModel)
 }

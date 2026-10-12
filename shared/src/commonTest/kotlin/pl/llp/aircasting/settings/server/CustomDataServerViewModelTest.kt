@@ -66,7 +66,7 @@ class CustomDataServerViewModelTest {
   }
 
   @Test
-  fun `an unreachable server ends on Failed, and nothing is saved`() = runTest {
+  fun `an unreachable server ends on Failed and nothing is saved`() = runTest {
     // "We'll test the connection before saving anything" — the design says it out loud.
     val repo = FakeAppSettingsRepository()
     val vm = viewModel(repo, probe = { false })

@@ -58,7 +58,7 @@ class NewSessionViewModelTest {
   }
 
   @Test
-  fun `tags are parsed from the comma-separated text, trimmed and de-duplicated`() {
+  fun `tags are parsed from the comma-separated text trimmed and de-duplicated`() {
     val vm = NewSessionViewModel()
 
     vm.editTags(" school , traffic,, school ,  ")
@@ -67,7 +67,7 @@ class NewSessionViewModelTest {
   }
 
   @Test
-  fun `a half-typed tag still counts, so Next never silently drops it`() {
+  fun `a half-typed tag still counts so Next never silently drops it`() {
     val vm = NewSessionViewModel()
 
     vm.editTags("school, traffic")

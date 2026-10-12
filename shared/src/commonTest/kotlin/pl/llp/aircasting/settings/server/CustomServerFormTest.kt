@@ -9,7 +9,7 @@ import kotlin.test.assertTrue
 class CustomServerFormTest {
 
   @Test
-  fun `an empty form is not an error, it is just not submittable`() {
+  fun `an empty form is not an error it is just not submittable`() {
     // The supporting text under each field is a *hint* until the user types something wrong.
     // Showing "Enter a valid URL" on a pristine field would be shouting at someone who has
     // not done anything yet.

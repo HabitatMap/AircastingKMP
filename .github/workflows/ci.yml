@@ -68,7 +68,8 @@ jobs:
           restore-keys: ${{ runner.os }}-konan-
 
       - run: ./gradlew :shared:iosSimulatorArm64Test
-
+        env:
+          GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx4g
       - name: Upload test reports
         if: failure()
         uses: actions/upload-artifact@v4

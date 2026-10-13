@@ -41,6 +41,12 @@ jobs:
           name: android-test-reports
           path: shared/build/reports/tests/
 
+      - uses: actions/upload-artifact@v4
+        if: github.event_name == 'push'
+        with:
+          name: debug-apk
+          path: androidApp/build/outputs/apk/debug/*.apk
+
   ios:
     name: iOS — simulator unit tests
     runs-on: macos-15

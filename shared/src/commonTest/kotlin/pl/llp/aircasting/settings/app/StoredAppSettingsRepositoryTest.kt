@@ -7,7 +7,7 @@ import kotlin.test.assertNull
 
 class StoredAppSettingsRepositoryTest {
   @Test
-  fun `the custom data server survives a restart, and clearing it returns to the official one`() {
+  fun `the custom data server survives a restart and clearing it returns to the official one`() {
     // null is not "" — absent means "use the official server", and the two must not collapse,
     // because the row's value line and the Ktor base URL both branch on it.
     val storage = MapSettings()

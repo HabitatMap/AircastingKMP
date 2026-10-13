@@ -29,7 +29,7 @@ class ServerProbeTest {
   }
 
   @Test
-  fun `a transport failure is a failed probe, not a crash`() = runTest {
+  fun `a transport failure is a failed probe not a crash`() = runTest {
     // Wrong host, no DNS, no route: the wizard must land on "Connection failed", and an
     // exception escaping here would take the whole ViewModel scope down with it.
     val engine = MockEngine { throw kotlinx.io.IOException("unreachable") }
@@ -38,7 +38,7 @@ class ServerProbeTest {
   }
 
   @Test
-  fun `the probe targets the candidate server, not the one in use`() = runTest {
+  fun `the probe targets the candidate server not the one in use`() = runTest {
     // The whole point: this request must NOT go through the app's configured base URL.
     val engine = MockEngine { respond("{}", HttpStatusCode.OK) }
 

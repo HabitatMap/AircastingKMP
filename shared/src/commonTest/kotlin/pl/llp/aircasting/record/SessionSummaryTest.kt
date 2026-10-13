@@ -9,7 +9,7 @@ import kotlin.test.assertTrue
 class SessionSummaryTest {
 
   @Test
-  fun `the summary is the form, phrased for the confirmation card`() {
+  fun `the summary is the form phrased for the confirmation card`() {
     val form = NewSessionForm(
       method = RecordingMethod.PhoneMicrophone,
       name = "Morning commute",

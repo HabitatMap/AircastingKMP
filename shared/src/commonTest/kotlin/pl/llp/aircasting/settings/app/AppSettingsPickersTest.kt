@@ -9,7 +9,7 @@ import kotlin.test.assertEquals
 class AppSettingsPickersTest {
 
   @Test
-  fun `temperature options follow the sheet order, each with a worked example`() {
+  fun `temperature options follow the sheet order each with a worked example`() {
     assertEquals(
       listOf(
         ChoiceOption(TemperatureUnit.Fahrenheit, "Fahrenheit", "°F • eg. 72°F"),
@@ -31,7 +31,7 @@ class AppSettingsPickersTest {
   }
 
   @Test
-  fun `every regional option covers a preset, in enum order`() {
+  fun `every regional option covers a preset in enum order`() {
     assertEquals(RegionalFormat.entries, EnStrings.regionalFormatOptions().map { it.value })
   }
 

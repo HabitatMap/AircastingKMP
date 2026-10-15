@@ -41,7 +41,7 @@
 :core            kotlinx-datetime, coroutines setup, Result types, logging, expect utils
 :domain          pure models + enums + state machines + business rules   (NO platform deps)
                  └ Session/Measurement/Stream/Threshold/Note, Level banding,
-                   averaging algorithm, recording state machine, threshold color levels
+                   display averaging (read-side bucketing), recording state machine, threshold color levels
 :data:db         SQLDelight schema (.sq) + queries + column adapters      (KEEP + PLATFORM driver)
 :data:network    Ktor client + kotlinx.serialization DTOs + API service   (KEEP + PLATFORM engine)
 :data:settings   multiplatform-settings wrapper (auth token, prefs)       (PLATFORM secure storage)
@@ -154,7 +154,6 @@ class RecordingEngine(
     private val driver: SensorDriver,
     private val sessions: SessionRepository,
     private val measurements: MeasurementRepository,
-    private val averaging: AveragingService,
     private val scope: CoroutineScope,
 ) {
     val state: StateFlow<RecordingState>            // NEW→RECORDING→DISCONNECTED→FINISHED
@@ -168,8 +167,10 @@ class RecordingEngine(
   flow through one `saveMeasurements()` path with the dedup rule (`INSERT … IGNORE` on the
   unique index). No more V1-vs-V2 fork.
 - **State machine** is `Session.Status` transitions, pure `commonMain`.
-- **Averaging** (`AveragingService` + windows) ports as-is — pure algorithm; inject a
-  dispatcher instead of `Dispatchers.Default`; keep the native-interval gate.
+- **No averaging in the engine.** The legacy `AveragingService` (in-place down-sampling of
+  stored rows) is **not ported**. Stored measurements stay at native resolution forever;
+  averaging is a read-side, display-only concern (graph/map/stats bucket raw rows when
+  rendering). See `DOMAIN_KNOWLEDGE.md` §7 and load-bearing rule #4.
 - **Background execution** is the one platform escape hatch: recording must survive
   backgrounding. `expect` a `BackgroundSessionHost` — Android = foreground service
   (`FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE`), iOS = Core Bluetooth background mode +
@@ -183,6 +184,8 @@ class RecordingEngine(
 ## 5. Data Layer
 
 ### Persistence — SQLDelight (`:data:db`)
+- **Raw measurements are immutable** — never averaged/down-sampled/deleted by the app
+  (only by session deletion cascade). No `averaging_frequency` column.
 - Port the Room schema (v38) to `.sq` files. Preserve: the unique measurements index
   (`session_id, stream_id, time`), `measurement_interval`, `session_token` + fixed indices,
   the active-measurements rolling window (>998-row guard → `transaction {}`).
@@ -386,7 +389,7 @@ These change the skeleton — resolve early:
 
 Vertical slices, each provable end-to-end, lowest-risk first:
 
-1. **Foundation:** `:core` + `:domain` (models, enums, state machine, averaging, thresholds)
+1. **Foundation:** `:core` + `:domain` (models, enums, state machine, display averaging, thresholds)
    with unit tests. No platform code — proves the shared logic compiles KMP.
 2. **Persistence:** `:data:db` (SQLDelight schema + queries) on both platforms.
 3. **Networking:** `:data:network` (Ktor + DTOs) + **timestamp round-trip tests** + auth/login.

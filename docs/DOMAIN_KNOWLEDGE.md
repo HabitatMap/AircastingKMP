@@ -112,13 +112,13 @@ Enums:
 2. **Configure** — user fills details → `StartRecordingEvent`.
 3. **Start** — orchestrator sets status, inserts session in DB, posts `ConfigureSession`;
    for fixed, first creates the backend session (below). Mobile also schedules averaging +
-   starts the measurement observer.
+   starts the measurement observer. *(Averaging step dropped in the rewrite — §7.)*
 4. **Record** — connector writes config to device; measurements flow back to DB + UI.
 5. **Disconnect** — unexpected BLE drop → `SensorDisconnectedUnexpectedlyEvent`; session →
    `DISCONNECTED`; a 2s-interval reconnect loop starts (no hard cap).
 6. **Resume** — reconnect success → `RECORDING`. User can also disconnect deliberately
    (standalone mode) keeping the session.
-7. **Finish** — `StopRecordingEvent` → final averaging, delete active-session rows, status
+7. **Finish** — `StopRecordingEvent` → final averaging *(dropped in the rewrite — §7)*, delete active-session rows, status
    `FINISHED`, backend sync. All services/connectors self-tear-down.
 
 Orchestration classes (all **CHANGE-LIKELY** at the EventBus edges, logic **KEEP**):
@@ -219,7 +219,7 @@ graph/map.
 ### Graph — **MPAndroidChart `v3.1.0`** (PLATFORM rendering)
 Mini card chart + full-screen detail graph with pinch-zoom/pan, colored **target zones**
 (threshold bands), note markers, midnight limit lines. Data shaping (`GraphDataGenerator`,
-`ChartData`, averaging, date formatting, note hit-testing) is **KEEP**; the `LineChart`/
+`ChartData`, averaging *(read-side only — §7)*, date formatting, note hit-testing) is **KEEP**; the `LineChart`/
 `CombinedChart` rendering + gestures are **PLATFORM**.
 
 ### Map — **Google Maps** + **Places** (PLATFORM rendering)
@@ -328,9 +328,36 @@ v37_38 (`tracked_locations`). Missing 29_30 & 32_33 hops rely on destructive fal
 Sessions, Measurements, MeasurementStreams, ActiveSessionMeasurements, Thresholds, Notes.
 `ExpandedCardsRepository` is SharedPreferences-backed (not DB) → multiplatform-settings.
 
-### Averaging — **KEEP** (algorithm), **PLATFORM** (scheduling/DAO)
+### Averaging — ⛔ **DROPPED as storage mutation; display-only in the rewrite**
+
+> **Decision (2026-10-15).** The rewrite **never averages, down-samples, or deletes stored
+> measurements.** Every measurement received from the device (live or sync) or downloaded is
+> kept at native resolution, exactly as recorded. Averaging exists **only on the read side**:
+> the UI (graph, map, heatmap, stats) buckets raw rows into windows when it renders.
+>
+> Why: the legacy in-place averaging was lossy and irreversible, needed scheduling during
+> recording, and caused real data loss (the sparse-interval bug that wiped whole sessions —
+> V2 guide, "Sparse-interval averaging gotcha"). Storage is cheap (1s × 5 streams × 24h ≈
+> 432k rows/day — trivial for SQLite); lost data is not.
+>
+> Consequences for the rewrite:
+> - No `AveragingService`, no averaging scheduler, no `averaging_frequency` column — the
+>   recording engine just saves.
+> - The **native-interval gate (old rule #4) is moot** — there's nothing destructive to guard.
+>   `measurement_interval` is still stored on the session: display bucketing uses it to avoid
+>   choosing a window finer than the native rate, and to tell gaps from sparse sampling.
+> - Read-side averaging must be **cheap on large streams** — bucket in SQL
+>   (`GROUP BY time / window`) or over a time-bounded query, not by loading a 10h session
+>   into memory per frame.
+> - **Uploads send raw measurements.** The backend gets full resolution (the legacy app could
+>   upload already-averaged rows for long sessions). Expect more v3 upload batches
+>   (mobile cap: 3000 frames/batch).
+>
+> The window values below remain a reasonable *display* default; the mutation described
+> after them is legacy behavior, kept here for reference only.
+
 `AveragingWindow`: `ZERO(1s)`, `FIRST(5s)`, `SECOND(60s)`. `TimeThreshold`: FIRST=2h, SECOND=9h.
-Rule: session > 2h → 5s averages; > 9h → 60s averages. Down-samples in place (mutates
+*Legacy:* session > 2h → 5s averages; > 9h → 60s averages. Down-samples in place (mutates
 `measurements` rows, sets `averaging_frequency`, deletes the rest). **Native-interval gate:**
 if `session.measurementInterval >= window.value`, averaging is skipped (prevents wiping
 sparse V2 data — the reason the v37 column exists). See V2 guide §5D.
@@ -401,7 +428,9 @@ Mini V2 mobile. Level banding lives in `Measurement.getLevel`.
    binary → epoch. Getting this wrong offsets every graph. (V2 guide §8a.)
 2. **HTTPS force-upgrade + port 80→443** in base-URL construction.
 3. **V2 sync UUID validation** — discard sync chunks whose device session UUID ≠ app session.
-4. **Averaging native-interval gate** — skip when `measurementInterval >= window`.
+4. **Raw measurements are never averaged, down-sampled, or deleted in storage** — averaging is
+   display-only (§7). *Supersedes the legacy "averaging native-interval gate" rule, which only
+   existed to limit damage from in-place averaging.*
 5. **Measurements unique index** `(session_id, stream_id, time)` — the V2 dedup strategy.
 6. **Backend URL/port preserved on logout.**
 7. **Two measurement "drain" flags for V2 finish-while-syncing** (V2 guide §9).

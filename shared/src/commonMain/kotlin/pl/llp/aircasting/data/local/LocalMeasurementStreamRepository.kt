@@ -46,7 +46,7 @@ class LocalMeasurementStreamRepository(
       .mapToList(ioDispatcher)
       .map { rows -> rows.map { it.toDomain() } }
 
-  override suspend fun setSensorTypeId(streamId: Long, sensorTypeId: Int) =
+  override suspend fun setSensorTypeId(streamId: Long, sensorTypeId: Int): Unit =
     withContext(ioDispatcher) { queries.updateSensorTypeId(sensorTypeId.toLong(), streamId) }
 }
 

@@ -23,7 +23,7 @@ class LocalSessionRepository(
   private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : SessionRepository {
 
-  override suspend fun insert(session: Session) = withContext(ioDispatcher) {
+  override suspend fun insert(session: Session): Unit = withContext(ioDispatcher) {
     queries.insertSession(
       uuid = session.uuid,
       type = session.type,
@@ -59,13 +59,13 @@ class LocalSessionRepository(
       .mapToList(ioDispatcher)
       .map { rows -> rows.map { it.toDomain() } }
 
-  override suspend fun updateStatus(uuid: String, status: SessionStatus) =
+  override suspend fun updateStatus(uuid: String, status: SessionStatus): Unit =
     withContext(ioDispatcher) { queries.updateSessionStatus(status, uuid) }
 
-  override suspend fun finish(uuid: String, endTime: Instant) = withContext(ioDispatcher) {
+  override suspend fun finish(uuid: String, endTime: Instant): Unit = withContext(ioDispatcher) {
     queries.finishSession(status = SessionStatus.FINISHED, endTime = endTime, uuid = uuid)
   }
-  override suspend fun delete(uuid: String) =
+  override suspend fun delete(uuid: String): Unit =
     withContext(ioDispatcher) { queries.deleteSession(uuid) }
 }
 

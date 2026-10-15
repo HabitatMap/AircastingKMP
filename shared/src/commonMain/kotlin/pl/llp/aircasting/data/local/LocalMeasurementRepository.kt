@@ -20,16 +20,16 @@ class LocalMeasurementRepository(
   private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : MeasurementRepository {
 
-  override suspend fun insertAll(measurements: List<Measurement>) = withContext(ioDispatcher) {
-    queries.transaction {
-      measurements.forEach {
+  override suspend fun insertAll(measurements: List<Measurement>): Int = withContext(ioDispatcher) {
+    queries.transactionWithResult {
+      measurements.sumOf {
         queries.insertMeasurement(
           stream_id = it.streamId,
           time = it.time,
           value_ = it.value,
           latitude = it.location?.latitude,
           longitude = it.location?.longitude,
-        )
+        ).value.toInt()
       }
     }
   }

@@ -27,7 +27,11 @@ interface MeasurementStreamRepository {
 }
 
 interface MeasurementRepository {
-  suspend fun insertAll(measurements: List<Measurement>)
+  /**
+   * One transaction, INSERT OR IGNORE per row
+   * @return how many rows were newly stored; the rest already existed for (stream, time).
+   */
+  suspend fun insertAll(measurements: List<Measurement>): Int
   fun observeRecent(streamId: Long, limit: Int): Flow<List<Measurement>>
   suspend fun lastTime(streamId: Long): Instant?
   suspend fun pendingUpload(sessionUuid: String, limit: Int): List<Measurement>

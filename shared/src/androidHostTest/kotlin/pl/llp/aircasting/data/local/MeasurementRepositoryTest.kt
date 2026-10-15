@@ -1,5 +1,6 @@
 package pl.llp.aircasting.data.local
 
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import pl.llp.aircasting.domain.GeoLocation
 import pl.llp.aircasting.domain.session.Measurement
@@ -50,12 +51,29 @@ class MeasurementRepositoryTest {
     seedSession()
     val stream = streams.findOrCreate(uuid, "AirBeam-PM2.5", "µg/m³")
 
-    measurements.insertAll(listOf(Measurement(stream, t0, value = 12.0)))
-    measurements.insertAll(listOf(Measurement(stream, t0, value = 99.0)))
+    assertEquals(1, measurements.insertAll(listOf(Measurement(stream, t0, value = 12.0))))
+    assertEquals(0, measurements.insertAll(listOf(Measurement(stream, t0, value = 99.0))))
 
     val stored = measurements.observeRecent(stream, limit = 10).first()
     assertEquals(1, stored.size)
     assertEquals(12.0, stored.single().value)
+  }
+
+  @Test
+  fun `insertAll counts only newly stored rows in a partially overlapping batch`() = runTest {
+    seedSession()
+    val stream = streams.findOrCreate(uuid, "AirBeam-PM2.5", "µg/m³")
+    measurements.insertAll(listOf(Measurement(stream, t0, 1.0)))
+
+    val stored = measurements.insertAll(
+      listOf(
+        Measurement(stream, t0, 1.0),
+        Measurement(stream, t0 + 1.seconds, 2.0),
+        Measurement(stream, t0 + 2.seconds, 3.0),
+      )
+    )
+
+    assertEquals(2, stored)
   }
 
   @Test

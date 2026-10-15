@@ -174,34 +174,38 @@ The two uploads look symmetric and are not. Three traps, in the order they bite:
 Everything else is forgiving: resends are free, so retry on any transport error rather than trying to
 reason about what got through.
 
-### Our outbox — rules for the local `measurements.uploaded` flag
+### Our outbox — the local `pending_uploads` table
 
-The local DB doubles as the upload outbox: `measurements.uploaded` (0/1) per row, read via
-`MeasurementRepository.pendingUpload` and set via `markUploaded`. The traps above shape how it may be
-used:
+Upload state is **not** stored on `measurements`. It lives in a separate outbox table holding only
+keys — `pending_uploads(stream_id, time)`, composite FK → `measurements` `ON DELETE CASCADE`. Each
+measurement is stored once, in `measurements`; an outbox row is just "this one hasn't reached the
+server yet". Written by `MeasurementRepository.insertRecorded`, read via `UploadOutbox.pending`,
+cleared via `UploadOutbox.acknowledge` (a `DELETE` — the data row is untouched; `measurements` stays
+insert-only, per `DOMAIN_KNOWLEDGE.md` rule #4). The traps above shape how it may be used:
 
-1. **Only mobile sessions are uploaded by the phone.** Fixed sessions are uploaded by the AirBeam itself
-   (with `session_token`). Measurements **downloaded** from the backend (fixed sessions, or a mobile
-   session restored from the server) must be inserted with `uploaded = 1`, or `pendingUpload` will
-   offer them for re-upload. *Not yet supported: `insertMeasurement` has no `uploaded` parameter —
-   add it with the fixed-download slice.*
-2. **`uploaded = 1` means "accepted in a `200` batch", not "stored".** See trap 1. So it is only truthful
+1. **Only data recorded on this phone is enqueued.** Fixed sessions are uploaded by the AirBeam itself
+   (with `session_token`); downloaded, followed or Explore-saved sessions belong to the server (often
+   another user). Those paths call `insertAll`, which never touches the outbox — so the safe default is
+   "not uploaded". Only the recording path calls `insertRecorded`, which stores **and** enqueues in one
+   transaction, enqueuing only rows actually newly stored (an `OR IGNORE`-skipped duplicate was
+   enqueued when first recorded).
+2. **Acknowledged means "accepted in a `200` batch", not "stored".** See trap 1. So it is only truthful
    if the uploader **never sends a frame the server will silently drop**:
-   - **Split against `finished_at` before sending** (trap 3). Frames after the session's
-     server-side `finished_at` are never stored, so don't send them and don't mark them uploaded. They
-     also must not sit in `pendingUpload` forever. **Open decision:** bound the pending query by
-     `finished_at`, or add an explicit "unuploadable" state. Never delete them: raw measurements
-     are immutable (`DOMAIN_KNOWLEDGE.md` rule #4).
+   - **Split against `finished_at` before sending** (trap 3). Frames after the session's server-side
+     `finished_at` are never stored — don't send them, don't acknowledge them. They also must not sit in
+     the outbox forever. **Open decision:** bound `pending` by `finished_at`, or add a `state` column to
+     `pending_uploads` (e.g. "unuploadable"). Either way the change stays in the outbox; the
+     measurement itself is never deleted.
 3. **Sync the clock before the first batch** (trap 2, empty body → `X-Server-Time`). On mobile one
-   out-of-range timestamp makes the **whole batch** fail with `400 invalid_epoch`, and a plain "retry
-   the oldest pending rows" loop then resends the same poisoned batch forever. The uploader must detect
-   `invalid_epoch` and handle the bad frames instead of retrying unchanged.
-4. **Mark by row `(stream_id, time)`, never by a time cursor.** Mini V2 reconnect-sync backfills
-   *older* timestamps after newer ones were already uploaded. A per-session "uploaded up to T" cursor
-   would treat those as done and lose them.
-5. **Retry is otherwise blind and safe.** On transport errors, timeouts and `5xx`, leave rows at
-   `uploaded = 0`, and they go out again on the next pass. Resends are deduped server-side on
-   `(stream, timestamp)`. The state lives in SQLite, so it survives process death.
+   out-of-range timestamp fails the **whole batch** with `400 invalid_epoch`, and a naive "retry the
+   oldest pending rows" loop then resends the same poisoned batch forever. The uploader must detect
+   `invalid_epoch` and handle the bad frames rather than retry unchanged.
+4. **Track per row `(stream_id, time)`, never a time cursor.** Mini V2 reconnect-sync backfills
+   *older* timestamps after newer ones were already uploaded; a per-session "uploaded up to T" cursor
+   would treat them as done and lose them.
+5. **Retry is otherwise blind and safe.** On transport errors, timeouts and `5xx`, leave the outbox
+   rows in place — they go out again next pass. Resends are deduped server-side on
+   `(stream, timestamp)`. State lives in SQLite, so it survives process death.
 
 ### Error codes
 

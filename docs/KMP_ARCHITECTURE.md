@@ -186,9 +186,15 @@ class RecordingEngine(
 ### Persistence — SQLDelight (`:data:db`)
 - **Raw measurements are immutable** — never averaged/down-sampled/deleted by the app
   (only by session deletion cascade). No `averaging_frequency` column.
-- Port the Room schema (v38) to `.sq` files. Preserve: the unique measurements index
-  (`session_id, stream_id, time`), `measurement_interval`, `session_token` + fixed indices,
-  the active-measurements rolling window (>998-row guard → `transaction {}`).
+- Port the Room schema (v38) to `.sq` files — as a redesign, not a copy. Preserve the
+  measurements dedup key, now `PRIMARY KEY (stream_id, time)` on `measurements` (the legacy
+  `session_id` in that index was redundant — a stream belongs to one session — and v3 dedups
+  on `(stream, timestamp)` too), plus `measurement_interval` and `session_token`.
+- **No `active_sessions_measurements` table.** The legacy rolling live buffer (10h of rows,
+  >998-row guard) existed because Room couldn't cheaply tail a growing table. The live view is
+  now a windowed query on `measurements` (`ORDER BY time DESC LIMIT ?`, an index walk on the
+  PK), so there is one table and one write path. Batch inserts still go in one
+  `transaction {}`.
 - Column adapters for `Date`→`Instant`, tags list, `Session.Status/Type`, `DeviceType`.
 - `expect` the driver: `AndroidSqliteDriver` / `NativeSqliteDriver`.
 - DAOs → SQLDelight queries returning `Flow` (`.asFlow().mapToList()`). The
@@ -221,7 +227,7 @@ plaintext today. Preserve backend URL/port on logout.
 ### Repositories (`:data:repo`)
 Interfaces in `:domain`, impls here. Extract interfaces for all current repos (only
 `MeasurementsRepository` is one today). Business rules (`getLevel`, threshold find-or-create,
-rolling-window sizing, status transitions) move into `:domain`.
+status transitions) move into `:domain`.
 
 ---
 

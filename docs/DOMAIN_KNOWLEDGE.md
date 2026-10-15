@@ -190,7 +190,8 @@ transports (BLE, WiFi-SoftAP, file I/O) are **PLATFORM**; HTTP is **CHANGE-LIKEL
    download, one-shot followed-session download.
 
 **Dedup differs:** V1 mobile filters `time > lastMeasurementTime`; V2 relies on the DB
-unique index `(session_id, stream_id, time)` + `IGNORE`. Preserve the index.
+unique index `(session_id, stream_id, time)` + `IGNORE`. Preserve the dedup — in the rewrite
+the key is `PRIMARY KEY (stream_id, time)` (see rule #5).
 
 ---
 
@@ -431,7 +432,10 @@ Mini V2 mobile. Level banding lives in `Measurement.getLevel`.
 4. **Raw measurements are never averaged, down-sampled, or deleted in storage** — averaging is
    display-only (§7). *Supersedes the legacy "averaging native-interval gate" rule, which only
    existed to limit damage from in-place averaging.*
-5. **Measurements unique index** `(session_id, stream_id, time)` — the V2 dedup strategy.
+5. **Measurements dedup on `(stream, time)`** — the V2 dedup strategy, and the backend's own v3
+   rule. Legacy index was `(session_id, stream_id, time)`; the rewrite uses
+   `PRIMARY KEY (stream_id, time)` + `INSERT OR IGNORE` (`session_id` was redundant). There is
+   no separate active-session buffer table — one `measurements` table, one write path.
 6. **Backend URL/port preserved on logout.**
 7. **Two measurement "drain" flags for V2 finish-while-syncing** (V2 guide §9).
 8. **V2→V1 fallback disconnect-path guards** — keep the service/EventBus alive across the

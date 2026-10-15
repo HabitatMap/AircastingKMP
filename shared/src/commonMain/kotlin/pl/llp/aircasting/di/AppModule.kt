@@ -17,10 +17,13 @@ import pl.llp.aircasting.data.auth.StoredAuthSession
 import pl.llp.aircasting.data.network.AccountApi
 import pl.llp.aircasting.data.network.AuthApi
 import pl.llp.aircasting.data.network.DefaultBackendUrl
+import pl.llp.aircasting.data.network.ExportApi
 import pl.llp.aircasting.data.network.FixedStationsApi
 import pl.llp.aircasting.data.network.FixedStationsRepository
 import pl.llp.aircasting.data.network.HttpServerProbe
+import pl.llp.aircasting.data.network.MobileSessionsApi
 import pl.llp.aircasting.data.network.ServerProbe
+import pl.llp.aircasting.data.network.ThresholdAlertsApi
 import pl.llp.aircasting.data.network.createAircastingHttpClient
 import pl.llp.aircasting.home.FakeHomeRepository
 import pl.llp.aircasting.home.HomeRepository
@@ -69,7 +72,7 @@ val networkModule = module {
   single<ServerProbe> { HttpServerProbe(platformHttpEngine()) }
   // Modern v3 APIs
   single { MobileSessionsApi(get()) }
-  single { FixedSessionsApi(get()) }
+  // single { FixedSessionsApi(get()) }
   // Search & Regional Exploration (Home screen)
   single { FixedStationsApi(get()) }
   single { FixedStationsRepository(get(), get()) }
@@ -77,7 +80,7 @@ val networkModule = module {
   single { ThresholdAlertsApi(get()) }
   single { ExportApi(get()) }
   // Deprecated Sync Fallback
-  single { LegacySessionsApi(get()) }
+  // single { LegacySessionsApi(get()) }
   single<Clock> { Clock.System }
   single<HomeRepository> { FakeHomeRepository() }
   viewModelOf(::HomeViewModel)

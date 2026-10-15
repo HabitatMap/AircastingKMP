@@ -9,6 +9,22 @@
 > **Captured:** 2026-07-20 from legacy `ApiService.kt`, `ApiConstants.kt`,
 > `ActiveFixedSessionsInRegionRepository.kt`, and the `data/api/response/search/*` DTOs.
 > **Companion:** [`HOME_SCREEN.md`](./design/HOME_SCREEN.md) (design) · [`DOMAIN_KNOWLEDGE.md`](./DOMAIN_KNOWLEDGE.md) §6 (full API).
+>
+> ---
+>
+> ## ⚠️ This is the **legacy (pre-v3)** surface
+>
+> Everything below was mined from the legacy Android app, and the official spec now marks most of it
+> **[DEPRECATED]** — "served only for already-released mobile builds. **Build new clients against the
+> `/api/v3` endpoints.**"
+>
+> **For new work read [`API_V3.md`](./API_V3.md) instead** — the current `/api/v3` surface, bearer auth,
+> and the binary measurement format. Source of truth is the spec at
+> <https://experimental.aircasting.org/api-docs/index.html> (ahead of prod `aircasting.org/api-docs`);
+> raw YAML: `curl -sL https://experimental.aircasting.org/api-docs/swagger.yaml`.
+>
+> Keep this doc for the shapes shipped builds still depend on, and for the Home-screen field mapping —
+> but verify any endpoint here against the spec before building on it.
 
 ---
 

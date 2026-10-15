@@ -85,6 +85,9 @@ kotlin {
       implementation(libs.turbine)
       implementation(libs.multiplatform.settings.test)
     }
+    getByName("androidHostTest").dependencies {
+      implementation(libs.sqldelight.sqlite.driver)
+    }
   }
 }
 

@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import pl.llp.aircasting.data.local.db.MeasurementQueries
 import pl.llp.aircasting.data.local.db.Measurements
+import pl.llp.aircasting.data.local.db.PendingUploadQueries
 import pl.llp.aircasting.domain.GeoLocation
 import pl.llp.aircasting.domain.session.Measurement
 import pl.llp.aircasting.domain.session.MeasurementRepository
@@ -17,22 +18,33 @@ import kotlin.time.Instant
 
 class LocalMeasurementRepository(
   private val queries: MeasurementQueries,
+  private val outboxQueries: PendingUploadQueries,
   private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : MeasurementRepository {
 
-  override suspend fun insertAll(measurements: List<Measurement>): Int = withContext(ioDispatcher) {
-    queries.transactionWithResult {
-      measurements.sumOf {
-        queries.insertMeasurement(
-          stream_id = it.streamId,
-          time = it.time,
-          value_ = it.value,
-          latitude = it.location?.latitude,
-          longitude = it.location?.longitude,
-        ).value.toInt()
+  override suspend fun insertAll(measurements: List<Measurement>): Int =
+    insert(measurements, enqueue = false)
+
+  override suspend fun insertRecorded(measurements: List<Measurement>): Int =
+    insert(measurements, enqueue = true)
+
+  private suspend fun insert(measurements: List<Measurement>, enqueue: Boolean): Int =
+    withContext(ioDispatcher) {
+      queries.transactionWithResult {
+        measurements.count { m ->
+          val stored = queries.insertMeasurement(
+            stream_id = m.streamId,
+            time = m.time,
+            value_ = m.value,
+            latitude = m.location?.latitude,
+            longitude = m.location?.longitude,
+          ).value == 1L
+          if (stored && enqueue) outboxQueries.enqueue(m.streamId, m.time)
+          stored
+        }
       }
     }
-  }
+
   override fun observeRecent(streamId: Long, limit: Int): Flow<List<Measurement>> =
     queries.selectRecentByStream(streamId, limit.toLong())
       .asFlow()
@@ -42,31 +54,11 @@ class LocalMeasurementRepository(
   override suspend fun lastTime(streamId: Long): Instant? = withContext(ioDispatcher) {
     queries.selectLastTimeByStream(streamId).executeAsOneOrNull()
   }
-
-  override suspend fun pendingUpload(sessionUuid: String, limit: Int): List<Measurement> =
-    withContext(ioDispatcher) {
-      queries.selectPendingUpload(sessionUuid, limit.toLong())
-        .executeAsList()
-        .map { it.toDomain() }
-    }
-
-
-  /**
-   * Marks exactly the rows handed back by `pendingUpload`, by natural key — not a
-   * high-water-mark cursor, which would wrongly swallow measurements backfilled out of
-   * order by a BLE sync.
-   */
-  override suspend fun markUploaded(measurements: List<Measurement>) = withContext(ioDispatcher) {
-    queries.transaction {
-      measurements.forEach { queries.markUploaded(it.streamId, it.time) }
-    }
-  }
 }
 
-private fun Measurements.toDomain() = Measurement(
+internal fun Measurements.toDomain() = Measurement(
   streamId = stream_id,
   time = time,
   value = value_,
   location = latitude?.let { lat -> longitude?.let { lon -> GeoLocation(lat, lon) } },
-  uploaded = uploaded,
 )

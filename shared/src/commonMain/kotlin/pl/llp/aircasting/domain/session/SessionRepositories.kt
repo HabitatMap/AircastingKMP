@@ -28,12 +28,19 @@ interface MeasurementStreamRepository {
 
 interface MeasurementRepository {
   /**
-   * One transaction, INSERT OR IGNORE per row
+   * Data that originated elsewhere — downloaded, followed, explored, fixed. Stored only;
+   * never becomes upload work.
    * @return how many rows were newly stored; the rest already existed for (stream, time).
    */
   suspend fun insertAll(measurements: List<Measurement>): Int
+  /**
+   * Data recorded on this phone. Stores AND enqueues for upload, in one transaction.
+   * Only newly stored rows are enqueued — an OR IGNORE-skipped duplicate was enqueued
+   * when it was first recorded.
+   * @return how many rows were newly stored.
+   */
+  suspend fun insertRecorded(measurements: List<Measurement>): Int
+  /** Newest-first window. Replaces the old `active_sessions_measurements` table. */
   fun observeRecent(streamId: Long, limit: Int): Flow<List<Measurement>>
   suspend fun lastTime(streamId: Long): Instant?
-  suspend fun pendingUpload(sessionUuid: String, limit: Int): List<Measurement>
-  suspend fun markUploaded(measurements: List<Measurement>)
 }

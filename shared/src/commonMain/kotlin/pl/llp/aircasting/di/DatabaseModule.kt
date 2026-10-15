@@ -4,6 +4,7 @@ import org.koin.dsl.module
 import pl.llp.aircasting.data.local.LocalMeasurementRepository
 import pl.llp.aircasting.data.local.LocalMeasurementStreamRepository
 import pl.llp.aircasting.data.local.LocalSessionRepository
+import pl.llp.aircasting.data.local.LocalUploadOutbox
 import pl.llp.aircasting.data.local.createDatabase
 import pl.llp.aircasting.data.local.db.AppDatabase
 import pl.llp.aircasting.domain.LocalThresholdsRepository
@@ -11,9 +12,11 @@ import pl.llp.aircasting.domain.ThresholdsRepository
 import pl.llp.aircasting.domain.session.MeasurementRepository
 import pl.llp.aircasting.domain.session.MeasurementStreamRepository
 import pl.llp.aircasting.domain.session.SessionRepository
+import pl.llp.aircasting.domain.session.UploadOutbox
 
 val databaseModule = module {
   single { createDatabase(get()) }
+  single { get<AppDatabase>().pendingUploadQueries }
   single { get<AppDatabase>().sensorThresholdQueries }
   single { get<AppDatabase>().sessionQueries }
   single { get<AppDatabase>().measurementStreamQueries }
@@ -22,5 +25,7 @@ val databaseModule = module {
   single<ThresholdsRepository> { LocalThresholdsRepository(get()) }
   single<SessionRepository> { LocalSessionRepository(get()) }
   single<MeasurementStreamRepository> { LocalMeasurementStreamRepository(get()) }
-  single<MeasurementRepository> { LocalMeasurementRepository(get()) }
+  single<MeasurementRepository> { LocalMeasurementRepository(get(), get()) }
+  single<UploadOutbox> { LocalUploadOutbox(get()) }
+
 }

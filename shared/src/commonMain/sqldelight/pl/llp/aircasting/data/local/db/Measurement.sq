@@ -1,4 +1,3 @@
-import kotlin.Boolean;
 import kotlin.time.Instant;
 
 CREATE TABLE measurements (
@@ -7,7 +6,6 @@ CREATE TABLE measurements (
     value REAL NOT NULL,
     latitude REAL,
     longitude REAL,
-    uploaded INTEGER AS Boolean NOT NULL DEFAULT 0,
     PRIMARY KEY (stream_id, time)
 );
 
@@ -28,16 +26,3 @@ FROM measurements
 WHERE stream_id = :streamId
 ORDER BY time DESC
 LIMIT 1;
-
-selectPendingUpload:
-SELECT measurements.*
-FROM measurements
-JOIN measurement_streams ON measurement_streams.id = measurements.stream_id
-WHERE measurement_streams.session_uuid = :sessionUuid AND measurements.uploaded = 0
-ORDER BY measurements.time
-LIMIT :limit;
-
-markUploaded:
-UPDATE measurements
-SET uploaded = 1
-WHERE stream_id = :streamId AND time = :time;

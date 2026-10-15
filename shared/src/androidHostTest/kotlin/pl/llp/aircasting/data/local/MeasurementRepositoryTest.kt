@@ -19,7 +19,7 @@ class MeasurementRepositoryTest {
   private val db = testDatabase()
   private val sessions = LocalSessionRepository(db.sessionQueries)
   private val streams = LocalMeasurementStreamRepository(db.measurementStreamQueries)
-  private val measurements = LocalMeasurementRepository(db.measurementQueries)
+  private val measurements = LocalMeasurementRepository(db.measurementQueries, db.pendingUploadQueries)
 
   private val uuid = "22222222-2222-2222-2222-222222222222"
   private val t0 = Instant.fromEpochMilliseconds(1_700_000_000_000)
@@ -120,23 +120,6 @@ class MeasurementRepositoryTest {
     seedSession()
     val stream = streams.findOrCreate(uuid, "AirBeam-PM2.5", "µg/m³")
     assertNull(measurements.lastTime(stream))
-  }
-
-  @Test
-  fun `pendingUpload yields oldest first and markUploaded clears them`() = runTest {
-    seedSession()
-    val stream = streams.findOrCreate(uuid, "AirBeam-PM2.5", "µg/m³")
-    val batch = listOf(
-      Measurement(stream, t0 + 1.seconds, 2.0),
-      Measurement(stream, t0, 1.0),
-    )
-    measurements.insertAll(batch)
-
-    val pending = measurements.pendingUpload(uuid, limit = 10)
-    assertEquals(listOf(t0, t0 + 1.seconds), pending.map { it.time })
-
-    measurements.markUploaded(pending)
-    assertTrue(measurements.pendingUpload(uuid, limit = 10).isEmpty())
   }
 
   @Test

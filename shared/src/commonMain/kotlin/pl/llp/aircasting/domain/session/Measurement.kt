@@ -9,5 +9,4 @@ data class Measurement(
   val value: Double,
   /** Mobile only — a fixed session's position lives on the Session. */
   val location: GeoLocation? = null,
-  val uploaded: Boolean = false,
 )

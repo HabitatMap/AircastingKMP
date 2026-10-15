@@ -174,6 +174,35 @@ The two uploads look symmetric and are not. Three traps, in the order they bite:
 Everything else is forgiving: resends are free, so retry on any transport error rather than trying to
 reason about what got through.
 
+### Our outbox — rules for the local `measurements.uploaded` flag
+
+The local DB doubles as the upload outbox: `measurements.uploaded` (0/1) per row, read via
+`MeasurementRepository.pendingUpload` and set via `markUploaded`. The traps above shape how it may be
+used:
+
+1. **Only mobile sessions are uploaded by the phone.** Fixed sessions are uploaded by the AirBeam itself
+   (with `session_token`). Measurements **downloaded** from the backend (fixed sessions, or a mobile
+   session restored from the server) must be inserted with `uploaded = 1`, or `pendingUpload` will
+   offer them for re-upload. *Not yet supported: `insertMeasurement` has no `uploaded` parameter —
+   add it with the fixed-download slice.*
+2. **`uploaded = 1` means "accepted in a `200` batch", not "stored".** See trap 1. So it is only truthful
+   if the uploader **never sends a frame the server will silently drop**:
+   - **Split against `finished_at` before sending** (trap 3). Frames after the session's
+     server-side `finished_at` are never stored, so don't send them and don't mark them uploaded. They
+     also must not sit in `pendingUpload` forever. **Open decision:** bound the pending query by
+     `finished_at`, or add an explicit "unuploadable" state. Never delete them: raw measurements
+     are immutable (`DOMAIN_KNOWLEDGE.md` rule #4).
+3. **Sync the clock before the first batch** (trap 2, empty body → `X-Server-Time`). On mobile one
+   out-of-range timestamp makes the **whole batch** fail with `400 invalid_epoch`, and a plain "retry
+   the oldest pending rows" loop then resends the same poisoned batch forever. The uploader must detect
+   `invalid_epoch` and handle the bad frames instead of retrying unchanged.
+4. **Mark by row `(stream_id, time)`, never by a time cursor.** Mini V2 reconnect-sync backfills
+   *older* timestamps after newer ones were already uploaded. A per-session "uploaded up to T" cursor
+   would treat those as done and lose them.
+5. **Retry is otherwise blind and safe.** On transport errors, timeouts and `5xx`, leave rows at
+   `uploaded = 0`, and they go out again on the next pass. Resends are deduped server-side on
+   `(stream, timestamp)`. The state lives in SQLite, so it survives process death.
+
 ### Error codes
 
 All v3 errors share `{ error_code, message, fields? }` (`fields` only when the request shape is wrong).

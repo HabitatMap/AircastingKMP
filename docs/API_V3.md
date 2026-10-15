@@ -154,6 +154,26 @@ Shared rules:
   dropped — and the response is `200` either way, so a straddling batch looks identical to a clean one.
   **Read `finished_at` on the session to know.**
 
+### ⚠️ Gotchas for whoever writes the uploader
+
+The two uploads look symmetric and are not. Three traps, in the order they bite:
+
+1. **`200` does not mean "everything landed."** It means "nothing was malformed." Frames can be
+   dropped individually and still answer `200` — see 2 and 3. Don't treat the response as an ack
+   for the batch; a client that clears its outbox on `200` can lose measurements silently.
+2. **Out-of-range timestamps diverge.** A frame with epoch 0, before 2020-01-01 UTC, or more than 24 h
+   ahead of server time is **silently dropped by fixed** (`200`, the rest of the payload is stored) but
+   **rejected by mobile** (`400 invalid_epoch`). So the same clock bug surfaces as data loss on one path
+   and a hard failure on the other. Sync the clock first via the empty-body / `X-Server-Time` call rather
+   than trusting the device.
+3. **A batch straddling `finished_at` is indistinguishable from a clean one.** Frames at or before
+   `finished_at` are stored, later ones dropped, response `200` either way, with no count of what was
+   kept. The only way to know is to **read `finished_at` off the session** and partition locally before
+   sending.
+
+Everything else is forgiving: resends are free, so retry on any transport error rather than trying to
+reason about what got through.
+
 ### Error codes
 
 All v3 errors share `{ error_code, message, fields? }` (`fields` only when the request shape is wrong).

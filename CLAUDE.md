@@ -1,11 +1,18 @@
 # Working with this project
 
-## Docs live in /docs/ (gitignored)
+## Docs live in /docs/
 
 Design docs, specs, and context live in the `/docs/` folder at repo root,
-covering **AirBeam** and **legacy codebase** knowledge. It's gitignored, so it
-won't show in git status — **read it at the start of any non-trivial task** to
-pick up context that isn't in the tracked code.
+covering **AirBeam**, the **backend API** and **legacy codebase** knowledge.
+It is tracked in git — **read it at the start of any non-trivial task** to pick
+up context that isn't in the code, and keep it current as part of the change.
+
+Backend API in particular: [`docs/API_V3.md`](docs/API_V3.md) is the current
+`/api/v3` surface (build new clients against it);
+[`docs/BACKEND_ENDPOINTS.md`](docs/BACKEND_ENDPOINTS.md) is the legacy pre-v3
+one. The source of truth for both is the OpenAPI spec at
+<https://experimental.aircasting.org/api-docs/index.html> — the Swagger UI is
+JS-rendered, so fetch `.../api-docs/swagger.yaml` instead.
 
 ## Core directive: propose the code in chat, and teach it
 

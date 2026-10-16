@@ -175,8 +175,7 @@ The two uploads look symmetric and are not. Three traps, in the order they bite:
 2. **Out-of-range timestamps diverge.** A frame with epoch 0, before 2020-01-01 UTC, or more than 24 h
    ahead of server time is **silently dropped by fixed** (`200`, the rest of the payload is stored) but
    **rejected by mobile** (`400 invalid_epoch`). So the same clock bug surfaces as data loss on one path
-   and a hard failure on the other. Sync the clock first via the empty-body / `X-Server-Time` call rather
-   than trusting the device.
+   and a hard failure on the other. *We don't pre-check this client-side* — see outbox rule 3.
 3. **A batch straddling `finished_at` is indistinguishable from a clean one.** Frames at or before
    `finished_at` are stored, later ones dropped, response `200` either way, with no count of what was
    kept. The only way to know is to **read `finished_at` off the session** and partition locally before
@@ -212,10 +211,11 @@ insert-only, per `DOMAIN_KNOWLEDGE.md` rule #4). The traps above shape how it ma
      `end_time`, so none can land after `finished_at` — **upload and `/finish` may happen in any order**,
      and the uploader never reads `finished_at` back. (With server-side stamping, a phone clock running
      ahead of the server's would silently drop the last frames; sending our own time removes that.)
-3. **Sync the clock before the first batch** (trap 2, empty body → `X-Server-Time`). On mobile one
-   out-of-range timestamp fails the **whole batch** with `400 invalid_epoch`, and a naive "retry the
-   oldest pending rows" loop then resends the same poisoned batch forever. The uploader must detect
-   `invalid_epoch` and handle the bad frames rather than retry unchanged.
+3. **No client-side clock checks** (trap 2) — *decided 2026-10-16.* Phone clocks are network-synced,
+   and the legacy app never checked timestamps against server time without trouble. So the uploader
+   doesn't sync the clock or filter frames by the server's bounds. If a broken clock ever produces an
+   `invalid_epoch` batch, the request throws like any other failure, the rows stay queued, and the
+   error is surfaced to the user and to crash reporting — a visible stuck upload, not silent loss.
 4. **Track per row `(stream_id, time)`, never a time cursor.** Mini V2 reconnect-sync backfills
    *older* timestamps after newer ones were already uploaded; a per-session "uploaded up to T" cursor
    would treat them as done and lose them.

@@ -155,6 +155,29 @@ Three distinct paths coexist today (the rewrite should unify onto one Flow pipel
 - **Path C — Fixed sessions:** device POSTs to backend autonomously; phone **downloads** via
   a 60s polling service + on card-expand.
 
+### Measurement location stamping (mobile) — **KEEP**
+
+Every **mobile** measurement gets a location **when it is stored** ("stamping"), never at
+upload time — the v3 mobile upload frame has no "no location" value. If the phone's
+location is unknown at that moment, the measurement **copies the last known location**.
+The rewrite follows the newest legacy variant (`V2MobileMeasurementsInserter` +
+`AirBeamMiniV2StateRepository.getClosestLocation`, used for Mini V2 and SD sync):
+
+1. **Tracked location closest in time** to the measurement (binary search over the
+   `tracked_locations` buffer) — matters for backfilled/synced records, whose timestamps are
+   in the past.
+2. else **last known location in this session** — the newest stored measurement of the
+   session with non-null lat/lng (`MeasurementDao.lastKnownLatLng`).
+3. else **the phone's last known location** (`LocationHelper.lastLocation()`).
+4. else `DEFAULT_LOCATION = (40.7128, -74.0060)` (New York) — last resort, should be rare.
+
+Special case: **maps disabled / location-less** session → every measurement gets
+`FAKE_LOCATION = (200.0, 200.0)` (`Session.Location.get(location, locationless = true)`).
+Path A (live V1) is the older variant: it stamps `LocationHelper.lastLocation()`, else
+`DEFAULT_LOCATION`, refreshed once per full set of streams so a set shares one location.
+
+Fixed-session measurements carry no per-measurement location (it lives on the session).
+
 UI consumes the DB reactively: Room `LiveData` → repository projections → `SessionsObserver`
 (diff engine) → dashboard cards. DB is the intended single source of truth.
 
@@ -440,3 +463,10 @@ Mini V2 mobile. Level banding lives in `Measurement.getLevel`.
 7. **Two measurement "drain" flags for V2 finish-while-syncing** (V2 guide §9).
 8. **V2→V1 fallback disconnect-path guards** — keep the service/EventBus alive across the
    failed V2 leg (V2 guide §9, Nordic disconnect hazard).
+9. **Mobile measurements are stamped with a location at insert, falling back to the last
+   known location** (§3 "Measurement location stamping"). A stored mobile measurement never
+   has a null location.
+10. **The app uploads mobile measurements only.** Fixed-session measurements are uploaded by
+    the AirBeam itself (with `session_token`); the app downloads them. Single exception:
+    **AB3 SD-card sync** can upload fixed measurements read off the card
+    (legacy `SDCardUploadFixedMeasurementsService`).

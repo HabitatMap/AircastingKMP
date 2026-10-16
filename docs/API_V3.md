@@ -184,18 +184,21 @@ cleared via `UploadOutbox.acknowledge` (a `DELETE` — the data row is untouched
 insert-only, per `DOMAIN_KNOWLEDGE.md` rule #4). The traps above shape how it may be used:
 
 1. **Only data recorded on this phone is enqueued.** Fixed sessions are uploaded by the AirBeam itself
-   (with `session_token`); downloaded, followed or Explore-saved sessions belong to the server (often
-   another user). Those paths call `insertAll`, which never touches the outbox — so the safe default is
+   (with `session_token`) — except the AB3 SD-card sync edge case, which is not built yet and would
+   need the 9-byte fixed frame; downloaded, followed or Explore-saved sessions belong to the server (often
+   another user). Every enqueued mobile measurement already has a location — it is stamped at insert
+   with a last-known-location fallback (`DOMAIN_KNOWLEDGE.md` §3) — so the uploader never invents one. Those paths call `insertAll`, which never touches the outbox — so the safe default is
    "not uploaded". Only the recording path calls `insertRecorded`, which stores **and** enqueues in one
    transaction, enqueuing only rows actually newly stored (an `OR IGNORE`-skipped duplicate was
    enqueued when first recorded).
 2. **Acknowledged means "accepted in a `200` batch", not "stored".** See trap 1. So it is only truthful
    if the uploader **never sends a frame the server will silently drop**:
-   - **Split against `finished_at` before sending** (trap 3). Frames after the session's server-side
-     `finished_at` are never stored — don't send them, don't acknowledge them. They also must not sit in
-     the outbox forever. **Open decision:** bound `pending` by `finished_at`, or add a `state` column to
-     `pending_uploads` (e.g. "unuploadable"). Either way the change stays in the outbox; the
-     measurement itself is never deleted.
+   - **Drain before finish** (trap 3) — *decided 2026-10-16.* Stopping a session is a user action:
+     the app stores it locally at once (`end_time`) but calls `POST .../finish` only **after that
+     session's outbox is empty**. The server stamps `finished_at` with *its own* clock when `/finish`
+     arrives, so finishing first would silently drop the last frames whenever the phone clock runs
+     ahead of the server's. Uploading first means no batch can straddle `finished_at`, and the
+     uploader never needs to read it.
 3. **Sync the clock before the first batch** (trap 2, empty body → `X-Server-Time`). On mobile one
    out-of-range timestamp fails the **whole batch** with `400 invalid_epoch`, and a naive "retry the
    oldest pending rows" loop then resends the same poisoned batch forever. The uploader must detect

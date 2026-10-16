@@ -77,6 +77,12 @@ type (`AirBeam-PM2.5`). Built-in `sensor_type_id`s are **1–99**, globally stab
 
 Call create once at the start of a recording, then stream measurements to `.../measurements`.
 
+**All streams go in the create call** — *decided 2026-10-16.* v3 has no endpoint to add a stream to an
+existing session, and a frame needs the `sensor_type_id` that only the create response hands out. So
+the recording flow must know every stream before create (the AirBeam reports its sensors on connect)
+and never create one lazily on a sensor's first measurement. A local stream without `sensor_type_id`
+can never be uploaded: the uploader skips its rows (they stay in the outbox) and logs an error.
+
 **⏳ Planned change to `/finish` (agreed with BE 2026-10-16, not in the spec yet):** the mobile
 `/finish` will accept the **client's** `finished_at` (the moment the user stopped recording, from the
 phone clock) instead of stamping the server's clock on arrival. Body shape still to be confirmed —

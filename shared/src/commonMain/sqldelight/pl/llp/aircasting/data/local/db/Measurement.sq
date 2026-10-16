@@ -1,0 +1,28 @@
+import kotlin.time.Instant;
+
+CREATE TABLE measurements (
+    stream_id INTEGER NOT NULL REFERENCES measurement_streams(id) ON DELETE CASCADE,
+    time INTEGER AS Instant NOT NULL,
+    value REAL NOT NULL,
+    latitude REAL,
+    longitude REAL,
+    PRIMARY KEY (stream_id, time)
+);
+
+insertMeasurement:
+INSERT OR IGNORE INTO measurements(stream_id, time, value, latitude, longitude)
+VALUES (?, ?, ?, ?, ?);
+
+selectRecentByStream:
+SELECT *
+FROM measurements
+WHERE stream_id = :streamId
+ORDER BY time DESC
+LIMIT :limit;
+
+selectLastTimeByStream:
+SELECT time
+FROM measurements
+WHERE stream_id = :streamId
+ORDER BY time DESC
+LIMIT 1;

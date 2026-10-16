@@ -276,6 +276,10 @@ Defaults `DEFAULT_MOBILE_INTERVAL_SECONDS = 1` / `DEFAULT_FIXED_INTERVAL_SECONDS
 `AirBeamMiniV2Configurator`'s companion object and apply only when the param is null
 (legacy/non-V2 paths).
 
+> **Legacy only.** The KMP rewrite does not average stored measurements at all — averaging
+> is display-only (`DOMAIN_KNOWLEDGE.md` §7), so this bug class cannot occur. Kept as the
+> motivating example for that decision.
+
 **Sparse-interval averaging gotcha (`AveragingService`).** Averaging assumes the native
 sample rate is finer-grained than the averaging window. When that is violated (a
 5-second-native session in the 5s FIRST window, or any session with native ≥ window),

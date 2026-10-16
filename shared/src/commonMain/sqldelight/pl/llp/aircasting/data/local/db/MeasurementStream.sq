@@ -1,0 +1,29 @@
+CREATE TABLE measurement_streams (
+    id INTEGER NOT NULL PRIMARY KEY,
+    session_uuid TEXT NOT NULL REFERENCES sessions(uuid) ON DELETE CASCADE,
+    sensor_name TEXT NOT NULL,
+    unit_symbol TEXT NOT NULL,
+    sensor_type_id INTEGER
+);
+CREATE UNIQUE INDEX measurement_streams_session_sensor
+ON measurement_streams(session_uuid, sensor_name);
+
+insertStreamIfAbsent:
+INSERT OR IGNORE INTO measurement_streams(session_uuid, sensor_name, unit_symbol, sensor_type_id)
+VALUES (?, ?, ?, ?);
+
+selectStream:
+SELECT *
+FROM measurement_streams
+WHERE session_uuid = :sessionUuid AND sensor_name = :sensorName;
+
+selectStreamsBySession:
+SELECT *
+FROM measurement_streams
+WHERE session_uuid = :sessionUuid
+ORDER BY id;
+
+updateSensorTypeId:
+UPDATE measurement_streams
+SET sensor_type_id = :sensorTypeId
+WHERE id = :id;

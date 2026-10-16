@@ -1,0 +1,26 @@
+import kotlin.time.Instant;
+CREATE TABLE pending_uploads (
+    stream_id INTEGER NOT NULL,
+    time INTEGER AS Instant NOT NULL,
+    PRIMARY KEY (stream_id, time),
+    FOREIGN KEY (stream_id, time) REFERENCES measurements(stream_id, time) ON DELETE CASCADE
+);
+
+enqueue:
+INSERT OR IGNORE INTO pending_uploads(stream_id, time)
+VALUES (?, ?);
+
+selectPending:
+SELECT measurements.*
+FROM pending_uploads
+JOIN measurements
+ON measurements.stream_id = pending_uploads.stream_id
+ AND measurements.time = pending_uploads.time
+JOIN measurement_streams ON measurement_streams.id = pending_uploads.stream_id
+WHERE measurement_streams.session_uuid = :sessionUuid
+ORDER BY pending_uploads.time
+LIMIT :limit;
+
+acknowledge:
+DELETE FROM pending_uploads
+WHERE stream_id = :streamId AND time = :time;

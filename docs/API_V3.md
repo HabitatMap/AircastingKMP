@@ -56,7 +56,7 @@ AirBeam mobile (moving) sessions.
 | GET | `/api/v3/mobile_sessions/{uuid}` | — | show **[A]** |
 | PATCH | `/api/v3/mobile_sessions/{uuid}` | partial JSON; empty `tag_list` clears tags | update **[A]** |
 | DELETE | `/api/v3/mobile_sessions/{uuid}` | — | delete **[A]** |
-| POST | `/api/v3/mobile_sessions/{uuid}/finish` | — | stamps `finished_at` **[A]** |
+| POST | `/api/v3/mobile_sessions/{uuid}/finish` | `finished_at` ⏳ | sets `finished_at` to the client's stop time **[A]** |
 | GET | `/api/v3/mobile_sessions/{uuid}/measurements` | `sensor_name` (req), `start_time`, `end_time` | read **[A]** |
 | POST | `/api/v3/mobile_sessions/{uuid}/measurements` | **binary** (below) | upload **[A]** |
 | GET · POST | `/api/v3/mobile_sessions/{uuid}/notes` | — · JSON | list · add **[A]** |
@@ -76,6 +76,11 @@ type (`AirBeam-PM2.5`). Built-in `sensor_type_id`s are **1–99**, globally stab
 **100–255**, unique within the session.
 
 Call create once at the start of a recording, then stream measurements to `.../measurements`.
+
+**⏳ Planned change to `/finish` (agreed with BE 2026-10-16, not in the spec yet):** the mobile
+`/finish` will accept the **client's** `finished_at` (the moment the user stopped recording, from the
+phone clock) instead of stamping the server's clock on arrival. Body shape still to be confirmed —
+expect epoch ms, like `finished_at` in the response. Until it lands, the server stamps its own time.
 
 ---
 
@@ -170,6 +175,7 @@ The two uploads look symmetric and are not. Three traps, in the order they bite:
    `finished_at` are stored, later ones dropped, response `200` either way, with no count of what was
    kept. The only way to know is to **read `finished_at` off the session** and partition locally before
    sending.
+   *Mobile:* defused once the client sends its own `finished_at` — see outbox rule 2 below.
 
 Everything else is forgiving: resends are free, so retry on any transport error rather than trying to
 reason about what got through.
@@ -186,19 +192,20 @@ insert-only, per `DOMAIN_KNOWLEDGE.md` rule #4). The traps above shape how it ma
 1. **Only data recorded on this phone is enqueued.** Fixed sessions are uploaded by the AirBeam itself
    (with `session_token`) — except the AB3 SD-card sync edge case, which is not built yet and would
    need the 9-byte fixed frame; downloaded, followed or Explore-saved sessions belong to the server (often
-   another user). Every enqueued mobile measurement already has a location — it is stamped at insert
-   with a last-known-location fallback (`DOMAIN_KNOWLEDGE.md` §3) — so the uploader never invents one. Those paths call `insertAll`, which never touches the outbox — so the safe default is
+   another user). Those paths call `insertAll`, which never touches the outbox — so the safe default is
    "not uploaded". Only the recording path calls `insertRecorded`, which stores **and** enqueues in one
    transaction, enqueuing only rows actually newly stored (an `OR IGNORE`-skipped duplicate was
-   enqueued when first recorded).
+   enqueued when first recorded). Every enqueued mobile measurement already has a location — it is
+   stamped at insert with a last-known-location fallback (`DOMAIN_KNOWLEDGE.md` §3) — so the uploader
+   never invents one.
 2. **Acknowledged means "accepted in a `200` batch", not "stored".** See trap 1. So it is only truthful
    if the uploader **never sends a frame the server will silently drop**:
-   - **Drain before finish** (trap 3) — *decided 2026-10-16.* Stopping a session is a user action:
-     the app stores it locally at once (`end_time`) but calls `POST .../finish` only **after that
-     session's outbox is empty**. The server stamps `finished_at` with *its own* clock when `/finish`
-     arrives, so finishing first would silently drop the last frames whenever the phone clock runs
-     ahead of the server's. Uploading first means no batch can straddle `finished_at`, and the
-     uploader never needs to read it.
+   - **The client owns `finished_at`** (trap 3) — *decided 2026-10-16, pending the BE change above.*
+     Stopping is a user action: the app stores the stop locally (`sessions.end_time`) and sends that same
+     instant to `POST .../finish`. Every recorded frame is stamped by the same phone clock at or before
+     `end_time`, so none can land after `finished_at` — **upload and `/finish` may happen in any order**,
+     and the uploader never reads `finished_at` back. (With server-side stamping, a phone clock running
+     ahead of the server's would silently drop the last frames; sending our own time removes that.)
 3. **Sync the clock before the first batch** (trap 2, empty body → `X-Server-Time`). On mobile one
    out-of-range timestamp fails the **whole batch** with `400 invalid_epoch`, and a naive "retry the
    oldest pending rows" loop then resends the same poisoned batch forever. The uploader must detect

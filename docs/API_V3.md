@@ -56,7 +56,7 @@ AirBeam mobile (moving) sessions.
 | GET | `/api/v3/mobile_sessions/{uuid}` | — | show **[A]** |
 | PATCH | `/api/v3/mobile_sessions/{uuid}` | partial JSON; empty `tag_list` clears tags | update **[A]** |
 | DELETE | `/api/v3/mobile_sessions/{uuid}` | — | delete **[A]** |
-| POST | `/api/v3/mobile_sessions/{uuid}/finish` | `finished_at` ⏳ | sets `finished_at` to the client's stop time **[A]** |
+| POST | `/api/v3/mobile_sessions/{uuid}/finish` | JSON `{ finished_at }` | sets `finished_at` to the client's stop time **[A]** |
 | GET | `/api/v3/mobile_sessions/{uuid}/measurements` | `sensor_name` (req), `start_time`, `end_time` | read **[A]** |
 | POST | `/api/v3/mobile_sessions/{uuid}/measurements` | **binary** (below) | upload **[A]** |
 | GET · POST | `/api/v3/mobile_sessions/{uuid}/notes` | — · JSON | list · add **[A]** |
@@ -83,10 +83,17 @@ the recording flow must know every stream before create (the AirBeam reports its
 and never create one lazily on a sensor's first measurement. A local stream without `sensor_type_id`
 can never be uploaded: the uploader skips its rows (they stay in the outbox) and logs an error.
 
-**⏳ Planned change to `/finish` (agreed with BE 2026-10-16, not in the spec yet):** the mobile
-`/finish` will accept the **client's** `finished_at` (the moment the user stopped recording, from the
-phone clock) instead of stamping the server's clock on arrival. Body shape still to be confirmed —
-expect epoch ms, like `finished_at` in the response. Until it lands, the server stamps its own time.
+**Create body is flat** — the fields above sit at the top level, not under a `session` key.
+**`201` response:** `{ share_url, streams[] { sensor_name, sensor_type_id } }` — write each
+`sensor_type_id` back onto the local stream. A `409 session_uuid_taken` on a retry usually means an
+earlier create landed and its response was lost: read the ids back from `GET .../{uuid}`, whose
+`streams` is an object keyed by `sensor_name`, each with a nullable `sensor_type_id`.
+
+**`/finish` takes the client's stop time** — *agreed with BE 2026-10-16, in the spec since
+2026-10-19.* Body `{ "finished_at": <epoch ms, UTC> }`; omit it or send `null` and the server stamps
+its own clock. A `finished_at` **in the future** (by the server's clock) is `400 validation_error` —
+so a phone clock running ahead can get a `/finish` sent right after stopping rejected. That heals
+itself: the next sync pass retries, and by then the server clock has caught up.
 
 ---
 
@@ -205,7 +212,7 @@ insert-only, per `DOMAIN_KNOWLEDGE.md` rule #4). The traps above shape how it ma
    never invents one.
 2. **Acknowledged means "accepted in a `200` batch", not "stored".** See trap 1. So it is only truthful
    if the uploader **never sends a frame the server will silently drop**:
-   - **The client owns `finished_at`** (trap 3) — *decided 2026-10-16, pending the BE change above.*
+   - **The client owns `finished_at`** (trap 3) — *decided 2026-10-16; the BE change landed 2026-10-19.*
      Stopping is a user action: the app stores the stop locally (`sessions.end_time`) and sends that same
      instant to `POST .../finish`. Every recorded frame is stamped by the same phone clock at or before
      `end_time`, so none can land after `finished_at` — **upload and `/finish` may happen in any order**,

@@ -127,7 +127,7 @@ class AccountViewModelTest {
 
     vm.submitDeletionCode("0000"); testScheduler.advanceUntilIdle()
 
-    assertEquals(content(Deletion.AwaitingCode(rejected = true)), vm.state.value)
+    assertEquals(content(Deletion.AwaitingCode(isRejected = true)), vm.state.value)
   }
 
   @Test
@@ -141,7 +141,7 @@ class AccountViewModelTest {
     repo.failConfirm = false
     vm.sendDeletionCode(); testScheduler.advanceUntilIdle()
 
-    assertEquals(content(Deletion.AwaitingCode(rejected = false)), vm.state.value)
+    assertEquals(content(Deletion.AwaitingCode(isRejected = false)), vm.state.value)
     assertEquals(2, repo.deletionRequests)
   }
 

@@ -24,11 +24,11 @@ class StoredAppSettingsRepositoryTest {
     // These are the states drawn in Figma 163:12617, and they are what a new user gets.
     assertEquals(
       AppPreferences(
-        crowdMapEnabled = true,
-        locationTrackingEnabled = true,
-        darkMode = null,
-        pushNotificationsEnabled = true,
-        wifiOnlySync = false,
+        isCrowdMapEnabled = true,
+        isLocationTrackingEnabled = true,
+        isDarkMode = null,
+        isPushNotificationsEnabled = true,
+        isWifiOnlySync = false,
         temperatureUnit = TemperatureUnit.Fahrenheit,
         regionalFormat = RegionalFormat.US,
         mapType = MapType.Default,
@@ -40,23 +40,23 @@ class StoredAppSettingsRepositoryTest {
   fun `writes survive a restart`() {
     val store = MapSettings()
     StoredAppSettingsRepository(store).update {
-      it.copy(wifiOnlySync = true, temperatureUnit = TemperatureUnit.Celsius, darkMode = true)
+      it.copy(isWifiOnlySync = true, temperatureUnit = TemperatureUnit.Celsius, isDarkMode = true)
     }
 
     val reopened = StoredAppSettingsRepository(store).preferences.value
 
-    assertEquals(true, reopened.wifiOnlySync)
+    assertEquals(true, reopened.isWifiOnlySync)
     assertEquals(TemperatureUnit.Celsius, reopened.temperatureUnit)
-    assertEquals(true, reopened.darkMode)
+    assertEquals(true, reopened.isDarkMode)
   }
   @Test
   fun `an unset dark mode stays unset after other writes`() {
     // null is persisted as "absent", not as false — otherwise the first unrelated write would
     // silently pin the theme to light.
     val store = MapSettings()
-    StoredAppSettingsRepository(store).update { it.copy(wifiOnlySync = true) }
+    StoredAppSettingsRepository(store).update { it.copy(isWifiOnlySync = true) }
 
-    assertEquals(null, StoredAppSettingsRepository(store).preferences.value.darkMode)
+    assertEquals(null, StoredAppSettingsRepository(store).preferences.value.isDarkMode)
   }
 
   @Test

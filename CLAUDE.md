@@ -14,6 +14,17 @@ one. The source of truth for both is the OpenAPI spec at
 <https://experimental.aircasting.org/api-docs/index.html> — the Swagger UI is
 JS-rendered, so fetch `.../api-docs/swagger.yaml` instead.
 
+## Business logic: docs first, then the legacy app
+
+This app is a KMP rewrite of the legacy Android app — GitHub
+`HabitatMap/AircastingAndroid`, usually checked out next to this repo at
+`../AircastingAndroid`. When a business rule (how a measurement gets its location, what
+gets uploaded, retry/sync behavior, edge cases) is **not covered by `/docs/`**, take it
+from the legacy app's code — don't invent one. Then record what you found in `/docs/`
+(usually `DOMAIN_KNOWLEDGE.md`), with the legacy class it came from, so the next person
+doesn't have to dig. Where the legacy app has several variants of a rule, prefer the
+newest, most robust one (typically the AirBeam Mini V2 path) and say so.
+
 ## Core directive: propose the code in chat, and teach it
 
 The developers on this project are **experienced Android Kotlin developers** learning

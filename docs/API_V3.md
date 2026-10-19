@@ -56,7 +56,7 @@ AirBeam mobile (moving) sessions.
 | GET | `/api/v3/mobile_sessions/{uuid}` | — | show **[A]** |
 | PATCH | `/api/v3/mobile_sessions/{uuid}` | partial JSON; empty `tag_list` clears tags | update **[A]** |
 | DELETE | `/api/v3/mobile_sessions/{uuid}` | — | delete **[A]** |
-| POST | `/api/v3/mobile_sessions/{uuid}/finish` | — | stamps `finished_at` **[A]** |
+| POST | `/api/v3/mobile_sessions/{uuid}/finish` | JSON `{ finished_at }` | sets `finished_at` to the client's stop time **[A]** |
 | GET | `/api/v3/mobile_sessions/{uuid}/measurements` | `sensor_name` (req), `start_time`, `end_time` | read **[A]** |
 | POST | `/api/v3/mobile_sessions/{uuid}/measurements` | **binary** (below) | upload **[A]** |
 | GET · POST | `/api/v3/mobile_sessions/{uuid}/notes` | — · JSON | list · add **[A]** |
@@ -76,6 +76,24 @@ type (`AirBeam-PM2.5`). Built-in `sensor_type_id`s are **1–99**, globally stab
 **100–255**, unique within the session.
 
 Call create once at the start of a recording, then stream measurements to `.../measurements`.
+
+**All streams go in the create call** — *decided 2026-10-16.* v3 has no endpoint to add a stream to an
+existing session, and a frame needs the `sensor_type_id` that only the create response hands out. So
+the recording flow must know every stream before create (the AirBeam reports its sensors on connect)
+and never create one lazily on a sensor's first measurement. A local stream without `sensor_type_id`
+can never be uploaded: the uploader skips its rows (they stay in the outbox) and logs an error.
+
+**Create body is flat** — the fields above sit at the top level, not under a `session` key.
+**`201` response:** `{ share_url, streams[] { sensor_name, sensor_type_id } }` — write each
+`sensor_type_id` back onto the local stream. A `409 session_uuid_taken` on a retry usually means an
+earlier create landed and its response was lost: read the ids back from `GET .../{uuid}`, whose
+`streams` is an object keyed by `sensor_name`, each with a nullable `sensor_type_id`.
+
+**`/finish` takes the client's stop time** — *agreed with BE 2026-10-16, in the spec since
+2026-10-19.* Body `{ "finished_at": <epoch ms, UTC> }`; omit it or send `null` and the server stamps
+its own clock. A `finished_at` **in the future** (by the server's clock) is `400 validation_error` —
+so a phone clock running ahead can get a `/finish` sent right after stopping rejected. That heals
+itself: the uploader backs off and retries, and by then the server clock has caught up.
 
 ---
 
@@ -164,12 +182,12 @@ The two uploads look symmetric and are not. Three traps, in the order they bite:
 2. **Out-of-range timestamps diverge.** A frame with epoch 0, before 2020-01-01 UTC, or more than 24 h
    ahead of server time is **silently dropped by fixed** (`200`, the rest of the payload is stored) but
    **rejected by mobile** (`400 invalid_epoch`). So the same clock bug surfaces as data loss on one path
-   and a hard failure on the other. Sync the clock first via the empty-body / `X-Server-Time` call rather
-   than trusting the device.
+   and a hard failure on the other. *We don't pre-check this client-side* — see outbox rule 3.
 3. **A batch straddling `finished_at` is indistinguishable from a clean one.** Frames at or before
    `finished_at` are stored, later ones dropped, response `200` either way, with no count of what was
    kept. The only way to know is to **read `finished_at` off the session** and partition locally before
    sending.
+   *Mobile:* defused once the client sends its own `finished_at` — see outbox rule 2 below.
 
 Everything else is forgiving: resends are free, so retry on any transport error rather than trying to
 reason about what got through.
@@ -184,28 +202,62 @@ cleared via `UploadOutbox.acknowledge` (a `DELETE` — the data row is untouched
 insert-only, per `DOMAIN_KNOWLEDGE.md` rule #4). The traps above shape how it may be used:
 
 1. **Only data recorded on this phone is enqueued.** Fixed sessions are uploaded by the AirBeam itself
-   (with `session_token`); downloaded, followed or Explore-saved sessions belong to the server (often
+   (with `session_token`) — except the AB3 SD-card sync edge case, which is not built yet and would
+   need the 9-byte fixed frame; downloaded, followed or Explore-saved sessions belong to the server (often
    another user). Those paths call `insertAll`, which never touches the outbox — so the safe default is
    "not uploaded". Only the recording path calls `insertRecorded`, which stores **and** enqueues in one
    transaction, enqueuing only rows actually newly stored (an `OR IGNORE`-skipped duplicate was
-   enqueued when first recorded).
+   enqueued when first recorded). Every enqueued mobile measurement already has a location — it is
+   stamped at insert with a last-known-location fallback (`DOMAIN_KNOWLEDGE.md` §3) — so the uploader
+   never invents one.
 2. **Acknowledged means "accepted in a `200` batch", not "stored".** See trap 1. So it is only truthful
    if the uploader **never sends a frame the server will silently drop**:
-   - **Split against `finished_at` before sending** (trap 3). Frames after the session's server-side
-     `finished_at` are never stored — don't send them, don't acknowledge them. They also must not sit in
-     the outbox forever. **Open decision:** bound `pending` by `finished_at`, or add a `state` column to
-     `pending_uploads` (e.g. "unuploadable"). Either way the change stays in the outbox; the
-     measurement itself is never deleted.
-3. **Sync the clock before the first batch** (trap 2, empty body → `X-Server-Time`). On mobile one
-   out-of-range timestamp fails the **whole batch** with `400 invalid_epoch`, and a naive "retry the
-   oldest pending rows" loop then resends the same poisoned batch forever. The uploader must detect
-   `invalid_epoch` and handle the bad frames rather than retry unchanged.
+   - **The client owns `finished_at`** (trap 3) — *decided 2026-10-16; the BE change landed 2026-10-19.*
+     Stopping is a user action: the app stores the stop locally (`sessions.end_time`) and sends that same
+     instant to `POST .../finish`. Every recorded frame is stamped by the same phone clock at or before
+     `end_time`, so none can land after `finished_at` — **upload and `/finish` may happen in any order**,
+     and the uploader never reads `finished_at` back. (With server-side stamping, a phone clock running
+     ahead of the server's would silently drop the last frames; sending our own time removes that.)
+3. **No client-side clock checks** (trap 2) — *decided 2026-10-16.* Phone clocks are network-synced,
+   and the legacy app never checked timestamps against server time without trouble. So the uploader
+   doesn't sync the clock or filter frames by the server's bounds. If a broken clock ever produces an
+   `invalid_epoch` batch, the request throws like any other failure, the rows stay queued, and the
+   error is surfaced to the user and to crash reporting — a visible stuck upload, not silent loss.
 4. **Track per row `(stream_id, time)`, never a time cursor.** Mini V2 reconnect-sync backfills
    *older* timestamps after newer ones were already uploaded; a per-session "uploaded up to T" cursor
    would treat them as done and lose them.
 5. **Retry is otherwise blind and safe.** On transport errors, timeouts and `5xx`, leave the outbox
    rows in place — they go out again next pass. Resends are deduped server-side on
    `(stream, timestamp)`. State lives in SQLite, so it survives process death.
+
+### When the uploader runs — *decided 2026-10-19*
+
+**Upload is not sync.** v3 has no `sync_with_versioning`, so nothing server-side decides what to upload;
+the outbox does. Mobile measurements go up **live, during recording** (new — the legacy app uploaded a
+session whole, after stop). Reconciliation (server deletes, downloads) is a separate, later feature.
+
+The trigger is **local data**, not a list of events. Work = a mobile session with `pending_uploads`
+rows, or one with `end_time` set and `is_finished_on_server = 0`. One loop in `commonMain` observes both
+(two queries) and, per pass, runs `MobileSessionUpload.upload(uuid)` (create once → batches → `/finish`
+once) for each such session:
+
+1. No work → idle (no timer runs).
+2. A stopped session not yet finished on the server → drain **now** — no caller has to remember to flush.
+3. Only rows of still-recording sessions → wait **N = 60 s**, then drain (≈300 frames at 5 streams × 1 Hz;
+   radio wakeups, not bytes, drive battery cost).
+4. Failure → exponential backoff (e.g. 30 s … ~10 min), reset on success. Heals the future-`finished_at` `400`.
+
+`flushNow()` exists for one case: the **app going to background** with work pending (lifecycle, not data).
+
+**Platform backstop**, for when the process may die with work left:
+- **Android:** unique one-off WorkManager work, `NetworkType.CONNECTED` + backoff. Replaces the legacy
+  `ConnectivityReceiver`. No periodic work — one-off work persists until it succeeds.
+- **iOS:** no WorkManager equivalent. `beginBackgroundTask` (~30 s) on backgrounding, drain on next
+  foreground/launch. **Known limit:** after a force-quit, pending uploads wait for the next launch — delayed,
+  never lost (SQLite).
+
+While recording, the process is alive on both platforms (Android foreground service, iOS
+`bluetooth-central`), so the live path needs no platform scheduler.
 
 ### Error codes
 

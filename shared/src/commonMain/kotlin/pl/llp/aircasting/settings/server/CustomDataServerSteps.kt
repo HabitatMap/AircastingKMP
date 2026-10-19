@@ -115,7 +115,7 @@ fun FormStep(form: CustomServerForm, onEdit: (CustomServerForm) -> Unit, onUseOf
       onValueChange = { onEdit(form.copy(host = it)) },
       label = strings.customServerUrlLabel,
       supporting = strings.customServerUrlHint,
-      isError = form.hostError,
+      isError = form.hasHostError,
       keyboard = KeyboardType.Uri,
     )
     ServerField(
@@ -123,7 +123,7 @@ fun FormStep(form: CustomServerForm, onEdit: (CustomServerForm) -> Unit, onUseOf
       onValueChange = { onEdit(form.copy(port = it)) },
       label = strings.customServerPortLabel,
       supporting = strings.customServerPortHint,
-      isError = form.portError,
+      isError = form.hasPortError,
       keyboard = KeyboardType.Number,
     )
     Text(

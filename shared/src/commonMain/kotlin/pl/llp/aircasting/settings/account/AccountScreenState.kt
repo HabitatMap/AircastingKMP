@@ -12,5 +12,5 @@ sealed interface AccountScreenState {
 sealed interface Deletion {
   data object None : Deletion
   data object Confirming : Deletion
-  data class AwaitingCode(val rejected: Boolean = false) : Deletion
+  data class AwaitingCode(val isRejected: Boolean = false) : Deletion
 }

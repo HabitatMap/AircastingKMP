@@ -6,6 +6,7 @@ import kotlin.time.Instant
 interface SessionRepository {
   suspend fun insert(session: Session)
   suspend fun find(uuid: String): Session?
+  suspend fun markFinishedOnServer(uuid: String)
   fun observe(uuid: String): Flow<Session?>
   fun observeAll(): Flow<List<Session>>
   suspend fun updateStatus(uuid: String, status: SessionStatus)

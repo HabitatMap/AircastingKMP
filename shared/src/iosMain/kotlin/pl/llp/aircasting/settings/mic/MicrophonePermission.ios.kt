@@ -17,7 +17,7 @@ actual fun rememberMicrophonePermission(): MicrophonePermission {
 
   return remember(session) {
     object : MicrophonePermission {
-      override val granted get() = state.value
+      override val isGranted get() = state.value
       override fun request() {
         session.requestRecordPermission { ok ->
           // The callback lands on an arbitrary queue; snapshot state must be written on main.

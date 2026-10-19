@@ -58,7 +58,7 @@ class AuthViewModelTest {
     testScheduler.advanceUntilIdle()
 
     assertEquals(AuthState.SignedIn("tok"), vm.session.value)
-    assertFalse(vm.form.value.submitting)
+    assertFalse(vm.form.value.isSubmitting)
     assertNull(vm.form.value.failure)
   }
 
@@ -71,7 +71,7 @@ class AuthViewModelTest {
     vm.submit()
     testScheduler.advanceUntilIdle()
 
-    assertTrue(vm.form.value.submitting)
+    assertTrue(vm.form.value.isSubmitting)
     assertFalse(vm.form.value.canSubmit)
 
     vm.submit()
@@ -79,7 +79,7 @@ class AuthViewModelTest {
     testScheduler.advanceUntilIdle()
 
     assertEquals(1, repo.calls)
-    assertFalse(vm.form.value.submitting)
+    assertFalse(vm.form.value.isSubmitting)
   }
 
   @Test
@@ -93,7 +93,7 @@ class AuthViewModelTest {
 
     assertEquals(AuthFailure.InvalidCredentials, vm.form.value.formError)
     assertNull(vm.form.value.passwordError)
-    assertFalse(vm.form.value.submitting)
+    assertFalse(vm.form.value.isSubmitting)
   }
 
   @Test

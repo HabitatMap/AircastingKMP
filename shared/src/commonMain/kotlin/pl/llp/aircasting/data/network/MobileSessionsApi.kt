@@ -14,6 +14,7 @@ import io.ktor.http.ContentType
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
+import kotlin.time.Instant
 
 class MobileSessionsApi(private val client: HttpClient) {
   /** List the signed-in user's mobile sessions, paginated. */
@@ -32,7 +33,7 @@ class MobileSessionsApi(private val client: HttpClient) {
   suspend fun createSession(
     userToken: String,
     request: CreateMobileSessionRequestDto,
-  ): MobileSessionSummaryDto = client.post(ApiEndpoints.V3MobileSessions) {
+  ): CreateMobileSessionResponseDto = client.post(ApiEndpoints.V3MobileSessions) {
     aircastingBearerAuth(userToken)
     contentType(ContentType.Application.Json)
     setBody(request)
@@ -62,6 +63,15 @@ class MobileSessionsApi(private val client: HttpClient) {
   suspend fun deleteSession(userToken: String, uuid: String) {
     client.delete(ApiEndpoints.v3MobileSession(uuid)) {
       aircastingBearerAuth(userToken)
+    }
+  }
+
+  /** Declare the recording over at [finishedAt] — the moment the user stopped, by the phone clock. */
+  suspend fun finishSession(userToken: String, uuid: String, finishedAt: Instant) {
+    client.post(ApiEndpoints.v3MobileSessionFinish(uuid)) {
+      aircastingBearerAuth(userToken)
+      contentType(ContentType.Application.Json)
+      setBody(FinishMobileSessionRequestDto(finishedAt.toEpochMilliseconds()))
     }
   }
 

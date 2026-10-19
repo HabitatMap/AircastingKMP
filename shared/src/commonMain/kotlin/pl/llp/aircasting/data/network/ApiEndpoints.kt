@@ -18,6 +18,7 @@ object ApiEndpoints {
   fun v3MobileSessionMeasurements(uuid: String) = "/api/v3/mobile_sessions/$uuid/measurements"
   fun v3MobileSessionNotes(uuid: String) = "/api/v3/mobile_sessions/$uuid/notes"
   fun v3MobileSessionNote(uuid: String, noteId: Long) = "/api/v3/mobile_sessions/$uuid/notes/$noteId"
+  fun v3MobileSessionFinish(uuid: String) = "/api/v3/mobile_sessions/$uuid/finish"
   // =========================================================================
   // Mobile app: Fixed sessions v3 (HTTP Bearer Auth: user token or session token)
   // =========================================================================

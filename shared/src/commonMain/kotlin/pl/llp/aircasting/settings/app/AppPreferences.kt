@@ -4,12 +4,12 @@ import cafe.adriel.lyricist.LanguageTag
 import pl.llp.aircasting.settings.mic.DefaultCalibrationOffset
 
 data class AppPreferences(
-  val crowdMapEnabled: Boolean = true,
-  val locationTrackingEnabled: Boolean = true,
+  val isCrowdMapEnabled: Boolean = true,
+  val isLocationTrackingEnabled: Boolean = true,
   /** `null` = follow the system theme */
-  val darkMode: Boolean? = null,
-  val pushNotificationsEnabled: Boolean = true,
-  val wifiOnlySync: Boolean = false,
+  val isDarkMode: Boolean? = null,
+  val isPushNotificationsEnabled: Boolean = true,
+  val isWifiOnlySync: Boolean = false,
   val temperatureUnit: TemperatureUnit = TemperatureUnit.Fahrenheit,
   val regionalFormat: RegionalFormat = RegionalFormat.US,
   val mapType: MapType = MapType.Default,

@@ -6,11 +6,11 @@ import pl.llp.aircasting.i18n.Strings
 fun AppPreferences.toRows(strings: Strings, systemDarkMode: Boolean): List<AppSettingRow> =
   AppSetting.entries.map { setting ->
     when (setting) {
-      AppSetting.CrowdMap -> AppSettingRow.Toggle(setting, crowdMapEnabled)
-      AppSetting.DisableMapping -> AppSettingRow.Toggle(setting, !locationTrackingEnabled)
-      AppSetting.DarkMode -> AppSettingRow.Toggle(setting, darkMode ?: systemDarkMode)
-      AppSetting.PushNotifications -> AppSettingRow.Toggle(setting, pushNotificationsEnabled)
-      AppSetting.WifiOnlySync -> AppSettingRow.Toggle(setting, wifiOnlySync)
+      AppSetting.CrowdMap -> AppSettingRow.Toggle(setting, isCrowdMapEnabled)
+      AppSetting.DisableMapping -> AppSettingRow.Toggle(setting, !isLocationTrackingEnabled)
+      AppSetting.DarkMode -> AppSettingRow.Toggle(setting, isDarkMode ?: systemDarkMode)
+      AppSetting.PushNotifications -> AppSettingRow.Toggle(setting, isPushNotificationsEnabled)
+      AppSetting.WifiOnlySync -> AppSettingRow.Toggle(setting, isWifiOnlySync)
       AppSetting.TemperatureUnits -> AppSettingRow.Link(setting, strings.display(temperatureUnit))
       AppSetting.RegionalFormats -> AppSettingRow.Link(setting, strings.display(regionalFormat))
       AppSetting.MapType -> AppSettingRow.Link(setting, strings.display(mapType))

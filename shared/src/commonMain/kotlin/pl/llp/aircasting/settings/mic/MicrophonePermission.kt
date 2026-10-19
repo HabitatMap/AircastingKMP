@@ -6,12 +6,12 @@ import androidx.compose.runtime.Stable
 /**
  * Read-and-request access to the microphone.
  *
- * `@Stable` because [granted] is backed by snapshot state on both platforms: Compose may skip
+ * `@Stable` because [isGranted] is backed by snapshot state on both platforms: Compose may skip
  * recomposition of anything holding this until that state actually changes.
  */
 @Stable
 interface MicrophonePermission {
-  val granted: Boolean
+  val isGranted: Boolean
   fun request()
 }
 

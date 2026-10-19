@@ -42,7 +42,7 @@ internal fun DeleteAccountConfirmDialog(onConfirm: () -> Unit, onDismiss: () -> 
 @Composable
 internal fun DeleteAccountCodeDialog(
   email: String,
-  rejected: Boolean,
+  isRejected: Boolean,
   onSubmit: (String) -> Unit,
   onResend: () -> Unit,
   onDismiss: () -> Unit,
@@ -63,8 +63,8 @@ internal fun DeleteAccountCodeDialog(
           modifier = Modifier.fillMaxWidth(),
           label = { Text(strings.deleteAccountCodeLabel) },
           keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-          isError = rejected,
-          supportingText = if (rejected) {
+          isError = isRejected,
+          supportingText = if (isRejected) {
             { Text(strings.deleteAccountCodeInvalid, color = MaterialTheme.colorScheme.error) }
           } else null,
           singleLine = true,

@@ -87,7 +87,7 @@ fun SettingsAccountScreen(
     )
     is Deletion.AwaitingCode -> DeleteAccountCodeDialog(
       email = content.profile.email,
-      rejected = deletion.rejected,
+      isRejected = deletion.isRejected,
       onSubmit = onDeletionCodeSubmit,
       onResend = onDeletionConfirmed,
       onDismiss = onDeletionDismissed,

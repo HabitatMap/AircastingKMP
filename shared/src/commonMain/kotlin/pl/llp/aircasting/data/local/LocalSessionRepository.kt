@@ -37,7 +37,7 @@ class LocalSessionRepository(
       latitude = session.location?.latitude,
       longitude = session.location?.longitude,
       is_indoor = session.isIndoor,
-      contribute = session.contribute,
+      is_contributing_to_crowd_map = session.isContributingToCrowdMap,
       time_zone = session.timeZone,
       measurement_interval_millis = session.measurementInterval.inWholeMilliseconds,
       session_token = session.sessionToken,
@@ -66,8 +66,8 @@ class LocalSessionRepository(
     queries.finishSession(status = SessionStatus.FINISHED, endTime = endTime, uuid = uuid)
   }
 
-  override suspend fun markFinishSynced(uuid: String): Unit =
-    withContext(ioDispatcher) { queries.markFinishSynced(uuid) }
+  override suspend fun markFinishedOnServer(uuid: String): Unit =
+    withContext(ioDispatcher) { queries.markFinishedOnServer(uuid) }
 
   override suspend fun delete(uuid: String): Unit =
     withContext(ioDispatcher) { queries.deleteSession(uuid) }
@@ -87,7 +87,7 @@ private fun Sessions.toDomain() = Session(
   deviceModel = device_model,
   location = latitude?.let { lat -> longitude?.let { lon -> GeoLocation(lat, lon) } },
   isIndoor = is_indoor,
-  contribute = contribute,
+  isContributingToCrowdMap = is_contributing_to_crowd_map,
   sessionToken = session_token,
-  finishSynced = finish_synced,
+  isFinishedOnServer = is_finished_on_server,
 )

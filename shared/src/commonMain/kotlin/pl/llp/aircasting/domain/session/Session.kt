@@ -25,9 +25,9 @@ data class Session(
   /** Per-session fix for fixed sessions; mobile carries location per measurement instead. */
   val location: GeoLocation? = null,
   val isIndoor: Boolean = false,
-  val contribute: Boolean = true,
+  val isContributingToCrowdMap: Boolean = true,
   /** v3 fixed only: the Bearer token the AirBeam itself uses to upload. Not the user token. */
   val sessionToken: String? = null,
   /** Mobile only: the server has our `end_time` as `finished_at`. */
-  val finishSynced: Boolean = false,
+  val isFinishedOnServer: Boolean = false,
 )

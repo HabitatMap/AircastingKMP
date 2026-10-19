@@ -18,18 +18,18 @@ CREATE TABLE sessions (
     latitude REAL,
     longitude REAL,
     is_indoor INTEGER AS Boolean NOT NULL DEFAULT 0,
-    contribute INTEGER AS Boolean NOT NULL DEFAULT 1,
+    is_contributing_to_crowd_map INTEGER AS Boolean NOT NULL DEFAULT 1,
     time_zone TEXT NOT NULL,
     measurement_interval_millis INTEGER NOT NULL,
     session_token TEXT,
-    finish_synced INTEGER AS Boolean NOT NULL DEFAULT 0
+    is_finished_on_server INTEGER AS Boolean NOT NULL DEFAULT 0
 );
 
 insertSession:
 INSERT INTO sessions(
     uuid, type, status, name, tags, device_id, device_model,
     start_time, end_time, latitude, longitude,
-    is_indoor, contribute, time_zone, measurement_interval_millis, session_token
+    is_indoor, is_contributing_to_crowd_map, time_zone, measurement_interval_millis, session_token
 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 selectSessionByUuid:
@@ -52,9 +52,9 @@ UPDATE sessions
 SET status = :status, end_time = :endTime
 WHERE uuid = :uuid;
 
-markFinishSynced:
+markFinishedOnServer:
 UPDATE sessions
-SET finish_synced = 1
+SET is_finished_on_server = 1
 WHERE uuid = :uuid;
 
 deleteSession:

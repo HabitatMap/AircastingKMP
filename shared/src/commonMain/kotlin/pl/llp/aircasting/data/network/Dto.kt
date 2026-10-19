@@ -35,7 +35,7 @@ data class MobileSessionSummaryDto(
   val title: String,
   val type: String = "MobileSession",
   @SerialName("tag_list") val tagList: String? = null,
-  val contribute: Boolean = true,
+  @SerialName("contribute") val isContributingToCrowdMap: Boolean = true,
   @SerialName("time_zone") val timeZone: String,
   @SerialName("start_time") val startTime: Long? = null,
   @SerialName("end_time") val endTime: Long? = null,
@@ -51,7 +51,7 @@ data class CreateMobileSessionRequestDto(
   val uuid: String,
   val title: String,
   @SerialName("time_zone") val timeZone: String,
-  val contribute: Boolean,
+  @SerialName("contribute") val isContributingToCrowdMap: Boolean,
   @SerialName("tag_list") val tagList: String,
   val device: DeviceDto,
   val streams: List<CreateStreamPayloadDto>,
@@ -87,7 +87,7 @@ data class CreateStreamPayloadDto(
 data class UpdateMobileSessionRequestDto(
   val title: String? = null,
   @SerialName("tag_list") val tagList: String? = null,
-  val contribute: Boolean? = null,
+  @SerialName("contribute") val isContributingToCrowdMap: Boolean? = null,
 )
 @Serializable
 data class NoteDto(

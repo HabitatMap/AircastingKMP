@@ -44,9 +44,9 @@ class MobileSessionSync(
     uploader.upload(sessionUuid)
 
     val endTime = session.endTime
-    if (endTime != null && !session.finishSynced) {
+    if (endTime != null && !session.isFinishedOnServer) {
       api.finishSession(token, sessionUuid, endTime)
-      sessions.markFinishSynced(sessionUuid)
+      sessions.markFinishedOnServer(sessionUuid)
     }
   }
   /** @return sensor_type_id by sensor_name. */
@@ -70,7 +70,7 @@ private fun Session.toCreateRequest(streams: List<MeasurementStream>) = CreateMo
   uuid = uuid,
   title = name,
   timeZone = timeZone,
-  contribute = contribute,
+  isContributingToCrowdMap = isContributingToCrowdMap,
   tagList = tags.joinToString(" "),
   device = DeviceDto(
     macAddress = requireNotNull(deviceId) { "$uuid: mobile session without a device id" },

@@ -171,7 +171,7 @@ class MobileSessionSyncTest {
 
   private class FakeSessionRepository(var session: Session) : SessionRepository {
     override suspend fun find(uuid: String) = session.takeIf { it.uuid == uuid }
-    override suspend fun markFinishSynced(uuid: String) { session = session.copy(finishSynced = true) }
+    override suspend fun markFinishedOnServer(uuid: String) { session = session.copy(isFinishedOnServer = true) }
     override suspend fun insert(session: Session) = error("unused")
     override fun observe(uuid: String): Flow<Session?> = error("unused")
     override fun observeAll(): Flow<List<Session>> = error("unused")

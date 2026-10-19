@@ -21,7 +21,7 @@ val TooLongThreshold = 10.seconds
 sealed interface CustomServerStep {
   data object Intro : CustomServerStep
   data class Form(val form: CustomServerForm = CustomServerForm()) : CustomServerStep
-  data class Testing(val baseUrl: String, val tookTooLong: Boolean = false) : CustomServerStep
+  data class Testing(val baseUrl: String, val isTakingTooLong: Boolean = false) : CustomServerStep
   data class Verified(val baseUrl: String) : CustomServerStep
   data class Failed(val baseUrl: String) : CustomServerStep
 }
@@ -98,7 +98,7 @@ class CustomDataServerViewModel(
     probeJob = viewModelScope.launch {
       val nag = launch {
         delay(TooLongThreshold)
-        (_step.value as? CustomServerStep.Testing)?.let { _step.value = it.copy(tookTooLong = true) }
+        (_step.value as? CustomServerStep.Testing)?.let { _step.value = it.copy(isTakingTooLong = true) }
       }
       val reachable = probe.reachable(baseUrl)
       nag.cancel()

@@ -14,13 +14,13 @@ class AppSettingsViewModel(private val repository: AppSettingsRepository) : View
 
   fun toggle(setting: AppSetting, enabled: Boolean) = repository.update { prefs ->
     when (setting) {
-      AppSetting.CrowdMap -> prefs.copy(crowdMapEnabled = enabled)
-      // The row is the negative of the pref — see AppPreferences.locationTrackingEnabled.
-      AppSetting.DisableMapping -> prefs.copy(locationTrackingEnabled = !enabled)
+      AppSetting.CrowdMap -> prefs.copy(isCrowdMapEnabled = enabled)
+      // The row is the negative of the pref — see AppPreferences.isLocationTrackingEnabled.
+      AppSetting.DisableMapping -> prefs.copy(isLocationTrackingEnabled = !enabled)
       // Writing a Boolean is what pins the theme: from here on the system is ignored.
-      AppSetting.DarkMode -> prefs.copy(darkMode = enabled)
-      AppSetting.PushNotifications -> prefs.copy(pushNotificationsEnabled = enabled)
-      AppSetting.WifiOnlySync -> prefs.copy(wifiOnlySync = enabled)
+      AppSetting.DarkMode -> prefs.copy(isDarkMode = enabled)
+      AppSetting.PushNotifications -> prefs.copy(isPushNotificationsEnabled = enabled)
+      AppSetting.WifiOnlySync -> prefs.copy(isWifiOnlySync = enabled)
       // Exhaustive and inert: these rows navigate, and a toggle reaching them is a wiring bug
       // worth a log rather than a silent write.
       AppSetting.TemperatureUnits,

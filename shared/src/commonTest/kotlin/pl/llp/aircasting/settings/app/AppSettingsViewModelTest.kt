@@ -18,9 +18,9 @@ class AppSettingsViewModelTest {
 
     assertEquals(
       AppPreferences(
-        crowdMapEnabled = false,
-        pushNotificationsEnabled = false,
-        wifiOnlySync = true
+        isCrowdMapEnabled = false,
+        isPushNotificationsEnabled = false,
+        isWifiOnlySync = true
       ),
       repo.preferences.value,
     )
@@ -33,7 +33,7 @@ class AppSettingsViewModelTest {
 
     vm.toggle(AppSetting.DisableMapping, true)
 
-    assertEquals(false, repo.preferences.value.locationTrackingEnabled)
+    assertEquals(false, repo.preferences.value.isLocationTrackingEnabled)
   }
 
   @Test
@@ -45,7 +45,7 @@ class AppSettingsViewModelTest {
 
     vm.toggle(AppSetting.DarkMode, false)
 
-    assertEquals(false, repo.preferences.value.darkMode)
+    assertEquals(false, repo.preferences.value.isDarkMode)
   }
 
   @Test

@@ -35,7 +35,7 @@ fun CustomDataServerScreen(
         CustomServerStep.Intro -> WizardButton(strings.customServerNext, onNext)
         is CustomServerStep.Form ->
           WizardButton(strings.customServerNext, onNext, enabled = step.form.baseUrl != null)
-        is CustomServerStep.Testing -> if (step.tookTooLong) {
+        is CustomServerStep.Testing -> if (step.isTakingTooLong) {
           Text(
             strings.customServerTooLong,
             modifier = Modifier.clickable(onClick = onCancelTest).padding(16.dp),

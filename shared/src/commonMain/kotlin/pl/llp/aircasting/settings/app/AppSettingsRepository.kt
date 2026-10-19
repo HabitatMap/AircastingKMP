@@ -42,11 +42,11 @@ private fun Settings.readPreferences() = AppPreferences(
   microphoneCalibrationOffset =
     getInt(KeyMicCalibrationOffset, Defaults.microphoneCalibrationOffset),
   language = getStringOrNull(KeyLanguage),
-  crowdMapEnabled = getBoolean(KeyCrowdMap, Defaults.crowdMapEnabled),
-  locationTrackingEnabled = getBoolean(KeyLocationTracking, Defaults.locationTrackingEnabled),
-  darkMode = getBooleanOrNull(KeyDarkMode),
-  pushNotificationsEnabled = getBoolean(KeyPushNotifications, Defaults.pushNotificationsEnabled),
-  wifiOnlySync = getBoolean(KeyWifiOnlySync, Defaults.wifiOnlySync),
+  isCrowdMapEnabled = getBoolean(KeyCrowdMap, Defaults.isCrowdMapEnabled),
+  isLocationTrackingEnabled = getBoolean(KeyLocationTracking, Defaults.isLocationTrackingEnabled),
+  isDarkMode = getBooleanOrNull(KeyDarkMode),
+  isPushNotificationsEnabled = getBoolean(KeyPushNotifications, Defaults.isPushNotificationsEnabled),
+  isWifiOnlySync = getBoolean(KeyWifiOnlySync, Defaults.isWifiOnlySync),
   temperatureUnit = getEnum(KeyTemperatureUnit, Defaults.temperatureUnit),
   regionalFormat = getEnum(KeyRegionalFormat, Defaults.regionalFormat),
   mapType = getEnum(KeyMapType, Defaults.mapType),
@@ -56,12 +56,12 @@ private fun Settings.writePreferences(prefs: AppPreferences) {
   prefs.dataServerUrl?.let { putString(KeyDataServerUrl, it) } ?: remove(KeyDataServerUrl)
   putInt(KeyMicCalibrationOffset, prefs.microphoneCalibrationOffset)
   prefs.language?.let { putString(KeyLanguage, it) } ?: remove(KeyLanguage)
-  putBoolean(KeyCrowdMap, prefs.crowdMapEnabled)
-  putBoolean(KeyLocationTracking, prefs.locationTrackingEnabled)
+  putBoolean(KeyCrowdMap, prefs.isCrowdMapEnabled)
+  putBoolean(KeyLocationTracking, prefs.isLocationTrackingEnabled)
   // Absent, not false: "not chosen yet" has to stay distinguishable from "chosen: light".
-  prefs.darkMode?.let { putBoolean(KeyDarkMode, it) } ?: remove(KeyDarkMode)
-  putBoolean(KeyPushNotifications, prefs.pushNotificationsEnabled)
-  putBoolean(KeyWifiOnlySync, prefs.wifiOnlySync)
+  prefs.isDarkMode?.let { putBoolean(KeyDarkMode, it) } ?: remove(KeyDarkMode)
+  putBoolean(KeyPushNotifications, prefs.isPushNotificationsEnabled)
+  putBoolean(KeyWifiOnlySync, prefs.isWifiOnlySync)
   putString(KeyTemperatureUnit, prefs.temperatureUnit.name)
   putString(KeyRegionalFormat, prefs.regionalFormat.name)
   putString(KeyMapType, prefs.mapType.name)

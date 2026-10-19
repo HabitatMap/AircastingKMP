@@ -62,7 +62,7 @@ class AccountViewModel(private val repository: AccountRepository) : ViewModel() 
       .onSuccess { _sessionEnded.emit(Unit) }
       .onFailure {
         log.e(it) { "deletion confirmation rejected" }
-        updateDeletion { Deletion.AwaitingCode(rejected = true) }
+        updateDeletion { Deletion.AwaitingCode(isRejected = true) }
       }
   }
 

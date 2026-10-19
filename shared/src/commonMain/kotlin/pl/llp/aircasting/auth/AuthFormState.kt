@@ -8,12 +8,12 @@ data class AuthFormState(
   val email: String = "",
   val username: String = "",
   val password: String = "",
-  val passwordVisible: Boolean = false,
-  val submitting: Boolean = false,
+  val isPasswordVisible: Boolean = false,
+  val isSubmitting: Boolean = false,
   val failure: AuthFailure? = null,
 ) {
   val canSubmit: Boolean
-    get() = !submitting && when (mode) {
+    get() = !isSubmitting && when (mode) {
       AuthMode.SignIn -> login.isNotBlank() && password.isNotBlank()
       AuthMode.SignUp -> email.isNotBlank() && username.isNotBlank() && password.isNotBlank()
     }

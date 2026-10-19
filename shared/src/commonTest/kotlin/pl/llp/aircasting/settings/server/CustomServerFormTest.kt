@@ -15,14 +15,14 @@ class CustomServerFormTest {
     // not done anything yet.
     val form = CustomServerForm()
 
-    assertFalse(form.hostError)
-    assertFalse(form.portError)
+    assertFalse(form.hasHostError)
+    assertFalse(form.hasPortError)
     assertNull(form.baseUrl)
   }
 
   @Test
   fun `a host without a scheme is rejected`() {
-    assertTrue(CustomServerForm(host = "aircasting.org").hostError)
+    assertTrue(CustomServerForm(host = "aircasting.org").hasHostError)
     assertNull(CustomServerForm(host = "aircasting.org").baseUrl)
   }
 
@@ -55,17 +55,17 @@ class CustomServerFormTest {
 
   @Test
   fun `a host with a path or a space is rejected`() {
-    assertTrue(CustomServerForm(host = "https://aircasting.org/api").hostError)
-    assertTrue(CustomServerForm(host = "https://air casting.org").hostError)
+    assertTrue(CustomServerForm(host = "https://aircasting.org/api").hasHostError)
+    assertTrue(CustomServerForm(host = "https://air casting.org").hasHostError)
     assertNull(CustomServerForm(host = "https://aircasting.org/api").baseUrl)
   }
 
   @Test
   fun `the port must be a number in 1-65535`() {
-    assertTrue(CustomServerForm(host = "https://aircasting.org", port = "0").portError)
-    assertTrue(CustomServerForm(host = "https://aircasting.org", port = "65536").portError)
-    assertTrue(CustomServerForm(host = "https://aircasting.org", port = "80a").portError)
-    assertFalse(CustomServerForm(host = "https://aircasting.org", port = "65535").portError)
+    assertTrue(CustomServerForm(host = "https://aircasting.org", port = "0").hasPortError)
+    assertTrue(CustomServerForm(host = "https://aircasting.org", port = "65536").hasPortError)
+    assertTrue(CustomServerForm(host = "https://aircasting.org", port = "80a").hasPortError)
+    assertFalse(CustomServerForm(host = "https://aircasting.org", port = "65535").hasPortError)
   }
 
 

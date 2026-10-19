@@ -10,7 +10,7 @@ import androidx.compose.ui.platform.LocalContext
 @Composable
 actual fun rememberMicrophonePermission(): MicrophonePermission {
   val context = LocalContext.current
-  // The MutableState (not its value) is captured, so `granted` re-reads it on every recomposition
+  // The MutableState (not its value) is captured, so `isGranted` re-reads it on every recomposition
   // and the object survives the grant flipping.
   val state = remember { mutableStateOf(context.hasRecordAudioPermission()) }
   val launcher = rememberLauncherForActivityResult(
@@ -19,7 +19,7 @@ actual fun rememberMicrophonePermission(): MicrophonePermission {
 
   return remember(launcher) {
     object : MicrophonePermission {
-      override val granted get() = state.value
+      override val isGranted get() = state.value
       override fun request() = launcher.launch(Manifest.permission.RECORD_AUDIO)
     }
   }

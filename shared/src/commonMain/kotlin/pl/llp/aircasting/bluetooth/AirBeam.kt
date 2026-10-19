@@ -8,26 +8,26 @@ enum class Transport { BLE, CLASSIC_SERIAL }
 
 sealed interface AirBeamDevice {
   val transport: Transport
-  val reportsOwnState: Boolean
+  val canReportOwnState: Boolean
 
   data object AirBeam2 : AirBeamDevice {
     override val transport = Transport.CLASSIC_SERIAL
-    override val reportsOwnState = false
+    override val canReportOwnState = false
   }
 
   data object AirBeam3 : AirBeamDevice {
     override val transport = Transport.BLE
-    override val reportsOwnState = false
+    override val canReportOwnState = false
   }
 
   sealed interface Mini : AirBeamDevice {
     override val transport: Transport get() = Transport.BLE
 
     data object V1 : Mini {
-      override val reportsOwnState = false
+      override val canReportOwnState = false
     }
     data object V2 : Mini {
-      override val reportsOwnState = true
+      override val canReportOwnState = true
     }
   }
 }

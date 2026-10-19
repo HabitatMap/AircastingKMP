@@ -25,7 +25,7 @@ fun App(onRequestLocation: () -> Unit = {}) {
     currentLanguageTag = preferences.language ?: Locale.current.toLanguageTag(),
   )
   ProvideStrings(lyricist, LocalStrings) {
-    AircastingTheme(darkTheme = preferences.darkMode ?: isSystemInDarkTheme()) {
+    AircastingTheme(darkTheme = preferences.isDarkMode ?: isSystemInDarkTheme()) {
       SplashGate {
         AppNavHost(onRequestLocation)
       }

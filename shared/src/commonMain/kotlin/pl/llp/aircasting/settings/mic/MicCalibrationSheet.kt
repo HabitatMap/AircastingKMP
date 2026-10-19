@@ -57,12 +57,12 @@ fun MicCalibrationSheet(offset: Int, onDismiss: () -> Unit, onConfirm: (Int) -> 
   val permission = rememberMicrophonePermission()
   // Asked for on open, not behind a button: the sheet is useless without a reading, and the
   // system dialog only appears once per install anyway.
-  LaunchedEffect(Unit) { if (!permission.granted) permission.request() }
+  LaunchedEffect(Unit) { if (!permission.isGranted) permission.request() }
 
   // Recreating the flow when the grant flips restarts capture the moment permission arrives;
   // `collectAsStateWithLifecycle` tears the old collection (and the AudioRecord) down for us.
-  val levels: Flow<Double?> = remember(source, permission.granted) {
-    if (permission.granted) source.levels() else emptyFlow()
+  val levels: Flow<Double?> = remember(source, permission.isGranted) {
+    if (permission.isGranted) source.levels() else emptyFlow()
   }
   val raw by levels.collectAsStateWithLifecycle(initialValue = null)
   val reading = raw?.let { calibrate(it, draft) }
@@ -79,7 +79,7 @@ fun MicCalibrationSheet(offset: Int, onDismiss: () -> Unit, onConfirm: (Int) -> 
     ) {
       LiveReadingCard(reading)
       Text(
-        if (permission.granted) strings.micCalibrationHint else strings.micPermissionNeeded,
+        if (permission.isGranted) strings.micCalibrationHint else strings.micPermissionNeeded,
         modifier = Modifier.fillMaxWidth(),
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onBackground,

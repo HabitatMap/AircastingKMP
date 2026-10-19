@@ -89,7 +89,7 @@ class CustomDataServerViewModelTest {
     assertEquals(CustomServerStep.Testing("https://slow.server"), vm.step.value)
 
     advanceTimeBy(2.seconds)
-    assertEquals(CustomServerStep.Testing("https://slow.server", tookTooLong = true), vm.step.value)
+    assertEquals(CustomServerStep.Testing("https://slow.server", isTakingTooLong = true), vm.step.value)
   }
   @Test
   fun `cancelling a probe returns to the form with the typed values intact`() = runTest {

@@ -24,9 +24,9 @@ class AppSettingsRowsTest {
   @Test
   fun `switch rows read the stored flags`() {
     val rows = AppPreferences(
-      crowdMapEnabled = false,
-      pushNotificationsEnabled = false,
-      wifiOnlySync = true,
+      isCrowdMapEnabled = false,
+      isPushNotificationsEnabled = false,
+      isWifiOnlySync = true,
     ).toRows(EnStrings, systemDarkMode = false)
       .associateBy { it.setting }
     assertEquals(AppSettingRow.Toggle(AppSetting.CrowdMap, false), rows[AppSetting.CrowdMap])
@@ -40,7 +40,7 @@ class AppSettingsRowsTest {
   @Test
   fun `Disable mapping shows the inverse of the stored flag`() {
     fun checked(tracking: Boolean) =
-      AppPreferences(locationTrackingEnabled = tracking)
+      AppPreferences(isLocationTrackingEnabled = tracking)
         .toRows(EnStrings, systemDarkMode = false)
         .filterIsInstance<AppSettingRow.Toggle>()
         .single { it.setting == AppSetting.DisableMapping }
@@ -53,7 +53,7 @@ class AppSettingsRowsTest {
   @Test
   fun `dark mode follows the system until the user pins it`() {
     fun checked(stored: Boolean?, system: Boolean) =
-      AppPreferences(darkMode = stored)
+      AppPreferences(isDarkMode = stored)
         .toRows(EnStrings, systemDarkMode = system)
         .filterIsInstance<AppSettingRow.Toggle>()
         .single { it.setting == AppSetting.DarkMode }

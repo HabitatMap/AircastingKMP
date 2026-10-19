@@ -24,12 +24,12 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
   fun onUsernameChange(value: String) = edit { it.copy(username = value) }
   fun onPasswordChange(value: String) = edit { it.copy(password = value) }
 
-  fun togglePasswordVisibility() = _form.update { it.copy(passwordVisible = !it.passwordVisible) }
+  fun togglePasswordVisibility() = _form.update { it.copy(isPasswordVisible = !it.isPasswordVisible) }
 
   fun submit() {
     val form = _form.value
-    if (!form.canSubmit) return          // the double-tap guard; `submitting` feeds canSubmit
-    _form.value = form.copy(submitting = true, failure = null)
+    if (!form.canSubmit) return          // the double-tap guard; `isSubmitting` feeds canSubmit
+    _form.value = form.copy(isSubmitting = true, failure = null)
     viewModelScope.launch {
       val result = when (form.mode) {
         AuthMode.SignIn -> repository.signIn(form.login.trim(), form.password)
@@ -37,7 +37,7 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
           repository.signUp(form.email.trim(), form.username.trim(), form.password)
       }
       result.onFailure { log.w(it) { "${form.mode} failed" } }
-      _form.update { it.copy(submitting = false, failure = result.exceptionOrNull()?.asFailure()) }
+      _form.update { it.copy(isSubmitting = false, failure = result.exceptionOrNull()?.asFailure()) }
     }
   }
 

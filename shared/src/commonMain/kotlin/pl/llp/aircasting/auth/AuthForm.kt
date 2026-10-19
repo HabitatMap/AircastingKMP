@@ -75,7 +75,7 @@ fun AuthForm(state: AuthFormState, actions: AuthFormActions, modifier: Modifier 
         AuthMode.SignIn -> strings.authPasswordLabel
         AuthMode.SignUp -> strings.authNewPasswordLabel
       },
-      revealed = state.passwordVisible,
+      revealed = state.isPasswordVisible,
       onToggleReveal = actions.onTogglePassword,
       onSubmit = actions.onSubmit,
       error = state.passwordError,
@@ -150,7 +150,7 @@ private fun SubmitButton(state: AuthFormState, onClick: () -> Unit) {
       contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
     ),
   ) {
-    if (state.submitting) {
+    if (state.isSubmitting) {
       CircularProgressIndicator(
         modifier = Modifier.size(20.dp),
         strokeWidth = 2.dp,

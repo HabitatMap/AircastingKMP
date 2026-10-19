@@ -178,6 +178,7 @@ class MobileSessionUploadTest {
     override suspend fun updateStatus(uuid: String, status: SessionStatus) = error("unused")
     override suspend fun finish(uuid: String, endTime: Instant) = error("unused")
     override suspend fun delete(uuid: String) = error("unused")
+    override fun observeAwaitingFinish(): Flow<List<String>> = error("unused")
   }
   private companion object {
     const val UUID = "8d7a3f2e-0000-4000-8000-000000000001"

@@ -71,6 +71,8 @@ class LocalSessionRepository(
 
   override suspend fun delete(uuid: String): Unit =
     withContext(ioDispatcher) { queries.deleteSession(uuid) }
+
+  override fun observeAwaitingFinish(): Flow<List<String>> = TODO()
 }
 
 private fun Sessions.toDomain() = Session(

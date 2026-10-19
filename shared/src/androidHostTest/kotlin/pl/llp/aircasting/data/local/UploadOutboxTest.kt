@@ -1,5 +1,6 @@
 package pl.llp.aircasting.data.local
 
+import app.cash.turbine.test
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import pl.llp.aircasting.domain.session.Measurement
@@ -153,5 +154,41 @@ class UploadOutboxTest {
     sessions.delete("33333333-3333-3333-3333-333333333333")
 
     assertTrue(outbox.pending("33333333-3333-3333-3333-333333333333", 10).isEmpty())
+  }
+
+  /** The loop's "batchable work" signal: re-emits as rows are recorded and acknowledged. */
+  @Test
+  fun `recording lists the session once, acknowledging the last row clears it`() = runTest {
+    val stream = seedStream()
+    val rows = listOf(Measurement(stream, t0, 12.0), Measurement(stream, t0 + 1.seconds, 13.0))
+
+    outbox.observeSessionsWithPending().test {
+      assertEquals(emptyList(), awaitItem())
+      measurements.insertRecorded(rows)
+      assertEquals(listOf("33333333-3333-3333-3333-333333333333"), awaitItem())
+      outbox.acknowledge(rows)
+      assertEquals(emptyList(), awaitItem())
+    }
+  }
+
+  /** Outbox rule 1: fixed data is the AirBeam's to upload — never feed it to the mobile uploader. */
+  @Test
+  fun `rows of a fixed session are never listed`() = runTest {
+    sessions.insert(
+      Session(
+        uuid = "fixed",
+        type = SessionType.FIXED,
+        status = SessionStatus.RECORDING,
+        name = "Test",
+        tags = emptyList(),
+        startTime = t0,
+        timeZone = "UTC",
+        measurementInterval = 1.seconds,
+      )
+    )
+    val stream = streams.findOrCreate("fixed", "AirBeam-PM2.5", "µg/m³")
+    measurements.insertRecorded(listOf(Measurement(stream, t0, 12.0)))
+
+    assertEquals(emptyList(), outbox.observeSessionsWithPending().first())
   }
 }

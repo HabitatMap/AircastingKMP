@@ -1,6 +1,7 @@
 package pl.llp.aircasting.data.local
 
 import app.cash.turbine.test
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import pl.llp.aircasting.domain.GeoLocation
 import pl.llp.aircasting.domain.session.Session
@@ -77,5 +78,34 @@ class SessionRepositoryTest {
     val stored = repo.find(session.uuid)!!
     assertEquals(SessionStatus.DISCONNECTED, stored.status)
     assertNull(stored.endTime)
+  }
+
+  /** Loop rule 2: stopping is itself the trigger — the list changes, no one calls flushNow. */
+  @Test
+  fun `stopping a session puts it on the awaiting-finish list`() = runTest {
+    repo.insert(session)
+    repo.observeAwaitingFinish().test {
+      assertEquals(emptyList(), awaitItem())
+      repo.finish(session.uuid, session.startTime + 60.seconds)
+      assertEquals(listOf(session.uuid), awaitItem())
+    }
+  }
+
+  @Test
+  fun `a session the server has finished leaves the awaiting-finish list`() = runTest {
+    repo.insert(session)
+    repo.finish(session.uuid, session.startTime + 60.seconds)
+    repo.observeAwaitingFinish().test {
+      assertEquals(listOf(session.uuid), awaitItem())
+      repo.markFinishedOnServer(session.uuid)
+      assertEquals(emptyList(), awaitItem())
+    }
+  }
+
+  /** Fixed sessions have no /finish on our side — the AirBeam owns them. */
+  @Test
+  fun `a stopped fixed session never awaits finish`() = runTest {
+    repo.insert(session.copy(type = SessionType.FIXED, endTime = session.startTime + 60.seconds))
+    assertEquals(emptyList(), repo.observeAwaitingFinish().first())
   }
 }

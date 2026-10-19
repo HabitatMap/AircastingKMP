@@ -61,7 +61,7 @@ class MobileUploadLoopTest {
     assertEquals(setOf(A, B), uploader.uploads.toSet())
   }
 
-  /** Rule 2: stopping is itself the trigger — no wait, no flushNow. */
+  /** Rule 2: stopping is itself the trigger — no wait, no call from the stop flow. */
   @Test
   fun a_stopped_session_drains_at_once() = runTest {
     start()
@@ -84,27 +84,13 @@ class MobileUploadLoopTest {
     assertEquals(listOf(A), uploader.uploads)
   }
 
-  /** Rule 1: no work, no timer — even a flushNow has nothing to send. */
+  /** Rule 1: no work, no timer. */
   @Test
   fun with_nothing_to_send_the_loop_stays_idle() = runTest {
     start()
-    loop.flushNow()
     advanceBy(1.hours)
 
     assertEquals(emptyList(), uploader.uploads)
-  }
-
-  /** The app is going to background: send now rather than risk the process dying. */
-  @Test
-  fun flushNow_skips_the_wait() = runTest {
-    start()
-    pending.value = listOf(A)
-    advanceBy(10.seconds)
-
-    loop.flushNow()
-    runCurrent()
-
-    assertEquals(listOf(A), uploader.uploads)
   }
 
   /**

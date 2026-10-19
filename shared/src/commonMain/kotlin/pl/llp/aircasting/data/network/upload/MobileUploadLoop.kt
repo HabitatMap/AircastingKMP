@@ -5,14 +5,12 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
@@ -32,12 +30,8 @@ class MobileUploadLoop(
   private val maxBackoff: Duration = 10.minutes,
 ) {
   private val log = Logger.withTag("UploadLoop")
-  private val flushRequests = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
-
-  /** Cuts the current batching wait short. Without a wait in progress there's nothing to cut. */
-  fun flushNow() {
-    flushRequests.tryEmit(Unit)
-  }
+  /** The loop and [drainOnce] may run at once; only one pass talks to the server at a time. */
+  private val passLock = Mutex()
 
   /** Never returns; cancel the calling scope to stop. */
   suspend fun run() = coroutineScope {
@@ -49,7 +43,7 @@ class MobileUploadLoop(
       if (backoff == null && work.value.awaitingFinish.isEmpty()) waitToBatch(work)
 
       val snapshot = work.value
-      val failed = drain(snapshot.all)
+      val failed = passLock.withLock { drain(snapshot.all) }
       backoff = if (failed) backoff?.times(2)?.coerceAtMost(maxBackoff) ?: initialBackoff else null
       if (backoff != null) delay(backoff)
       // The drain's writes reach the queries asynchronously; don't re-drain the stale snapshot.
@@ -58,16 +52,19 @@ class MobileUploadLoop(
   }
   private suspend fun waitToBatch(work: StateFlow<Work>) {
     withTimeoutOrNull(flushInterval) {
-      merge(flushRequests, work.filter { it.awaitingFinish.isNotEmpty() }.map { }).first()
+      work.first { it.awaitingFinish.isNotEmpty() }
     }
   }
 
   /**
    * One pass over everything pending, no batching wait — for a platform backstop (the Android
-   * worker). Red stub: replaced by the green step.
+   * worker, the iOS background task).
    * @return true when every session went; false means retry later.
    */
-  suspend fun drainOnce(): Boolean = TODO()
+  suspend fun drainOnce(): Boolean = passLock.withLock {
+    val work = combine(sessionsWithPending, sessionsAwaitingFinish, ::Work).first()
+    !drain(work.all)
+  }
 
   /** @return true if any session failed; the others still went. */
   private suspend fun drain(uuids: List<String>): Boolean {

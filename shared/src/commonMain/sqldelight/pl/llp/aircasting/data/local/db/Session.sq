@@ -60,3 +60,10 @@ WHERE uuid = :uuid;
 deleteSession:
 DELETE FROM sessions
 WHERE uuid = :uuid;
+
+selectAwaitingFinish:
+SELECT uuid
+FROM sessions
+WHERE type = 'MOBILE'
+  AND end_time IS NOT NULL
+  AND is_finished_on_server = 0;

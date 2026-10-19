@@ -1,5 +1,7 @@
 package pl.llp.aircasting.data.local
 
+import app.cash.sqldelight.coroutines.asFlow
+import app.cash.sqldelight.coroutines.mapToList
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -30,5 +32,7 @@ class LocalUploadOutbox(
       }
     }
 
-  override fun observeSessionsWithPending(): Flow<List<String>> = TODO()
+  override fun observeSessionsWithPending(): Flow<List<String>> =
+    queries.selectSessionsWithPending().asFlow().mapToList(ioDispatcher)
+
 }

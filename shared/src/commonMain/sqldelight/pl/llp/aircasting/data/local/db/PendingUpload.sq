@@ -24,3 +24,10 @@ LIMIT :limit;
 acknowledge:
 DELETE FROM pending_uploads
 WHERE stream_id = :streamId AND time = :time;
+
+selectSessionsWithPending:
+SELECT DISTINCT sessions.uuid
+FROM pending_uploads
+JOIN measurement_streams ON measurement_streams.id = pending_uploads.stream_id
+JOIN sessions ON sessions.uuid = measurement_streams.session_uuid
+WHERE sessions.type = 'MOBILE';

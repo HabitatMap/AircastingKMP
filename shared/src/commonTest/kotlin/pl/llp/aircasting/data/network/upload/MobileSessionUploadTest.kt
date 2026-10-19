@@ -37,7 +37,7 @@ import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 
-class MobileSessionSyncTest {
+class MobileSessionUploadTest {
 
   private val requests = mutableListOf<HttpRequestData>()
   private var createStatus = HttpStatusCode.Created
@@ -62,7 +62,7 @@ class MobileSessionSyncTest {
 
   @Test
   fun creates_the_session_with_every_stream_and_writes_back_sensor_type_ids() = runTest {
-    sync().sync(UUID)
+    upload().upload(UUID)
 
     val body = Json.parseToJsonElement(requests.single { it.url.encodedPath == CREATE_PATH }.bodyText()).jsonObject
     assertNull(body["session"]) // flat body, no wrapper
@@ -84,7 +84,7 @@ class MobileSessionSyncTest {
   fun pending_measurements_go_out_with_the_ids_the_create_just_assigned() = runTest {
     outbox.rows += Measurement(streamId = 1, time = START, value = 12.5, location = LOCATION)
 
-    sync().sync(UUID)
+    upload().upload(UUID)
 
     assertTrue(requests.any { it.url.encodedPath == "/api/v3/mobile_sessions/$UUID/measurements" })
     assertTrue(outbox.rows.isEmpty())
@@ -95,7 +95,7 @@ class MobileSessionSyncTest {
     streams.setSensorTypeId(streamId = 1, sensorTypeId = 2)
     streams.setSensorTypeId(streamId = 2, sensorTypeId = 1)
 
-    sync().sync(UUID)
+    upload().upload(UUID)
 
     assertTrue(requests.none { it.url.encodedPath == CREATE_PATH })
   }
@@ -104,7 +104,7 @@ class MobileSessionSyncTest {
   fun uuid_taken_reads_the_ids_back_from_the_existing_session() = runTest {
     createStatus = HttpStatusCode.Conflict
 
-    sync().sync(UUID)
+    upload().upload(UUID)
 
     assertEquals(listOf(2, 1), streams.streams.map { it.sensorTypeId })
   }
@@ -112,10 +112,10 @@ class MobileSessionSyncTest {
   @Test
   fun stopped_session_sends_its_end_time_to_finish_exactly_once() = runTest {
     sessions.session = SESSION.copy(endTime = END)
-    val sync = sync()
+    val upload = upload()
 
-    sync.sync(UUID)
-    sync.sync(UUID)
+    upload.upload(UUID)
+    upload.upload(UUID)
 
     val finish = requests.single { it.url.encodedPath == FINISH_PATH }
     val body = Json.parseToJsonElement(finish.bodyText()).jsonObject
@@ -124,7 +124,7 @@ class MobileSessionSyncTest {
 
   @Test
   fun session_still_recording_is_not_finished() = runTest {
-    sync().sync(UUID)
+    upload().upload(UUID)
 
     assertTrue(requests.none { it.url.encodedPath == FINISH_PATH })
   }
@@ -134,7 +134,7 @@ class MobileSessionSyncTest {
     sessions.session = SESSION.copy(endTime = END)
     outbox.rows += Measurement(streamId = 1, time = START, value = 12.5, location = LOCATION)
 
-    assertFailsWith<ServerResponseException> { sync().sync(UUID) }
+    assertFailsWith<ServerResponseException> { upload().upload(UUID) }
 
     assertEquals(listOf(CREATE_PATH), requests.map { it.url.encodedPath })
     assertEquals(1, outbox.rows.size)
@@ -142,11 +142,11 @@ class MobileSessionSyncTest {
 
   @Test
   fun signed_out_sends_nothing() = runTest {
-    sync(token = null).sync(UUID)
+    upload(token = null).upload(UUID)
 
     assertTrue(requests.isEmpty())
   }
-  private fun sync(token: String? = "tok-123"): MobileSessionSync {
+  private fun upload(token: String? = "tok-123"): MobileSessionUpload {
     val engine = MockEngine { request ->
       requests += request
       when (request.url.encodedPath) {
@@ -159,7 +159,7 @@ class MobileSessionSyncTest {
     }
     val api = MobileSessionsApi(createAircastingHttpClient(engine))
     val auth = StoredAuthSession(MapSettings()).apply { token?.let(::start) }
-    return MobileSessionSync(
+    return MobileSessionUpload(
       api = api,
       sessions = sessions,
       streams = streams,

@@ -211,6 +211,13 @@ transports (BLE, WiFi-SoftAP, file I/O) are **PLATFORM**; HTTP is **CHANGE-LIKEL
    session versions, backend responds with `delete` / `upload` / `download` partitions;
    uploads mobile sessions, downloads remote changes. Also: periodic (60s) fixed-session
    download, one-shot followed-session download.
+   **Legacy triggers** (no WorkManager, nothing scheduled): dashboard setup on app start
+   (`MainController.setupDashboard`), connectivity regained (`ConnectivityReceiver`, only while
+   MainActivity lives), stop recording (`RecordingHandler.stopRecording`), session delete
+   (`SessionManager.deleteSession`), pull-to-refresh (`DashboardController`). Only non-recording
+   sessions; a failure waits for the next trigger.
+   **Rewrite:** mobile upload is split out of sync and runs live, driven by the outbox — see
+   [`API_V3.md` → When the uploader runs](./API_V3.md#when-the-uploader-runs--decided-2026-10-19).
 
 **Dedup differs:** V1 mobile filters `time > lastMeasurementTime`; V2 relies on the DB
 unique index `(session_id, stream_id, time)` + `IGNORE`. Preserve the dedup — in the rewrite

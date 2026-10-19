@@ -19,17 +19,17 @@ import pl.llp.aircasting.domain.session.SessionRepository
  * outbox, then `/finish` (once, after the user stopped). Each step is skipped when already
  * done, so calling it again after a failure resumes where it stopped.
  */
-class MobileSessionSync(
+class MobileSessionUpload(
   private val api: MobileSessionsApi,
   private val sessions: SessionRepository,
   private val streams: MeasurementStreamRepository,
   private val uploader: MobileMeasurementUploader,
   private val auth: AuthSession,
 ) {
-  private val log = Logger.withTag("SessionSync")
+  private val log = Logger.withTag("SessionUpload")
 
   /** Throws on the first failed request; whatever was done before it stays done. */
-  suspend fun sync(sessionUuid: String) {
+  suspend fun upload(sessionUuid: String) {
     val token = auth.state.value.tokenOrNull ?: return
     val session = sessions.find(sessionUuid) ?: return
     val local = streams.findBySession(sessionUuid)

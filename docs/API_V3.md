@@ -93,7 +93,7 @@ earlier create landed and its response was lost: read the ids back from `GET ...
 2026-10-19.* Body `{ "finished_at": <epoch ms, UTC> }`; omit it or send `null` and the server stamps
 its own clock. A `finished_at` **in the future** (by the server's clock) is `400 validation_error` —
 so a phone clock running ahead can get a `/finish` sent right after stopping rejected. That heals
-itself: the next sync pass retries, and by then the server clock has caught up.
+itself: the uploader backs off and retries, and by then the server clock has caught up.
 
 ---
 
@@ -229,6 +229,35 @@ insert-only, per `DOMAIN_KNOWLEDGE.md` rule #4). The traps above shape how it ma
 5. **Retry is otherwise blind and safe.** On transport errors, timeouts and `5xx`, leave the outbox
    rows in place — they go out again next pass. Resends are deduped server-side on
    `(stream, timestamp)`. State lives in SQLite, so it survives process death.
+
+### When the uploader runs — *decided 2026-10-19*
+
+**Upload is not sync.** v3 has no `sync_with_versioning`, so nothing server-side decides what to upload;
+the outbox does. Mobile measurements go up **live, during recording** (new — the legacy app uploaded a
+session whole, after stop). Reconciliation (server deletes, downloads) is a separate, later feature.
+
+The trigger is **local data**, not a list of events. Work = a mobile session with `pending_uploads`
+rows, or one with `end_time` set and `is_finished_on_server = 0`. One loop in `commonMain` observes both
+(two queries) and, per pass, runs `MobileSessionUpload.upload(uuid)` (create once → batches → `/finish`
+once) for each such session:
+
+1. No work → idle (no timer runs).
+2. A stopped session not yet finished on the server → drain **now** — no caller has to remember to flush.
+3. Only rows of still-recording sessions → wait **N = 60 s**, then drain (≈300 frames at 5 streams × 1 Hz;
+   radio wakeups, not bytes, drive battery cost).
+4. Failure → exponential backoff (e.g. 30 s … ~10 min), reset on success. Heals the future-`finished_at` `400`.
+
+`flushNow()` exists for one case: the **app going to background** with work pending (lifecycle, not data).
+
+**Platform backstop**, for when the process may die with work left:
+- **Android:** unique one-off WorkManager work, `NetworkType.CONNECTED` + backoff. Replaces the legacy
+  `ConnectivityReceiver`. No periodic work — one-off work persists until it succeeds.
+- **iOS:** no WorkManager equivalent. `beginBackgroundTask` (~30 s) on backgrounding, drain on next
+  foreground/launch. **Known limit:** after a force-quit, pending uploads wait for the next launch — delayed,
+  never lost (SQLite).
+
+While recording, the process is alive on both platforms (Android foreground service, iOS
+`bluetooth-central`), so the live path needs no platform scheduler.
 
 ### Error codes
 

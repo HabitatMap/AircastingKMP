@@ -28,4 +28,6 @@ data class Session(
   val contribute: Boolean = true,
   /** v3 fixed only: the Bearer token the AirBeam itself uses to upload. Not the user token. */
   val sessionToken: String? = null,
+  /** Mobile only: the server has our `end_time` as `finished_at`. */
+  val finishSynced: Boolean = false,
 )

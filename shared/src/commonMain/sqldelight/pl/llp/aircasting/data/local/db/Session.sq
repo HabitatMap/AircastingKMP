@@ -21,7 +21,8 @@ CREATE TABLE sessions (
     contribute INTEGER AS Boolean NOT NULL DEFAULT 1,
     time_zone TEXT NOT NULL,
     measurement_interval_millis INTEGER NOT NULL,
-    session_token TEXT
+    session_token TEXT,
+    finish_synced INTEGER AS Boolean NOT NULL DEFAULT 0
 );
 
 insertSession:
@@ -49,6 +50,11 @@ WHERE uuid = :uuid;
 finishSession:
 UPDATE sessions
 SET status = :status, end_time = :endTime
+WHERE uuid = :uuid;
+
+markFinishSynced:
+UPDATE sessions
+SET finish_synced = 1
 WHERE uuid = :uuid;
 
 deleteSession:

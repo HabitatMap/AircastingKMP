@@ -65,6 +65,10 @@ class LocalSessionRepository(
   override suspend fun finish(uuid: String, endTime: Instant): Unit = withContext(ioDispatcher) {
     queries.finishSession(status = SessionStatus.FINISHED, endTime = endTime, uuid = uuid)
   }
+
+  override suspend fun markFinishSynced(uuid: String): Unit =
+    withContext(ioDispatcher) { queries.markFinishSynced(uuid) }
+
   override suspend fun delete(uuid: String): Unit =
     withContext(ioDispatcher) { queries.deleteSession(uuid) }
 }
@@ -85,4 +89,5 @@ private fun Sessions.toDomain() = Session(
   isIndoor = is_indoor,
   contribute = contribute,
   sessionToken = session_token,
+  finishSynced = finish_synced,
 )

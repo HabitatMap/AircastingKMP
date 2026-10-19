@@ -26,6 +26,8 @@ data class PaginationMetaDto(
 data class MobileSessionListResponseDto(
   val sessions: List<MobileSessionSummaryDto> = emptyList(),
   val meta: PaginationMetaDto,
+  @SerialName("share_url") val shareUrl: String? = null,
+  val streams: Map<String, SessionStreamDto> = emptyMap(),
 )
 @Serializable
 data class MobileSessionSummaryDto(
@@ -41,20 +43,38 @@ data class MobileSessionSummaryDto(
   val latitude: Double? = null,
   val longitude: Double? = null,
   @SerialName("share_url") val shareUrl: String? = null,
+  val streams: Map<String, SessionStreamDto> = emptyMap(),
 )
+/** `POST /api/v3/mobile_sessions` — flat body, no `session` wrapper. */
 @Serializable
 data class CreateMobileSessionRequestDto(
-  val session: MobileSessionPayloadDto,
-)
-@Serializable
-data class MobileSessionPayloadDto(
   val uuid: String,
   val title: String,
   @SerialName("time_zone") val timeZone: String,
-  val contribute: Boolean = true,
-  val tags: List<String> = emptyList(),
-  val streams: List<CreateStreamPayloadDto> = emptyList(),
+  val contribute: Boolean,
+  @SerialName("tag_list") val tagList: String,
+  val device: DeviceDto,
+  val streams: List<CreateStreamPayloadDto>,
 )
+@Serializable
+data class DeviceDto(
+  @SerialName("mac_address") val macAddress: String,
+  val model: String,
+)
+@Serializable
+data class CreateMobileSessionResponseDto(
+  val streams: List<CreatedStreamDto>,
+)
+@Serializable
+data class FinishMobileSessionRequestDto(
+  @SerialName("finished_at") val finishedAt: Long,
+)
+/** One entry of a session's `streams` object (keyed by sensor_name); aggregates ignored. */
+@Serializable
+data class SessionStreamDto(
+  @SerialName("sensor_type_id") val sensorTypeId: Int? = null,
+)
+
 @Serializable
 data class CreateStreamPayloadDto(
   @SerialName("sensor_name") val sensorName: String,

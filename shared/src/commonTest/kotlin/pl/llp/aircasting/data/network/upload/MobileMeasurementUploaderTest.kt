@@ -9,17 +9,13 @@ import io.ktor.client.request.HttpRequestData
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.OutgoingContent
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.test.runTest
-import pl.llp.aircasting.bluetooth.transport.ble.AirBeamGatt.MiniV2.measurement
 import pl.llp.aircasting.data.auth.StoredAuthSession
 import pl.llp.aircasting.data.network.MobileSessionsApi
 import pl.llp.aircasting.data.network.createAircastingHttpClient
 import pl.llp.aircasting.domain.GeoLocation
 import pl.llp.aircasting.domain.session.Measurement
 import pl.llp.aircasting.domain.session.MeasurementStream
-import pl.llp.aircasting.domain.session.MeasurementStreamRepository
-import pl.llp.aircasting.domain.session.UploadOutbox
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
@@ -126,20 +122,6 @@ class MobileMeasurementUploaderTest {
     Measurement(streamId = streamId, time = T0 + second.seconds, value = value, location = LOCATION)
 
   private fun HttpRequestData.bodyBytes() = (body as OutgoingContent.ByteArrayContent).bytes()
-
-  /** Mirrors LocalUploadOutbox: oldest first, at most [limit]; acknowledge deletes. */
-  private class FakeUploadOutbox : UploadOutbox {
-    val rows = mutableListOf<Measurement>()
-    override suspend fun pending(sessionUuid: String, limit: Int) = rows.sortedBy { it.time }.take(limit)
-    override suspend fun acknowledge(measurements: List<Measurement>) { rows -= measurements.toSet() }
-  }
-
-  private class FakeStreamRepository(private val streams: List<MeasurementStream>) : MeasurementStreamRepository {
-    override suspend fun findBySession(sessionUuid: String) = streams.filter { it.sessionUuid == sessionUuid }
-    override suspend fun findOrCreate(sessionUuid: String, sensorName: String, unitSymbol: String, sensorTypeId: Int?): Long = error("unused")
-    override fun observeBySession(sessionUuid: String): Flow<List<MeasurementStream>> = error("unused")
-    override suspend fun setSensorTypeId(streamId: Long, sensorTypeId: Int) = error("unused")
-  }
 
   private companion object {
     const val UUID = "8d7a3f2e-0000-4000-8000-000000000001"

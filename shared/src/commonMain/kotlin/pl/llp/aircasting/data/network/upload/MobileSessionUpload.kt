@@ -25,11 +25,11 @@ class MobileSessionUpload(
   private val streams: MeasurementStreamRepository,
   private val uploader: MobileMeasurementUploader,
   private val auth: AuthSession,
-) {
+) : SessionUploader {
   private val log = Logger.withTag("SessionUpload")
 
   /** Throws on the first failed request; whatever was done before it stays done. */
-  suspend fun upload(sessionUuid: String) {
+  override suspend fun upload(sessionUuid: String) {
     val token = auth.state.value.tokenOrNull ?: return
     val session = sessions.find(sessionUuid) ?: return
     val local = streams.findBySession(sessionUuid)

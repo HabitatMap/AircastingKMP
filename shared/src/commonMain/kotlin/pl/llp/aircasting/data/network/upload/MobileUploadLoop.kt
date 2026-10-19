@@ -62,6 +62,13 @@ class MobileUploadLoop(
     }
   }
 
+  /**
+   * One pass over everything pending, no batching wait — for a platform backstop (the Android
+   * worker). Red stub: replaced by the green step.
+   * @return true when every session went; false means retry later.
+   */
+  suspend fun drainOnce(): Boolean = TODO()
+
   /** @return true if any session failed; the others still went. */
   private suspend fun drain(uuids: List<String>): Boolean {
     var failed = false

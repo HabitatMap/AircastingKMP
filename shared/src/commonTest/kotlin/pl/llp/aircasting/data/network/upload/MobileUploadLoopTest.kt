@@ -1,5 +1,7 @@
 package pl.llp.aircasting.data.network.upload
 
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
@@ -8,6 +10,8 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
@@ -156,6 +160,56 @@ class MobileUploadLoopTest {
     assertEquals(listOf(A, B), uploader.uploads)
   }
 
+  /** The Android worker's single pass: everything now, no batching wait. */
+  @Test
+  fun drainOnce_sends_everything_at_once_and_reports_success() = runTest {
+    pending.value = listOf(A)
+    awaitingFinish.value = listOf(B)
+
+    assertTrue(loop.drainOnce())
+    assertEquals(setOf(A, B), uploader.uploads.toSet())
+  }
+
+  /** false → the worker returns Result.retry() and WorkManager applies its own backoff. */
+  @Test
+  fun drainOnce_reports_a_failure_after_trying_every_session() = runTest {
+    uploader.failing += A
+    pending.value = listOf(A, B)
+
+    assertFalse(loop.drainOnce())
+    assertEquals(listOf(A, B), uploader.uploads)
+  }
+
+  @Test
+  fun drainOnce_with_nothing_to_send_succeeds_without_uploading() = runTest {
+    assertTrue(loop.drainOnce())
+    assertEquals(emptyList(), uploader.uploads)
+  }
+
+  /**
+   * Worker and loop share one process and may fire together. Running side by side, both would
+   * read the same outbox rows and POST them twice (and /finish twice). They must take turns, and
+   * the second must read the work only after the first finished.
+   */
+  @Test
+  fun drainOnce_waits_for_a_running_drain_and_then_sees_its_result() = runTest {
+    start()
+    val gate = CompletableDeferred<Unit>()
+    uploader.gate = gate
+    awaitingFinish.value = listOf(A)
+    runCurrent()                                   // the loop is mid-upload of A
+    assertEquals(listOf(A), uploader.uploads)
+
+    val second = async { loop.drainOnce() }
+    runCurrent()
+    assertEquals(listOf(A), uploader.uploads)      // waiting its turn
+
+    gate.complete(Unit)
+    runCurrent()
+    assertTrue(second.await())
+    assertEquals(listOf(A), uploader.uploads)      // A is done; not sent twice
+  }
+
   private fun TestScope.start() {
     backgroundScope.launch { loop.run() }
     runCurrent()
@@ -176,9 +230,12 @@ class MobileUploadLoopTest {
   ) : SessionUploader {
     val uploads = mutableListOf<String>()
     val failing = mutableSetOf<String>()
+    /** When set, every upload suspends here until it completes — "a request in flight". */
+    var gate: CompletableDeferred<Unit>? = null
 
     override suspend fun upload(sessionUuid: String) {
       uploads += sessionUuid
+      gate?.await()
       if (sessionUuid in failing) error("offline")
       pending.value -= sessionUuid
       awaitingFinish.value -= sessionUuid

@@ -45,10 +45,14 @@ sealed interface ConfigResult {
 sealed interface SessionConfig {
   val uuid: Uuid
 
+  // Configs end up in logs; each toString() leaves the credentials out.
+
   data class Mobile(
     override val uuid: Uuid,
     val authToken: String? = null
-  ) : SessionConfig
+  ) : SessionConfig {
+    override fun toString() = "Mobile(uuid=$uuid)"
+  }
 
   data class FixedWiFi(
     override val uuid: Uuid,
@@ -60,12 +64,16 @@ sealed interface SessionConfig {
     val zoneOffset: Int,
     val pm1Index: Int = 0,
     val pm25Index: Int = 1
-  ) : SessionConfig
+  ) : SessionConfig {
+    override fun toString() = "FixedWiFi(uuid=$uuid, ssid=$ssid)"
+  }
 
   data class FixedCellular(
     override val uuid: Uuid,
     val authToken: String,
     val latitude: Double,
     val longitude: Double
-  ) : SessionConfig
+  ) : SessionConfig {
+    override fun toString() = "FixedCellular(uuid=$uuid)"
+  }
 }

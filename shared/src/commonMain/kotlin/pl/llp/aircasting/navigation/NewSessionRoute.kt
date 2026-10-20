@@ -6,6 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.serialization.Serializable
 import org.koin.compose.viewmodel.koinViewModel
+import pl.llp.aircasting.record.DevicePickerScreen
 import pl.llp.aircasting.record.NewSessionStep
 import pl.llp.aircasting.record.NewSessionViewModel
 import pl.llp.aircasting.record.RecordMethodScreen
@@ -13,6 +14,8 @@ import pl.llp.aircasting.record.RecordingViewModel
 import pl.llp.aircasting.record.SessionConfirmScreen
 import pl.llp.aircasting.record.SessionDetailsScreen
 import pl.llp.aircasting.record.StartState
+import pl.llp.aircasting.scan.ScanUiState
+import pl.llp.aircasting.scan.ScanViewModel
 
 @Serializable
 data object NewSessionRoute
@@ -50,5 +53,17 @@ fun NewSessionDestination(onExit: () -> Unit) {
       onCancel = onExit,
       onStart = { recorder.start(state.form) },
     )
+    NewSessionStep.Device -> {
+      val scanVm = koinViewModel<ScanViewModel>()
+      val scan by scanVm.state.collectAsStateWithLifecycle()
+      DevicePickerScreen(
+        devices = (scan as? ScanUiState.Scanning)?.devices.orEmpty(),
+        selected = state.form.device,
+        onSelect = vm::selectDevice,
+        onBack = back,
+        onCancel = onExit,
+        onNext = vm::next,
+      )
+    }
   }
 }

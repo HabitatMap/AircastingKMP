@@ -5,8 +5,12 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import pl.llp.aircasting.bluetooth.AirBeamDevice
+import pl.llp.aircasting.bluetooth.DeviceId
+import pl.llp.aircasting.bluetooth.DiscoveredAirBeam
 
 class NewSessionViewModelTest {
+  private val ab3 = DiscoveredAirBeam(DeviceId("id-ab3"), "AirBeam3:246f28c47698", AirBeamDevice.AirBeam3)
 
   @Test
   fun `the wizard opens on the method step with an empty form`() {
@@ -98,8 +102,45 @@ class NewSessionViewModelTest {
 
   @Test
   fun `progress fills as the wizard advances`() {
-    assertEquals(1f / 3, NewSessionStep.Method.progress)
+    assertEquals(1f / 4, NewSessionStep.Method.progress)
     assertEquals(1f, NewSessionStep.Confirm.progress)
     assertTrue(NewSessionStep.entries.all { it.progress in 0f..1f })
+  }
+  @Test
+  fun `an AirBeam method leads to the device step`() {
+    val vm = NewSessionViewModel()
+
+    vm.select(RecordingMethod.AirBeamMobile)
+    vm.next()
+
+    assertEquals(NewSessionStep.Device, vm.state.value.step)
+  }
+
+  @Test
+  fun `next is dead on the device step until a device is picked`() {
+    val vm = NewSessionViewModel()
+    vm.select(RecordingMethod.AirBeamMobile)
+    vm.next()
+
+    assertFalse(vm.state.value.canContinue)
+    vm.next()
+    assertEquals(NewSessionStep.Device, vm.state.value.step)
+
+    vm.selectDevice(ab3)
+    vm.next()
+    assertEquals(NewSessionStep.Details, vm.state.value.step)
+    assertEquals(ab3, vm.state.value.form.device)
+  }
+
+  @Test
+  fun `the phone microphone skips the device step in both directions`() {
+    val vm = NewSessionViewModel()
+    vm.select(RecordingMethod.PhoneMicrophone)
+
+    vm.next()
+    assertEquals(NewSessionStep.Details, vm.state.value.step)
+
+    vm.back()
+    assertEquals(NewSessionStep.Method, vm.state.value.step)
   }
 }

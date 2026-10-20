@@ -243,6 +243,12 @@ only** → `tryToReconnectPeriodically` (`AirBeamService.kt:123-140`). Retries e
 
 - **KEEP (behavior):** connection outlives the UI; mobile auto-reconnect; distinguish
   user-disconnect from unexpected drop (your `ConnectionStatus.DisconnectedUnexpectedly`).
+- **Rewrite status (2026-10-20):** `AirBeamLink` (`bluetooth/AirBeamLink.kt`) is the owner —
+  a Koin singleton running in a process-lifetime scope, so the connection outlives screens.
+  It carries the reconnect rules above (`DOMAIN_KNOWLEDGE.md` §2, step 6) and is unit-tested
+  against fakes (`AirBeamLinkTest`). `AirBeamForegroundService` only mirrors `LinkState` to keep
+  the process alive; nothing starts it yet (the recording engine will, behind a
+  `BackgroundSessionHost`).
 - **KMP mapping:** ownership is the `01-connecting.md` §9 question. Android → foreground service
   (`expect`/`actual` + Android `FOREGROUND_SERVICE_CONNECTED_DEVICE`). iOS → CoreBluetooth
   background mode `bluetooth-central` + state restoration. Reconnect loop → a clean Flow + backoff

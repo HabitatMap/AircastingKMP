@@ -8,7 +8,9 @@ import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.math.abs
 import kotlin.math.pow
 import kotlin.math.roundToLong
+import pl.llp.aircasting.bluetooth.SensorReading
 import kotlin.time.Clock
+import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
 sealed class AirBeamProtocol {
@@ -67,6 +69,22 @@ sealed class AirBeamProtocol {
     fun startFixedCellCommand(): ByteArray = byteArrayOf(BEGIN, START_FIXED_CELL, END)
     fun startSyncCommand(): ByteArray = byteArrayOf(BEGIN, START_SYNC, END)
     fun clearMemoryCommand(): ByteArray = byteArrayOf(BEGIN, DELETE_MEMORY, END)
+
+    /**
+     * A measurement line — AB3 / Mini V1 over BLE notifications, AB2 over the serial socket:
+     * `value;package;sensor name;type;short type;unit name;unit symbol;T1;T2;T3;T4;T5`.
+     * Anything else (Mini V1's "85%" battery notification, a torn line) is `null`.
+     * Legacy: `ResponseParser`.
+     */
+    fun parseReading(line: String): SensorReading? {
+      val parts = line.trim().split(';')
+      if (parts.size < READING_FIELDS) return null
+      val value = parts[0].toDoubleOrNull() ?: return null
+      if (parts.subList(7, READING_FIELDS).any { it.toIntOrNull() == null }) return null
+      return SensorReading(sensorName = parts[2], unitSymbol = parts[6], value = value, measuredAt = null)
+    }
+
+    private const val READING_FIELDS = 12
   }
 
   /**
@@ -305,6 +323,39 @@ sealed class AirBeamProtocol {
 
     /** 0x16: StartBleSync (transfers stored measurements over sync characteristic) */
     fun startBleSyncCommand(): ByteArray = byteArrayOf(CMD_START_BLE_SYNC)
+
+    /** Live `Measurement` indication: `[count_u8=1, timestamp_u32, pm1_u16, pm2_5_u16]`, LE. */
+    fun parseMeasurement(bytes: ByteArray): List<SensorReading> =
+      if (bytes.size < 1 + RECORD_SIZE) emptyList() else record(bytes, offset = 1)
+
+    /**
+     * `Sync` indication — measurements stored while the phone was away, streamed by the
+     * firmware right after a reconnect: `[count_u8, padding_2B, record × count]`.
+     */
+    fun parseSyncChunk(bytes: ByteArray): List<SensorReading> {
+      if (bytes.isEmpty()) return emptyList()
+      val count = bytes[0].toInt() and 0xFF
+      val whole = minOf(count, (bytes.size - SYNC_HEADER_SIZE).coerceAtLeast(0) / RECORD_SIZE)
+      return (0 until whole).flatMap { i -> record(bytes, SYNC_HEADER_SIZE + i * RECORD_SIZE) }
+    }
+
+    /**
+     * V2 frames carry values only; the names and unit match what legacy V2 uploads
+     * (`AirBeamMiniV2Configurator.postLiveMeasurementEvents`), so streams line up on the backend.
+     */
+    private fun record(bytes: ByteArray, offset: Int): List<SensorReading> {
+      val at = Instant.fromEpochSeconds(bytes.toLittleEndianUInt(offset))
+      return listOf(
+        SensorReading(PM1_SENSOR, PM_UNIT, bytes.toLittleEndianUShort(offset + 4).toDouble(), at),
+        SensorReading(PM25_SENSOR, PM_UNIT, bytes.toLittleEndianUShort(offset + 6).toDouble(), at),
+      )
+    }
+
+    private const val RECORD_SIZE = 8
+    private const val SYNC_HEADER_SIZE = 3
+    private const val PM1_SENSOR = "AirBeamMini-PM1"
+    private const val PM25_SENSOR = "AirBeamMini-PM2.5"
+    private const val PM_UNIT = "µg/m³"
   }
 
   /**
@@ -366,6 +417,12 @@ private fun ByteArray.toLittleEndianLong(offset: Int): Long {
   }
   return result
 }
+
+private fun ByteArray.toLittleEndianUInt(offset: Int): Long =
+  (0 until 4).fold(0L) { acc, i -> acc or ((this[offset + i].toLong() and 0xFFL) shl (i * 8)) }
+
+private fun ByteArray.toLittleEndianUShort(offset: Int): Int =
+  (this[offset].toInt() and 0xFF) or ((this[offset + 1].toInt() and 0xFF) shl 8)
 
 private fun uuidStringTo16BytesLittleEndian(uuidStr: String): ByteArray {
   val hex = uuidStr.replace("-", "")

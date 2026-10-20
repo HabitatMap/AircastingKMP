@@ -1,55 +1,65 @@
 package pl.llp.aircasting.bluetooth.transport.ble
 
 import co.touchlab.kermit.Logger
+import com.juul.kable.Characteristic
 import com.juul.kable.Peripheral
 import com.juul.kable.Scanner
 import com.juul.kable.State
 import com.juul.kable.WriteType
 import com.juul.kable.characteristicOf
-import pl.llp.aircasting.bluetooth.AirBeamConnection
-import pl.llp.aircasting.bluetooth.AirBeamConnector
-import pl.llp.aircasting.bluetooth.AirBeamDevice
-import pl.llp.aircasting.bluetooth.ConnectionStatus
-import pl.llp.aircasting.bluetooth.DeviceId
-import pl.llp.aircasting.bluetooth.DiscoveredAirBeam
-import pl.llp.aircasting.bluetooth.FailureReason
-import pl.llp.aircasting.bluetooth.Transport
-import pl.llp.aircasting.bluetooth.detection.airBeamFrom
-import pl.llp.aircasting.bluetooth.transport.accumulateDistinct
-import pl.llp.aircasting.bluetooth.v2_firmware_specific.DeviceReportedState
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.TimeoutCancellationException
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.async
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.job
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
-import kotlinx.datetime.toLocalDateTime
+import pl.llp.aircasting.bluetooth.AirBeamConnection
+import pl.llp.aircasting.bluetooth.AirBeamConnector
+import pl.llp.aircasting.bluetooth.AirBeamDevice
 import pl.llp.aircasting.bluetooth.ConfigResult
+import pl.llp.aircasting.bluetooth.ConnectResult
+import pl.llp.aircasting.bluetooth.ConnectionStatus
+import pl.llp.aircasting.bluetooth.DeviceId
+import pl.llp.aircasting.bluetooth.DiscoveredAirBeam
+import pl.llp.aircasting.bluetooth.FailureReason
+import pl.llp.aircasting.bluetooth.SensorReading
 import pl.llp.aircasting.bluetooth.SessionConfig
+import pl.llp.aircasting.bluetooth.Transport
+import pl.llp.aircasting.bluetooth.detection.airBeamFrom
 import pl.llp.aircasting.bluetooth.protocol.AirBeamProtocol
-import kotlin.math.abs
-import kotlin.math.pow
-import kotlin.math.roundToLong
-import kotlin.time.Clock
+import pl.llp.aircasting.bluetooth.protocol.AirBeamProtocol.MiniV2.CommandResponse
+import pl.llp.aircasting.bluetooth.transport.accumulateDistinct
+import pl.llp.aircasting.bluetooth.v2_firmware_specific.DeviceReportedState
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
 private val SCAN_TIMEOUT_DURATION = 10.seconds
 private val CONNECT_TIMEOUT_DURATION = 30.seconds
-private val HANDSHAKE_SETTLE_DURATION = 500.milliseconds
 private val STATUS_SETTLE_TIMEOUT = 5.seconds
+
+/** Legacy `SyncableAirBeamConfigurator.MAX_MTU`: one ASCII measurement line per notification. */
+private const val V1_MTU = 517
+/** Legacy `AirBeamMiniV2Configurator`: fits a 244-byte sync chunk. */
+private const val V2_MTU = 247
 
 class BleAirBeamConnector() : AirBeamConnector {
   override val supportedTransports = setOf(Transport.BLE)
@@ -66,118 +76,155 @@ class BleAirBeamConnector() : AirBeamConnector {
     }
     .accumulateDistinct()
 
-  override suspend fun connect(target: DiscoveredAirBeam): AirBeamConnection {
-    val advertisement = withTimeoutOrNull(SCAN_TIMEOUT_DURATION) {
-      Scanner().advertisements.first { it.identifier.toString() == target.id.value }
-    } ?: return failedConnection(FailureReason.NoDeviceFound)
-
-    val peripheral = Peripheral(advertisement)
-    try {
-      withTimeout(CONNECT_TIMEOUT_DURATION) { peripheral.connect() }
-
+  override suspend fun connect(target: DiscoveredAirBeam): ConnectResult {
+    val advertisement = try {
+      withTimeoutOrNull(SCAN_TIMEOUT_DURATION) {
+        Scanner().advertisements.first { it.identifier.toString() == target.id.value }
+      } ?: return ConnectResult.Failed(FailureReason.NoDeviceFound)
     } catch (cancel: CancellationException) {
-      peripheral.disconnectQuietly()
-      if (cancel is TimeoutCancellationException)
-        return failedConnection(FailureReason.LinkTimeout)
       throw cancel
-
     } catch (_: Exception) {
-      peripheral.disconnectQuietly()
-      return failedConnection(FailureReason.LinkTimeout)
+      return ConnectResult.Failed(FailureReason.RadioOrPermissionMissing)
+    }
+
+    val mtu = if (target.device is AirBeamDevice.Mini.V2) V2_MTU else V1_MTU
+    val peripheral = Peripheral(advertisement) {
+      onServicesDiscovered { requestMtuIfSupported(mtu) }
+    }
+    // Cancelled by Kable the moment this link ends — everything per-link runs in it.
+    val linkScope = try {
+      withTimeout(CONNECT_TIMEOUT_DURATION) { peripheral.connect() }
+    } catch (_: TimeoutCancellationException) {
+      peripheral.release()
+      return ConnectResult.Failed(FailureReason.LinkTimeout)
+    } catch (cancel: CancellationException) {
+      peripheral.release()
+      throw cancel
+    } catch (_: Exception) {
+      peripheral.release()
+      return ConnectResult.Failed(FailureReason.LinkTimeout)
     }
 
     return try {
-      if (target.device is AirBeamDevice.Mini.V2) {
-        connectV2(peripheral, target.device)
-      } else {
-        BleConnection(peripheral, target.device)
-      }
-
-    } catch (_: TimeoutCancellationException) {
-      peripheral.disconnectQuietly()
-      failedConnection(FailureReason.HandshakeFailed)
+      val readings = peripheral.readings(target.device, linkScope)
+      val deviceState = if (target.device is AirBeamDevice.Mini.V2) settleV2(peripheral, linkScope) else null
+      ConnectResult.Connected(BleConnection(peripheral, target.device, readings, deviceState))
     } catch (cancel: CancellationException) {
-      peripheral.disconnectQuietly()
+      peripheral.release()
       throw cancel
     } catch (_: Exception) {
-      peripheral.disconnectQuietly()
-      failedConnection(FailureReason.HandshakeFailed)
+      peripheral.release()
+      ConnectResult.Failed(FailureReason.HandshakeFailed)
     }
   }
 
-  private suspend fun connectV2(peripheral: Peripheral, device: AirBeamDevice): AirBeamConnection {
-    // Scope outlives connect(): keeps observing Status for later transitions (Idle -> Running, etc.).
-    val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
-    listOf(AirBeamGatt.MiniV2.response, AirBeamGatt.MiniV2.measurement,
-      AirBeamGatt.MiniV2.sync).forEach { ch ->
-      peripheral.observe(ch).launchIn(scope)
-    }
-    val states = peripheral.observe(AirBeamGatt.MiniV2.status,)
-      .mapNotNull { DeviceReportedState.from(it) }
+  /** V2 reports its state on connect; it decides what the app does next (new / continue / sync). */
+  private suspend fun settleV2(peripheral: Peripheral, linkScope: CoroutineScope): StateFlow<DeviceReportedState>? {
+    // Kept subscribed for the life of the link, so a command's reply is never missed.
+    peripheral.observe(AirBeamGatt.MiniV2.response).logFailures().launchIn(linkScope)
+    val states = peripheral.observe(AirBeamGatt.MiniV2.status).mapNotNull { DeviceReportedState.from(it) }
     // stateIn (suspend overload) subscribes, then suspends until the first frame — that IS the settle.
-    val deviceState = withTimeoutOrNull(STATUS_SETTLE_TIMEOUT) { states.stateIn(scope) }
-
-    if (deviceState == null && peripheral.state.value !is State.Connected) {
-      scope.cancel()
-      peripheral.disconnectQuietly()
-      return failedConnection(FailureReason.LinkTimeout)
-    }
-
-    return BleConnection(peripheral, device, deviceState, scope)
+    val deviceState = withTimeoutOrNull(STATUS_SETTLE_TIMEOUT) { states.stateIn(linkScope) }
+    if (deviceState == null && peripheral.state.value !is State.Connected) error("V2 dropped while settling")
+    return deviceState
   }
 }
 
+/**
+ * Subscribes every measurement characteristic of [device] and buffers what arrives until the
+ * reader collects it. Closes when the link ends.
+ */
+private fun Peripheral.readings(device: AirBeamDevice, linkScope: CoroutineScope): Flow<SensorReading> {
+  val received = Channel<SensorReading>(Channel.UNLIMITED)
+  linkScope.coroutineContext.job.invokeOnCompletion { received.close() }
+  readingSources(device).forEach { (characteristic, parse) ->
+    observe(characteristic)
+      .onEach { bytes -> parse(bytes).forEach { received.trySend(it) } }
+      .logFailures()
+      .launchIn(linkScope)
+  }
+  return received.receiveAsFlow()
+}
+
+private fun readingSources(device: AirBeamDevice): List<Pair<Characteristic, (ByteArray) -> List<SensorReading>>> {
+  val line = { bytes: ByteArray -> listOfNotNull(AirBeamProtocol.Standard.parseReading(bytes.decodeToString())) }
+  return when (device) {
+    // Legacy AirBeam3Configurator.measurementsCharacteristicUUIDs
+    AirBeamDevice.AirBeam3 -> with(AirBeamGatt.Standard) { listOf(temperatureF, humidity, PM1, PM2_5, PM10) }
+      .map { it to line }
+    // Legacy AirBeamMiniConfigurator (its battery characteristic carries no readings)
+    AirBeamDevice.Mini.V1 -> with(AirBeamGatt.Standard) { listOf(PM1, PM2_5) }.map { it to line }
+    AirBeamDevice.Mini.V2 -> listOf(
+      AirBeamGatt.MiniV2.measurement to AirBeamProtocol.MiniV2::parseMeasurement,
+      AirBeamGatt.MiniV2.sync to AirBeamProtocol.MiniV2::parseSyncChunk,
+    )
+    AirBeamDevice.AirBeam2 -> emptyList()
+  }
+}
 
 private class BleConnection(
   private val peripheral: Peripheral,
-  val device: AirBeamDevice,
-  override val deviceState: StateFlow<DeviceReportedState>? = null,
-  passedScope: CoroutineScope? = null,
+  override val device: AirBeamDevice,
+  override val readings: Flow<SensorReading>,
+  override val deviceState: StateFlow<DeviceReportedState>?,
 ) : AirBeamConnection {
-  private val scope: CoroutineScope = passedScope ?: CoroutineScope(Dispatchers.Default + SupervisorJob())
-  private val _status = MutableStateFlow<ConnectionStatus>(ConnectionStatus.Ready(device))
+  private val _status = MutableStateFlow(ConnectionStatus.Ready)
   override val status: StateFlow<ConnectionStatus> = _status.asStateFlow()
   private val log = Logger.withTag("BleConnection")
-  private var isDisconnectingExplicitly = false
 
   init {
-    peripheral.state
-      .onEach { state ->
-        log.d { "Peripheral state changed: $state" }
-        if (state is State.Disconnected && !isDisconnectingExplicitly && _status.value !is ConnectionStatus.Disconnected) {
-          log.w { "Peripheral disconnected unexpectedly" }
-          _status.value = ConnectionStatus.DisconnectedUnexpectedly
-        }
+    // peripheral.scope, not the link scope: Kable cancels the latter on the very drop we watch for.
+    peripheral.scope.launch {
+      peripheral.state.first { it is State.Disconnected }
+      if (_status.compareAndSet(ConnectionStatus.Ready, ConnectionStatus.DisconnectedUnexpectedly)) {
+        log.w { "$device disconnected unexpectedly" }
       }
-      .launchIn(scope)
+    }
   }
 
   override suspend fun configure(config: SessionConfig): ConfigResult {
-    log.i { "Configuring device: $device with config: $config" }
-    return try {
+    log.i { "Configuring $device with $config" }
+    return guarded {
       when (device) {
-        AirBeamDevice.AirBeam3, AirBeamDevice.Mini.V1 -> {
-          oldSetup(config)
-        }
-        AirBeamDevice.Mini.V2 -> {
-          miniV2Setup(config)
-        }
-        AirBeamDevice.AirBeam2 -> {
-          log.e { "BLE connection configure method attempted to configure AirBeam2" }
-          ConfigResult.UnknownFailure
+        AirBeamDevice.AirBeam3, AirBeamDevice.Mini.V1 -> oldSetup(config)
+        AirBeamDevice.Mini.V2 -> miniV2Setup(config)
+        AirBeamDevice.AirBeam2 -> ConfigResult.UnknownFailure // classic serial, never over BLE
+      }
+    }
+  }
+
+  /**
+   * Legacy `reconnectMobileSession()`: V1 devices get mobile mode again; a V2 keeps running its
+   * session through the drop, so it gets the time and — if it paused — `ContinueSession`.
+   */
+  override suspend fun resumeMobileSession(config: SessionConfig.Mobile): ConfigResult = guarded {
+    when (device) {
+      AirBeamDevice.AirBeam3, AirBeamDevice.Mini.V1 -> oldSetup(config)
+      AirBeamDevice.Mini.V2 -> {
+        sendV2Command(AirBeamProtocol.MiniV2.timeSyncCommand())
+        when (deviceState?.value) {
+          DeviceReportedState.HasSavedSession ->
+            sendV2AndAwait(AirBeamProtocol.MiniV2.continueSessionCommand(), 10.seconds)
+          // Running: sync + live data already flow. Idle / unknown: legacy logs and carries on.
+          else -> ConfigResult.Success
         }
       }
-    } catch (e: Exception) {
-      log.e(e) { "Configuration failed for $device" }
-      ConfigResult.UnknownFailure
+      AirBeamDevice.AirBeam2 -> ConfigResult.UnknownFailure
     }
   }
 
   override suspend fun disconnect() {
-    isDisconnectingExplicitly = true
-    scope.cancel()
-    peripheral.disconnect()
-    _status.value = ConnectionStatus.Disconnected
+    _status.compareAndSet(ConnectionStatus.Ready, ConnectionStatus.Disconnected)
+    peripheral.release()
+  }
+
+  private suspend fun guarded(block: suspend () -> ConfigResult): ConfigResult = try {
+    block()
+  } catch (cancel: CancellationException) {
+    throw cancel
+  } catch (e: Exception) {
+    log.e(e) { "Configuration failed for $device" }
+    ConfigResult.UnknownFailure
   }
 
   private suspend fun oldSetup(config: SessionConfig): ConfigResult {
@@ -206,65 +253,49 @@ private class BleConnection(
     sendV2Command(AirBeamProtocol.MiniV2.timeSyncCommand())
 
     // 2. Configure Session
-    when (config) {
-      is SessionConfig.Mobile -> {
-        sendV2Command(AirBeamProtocol.MiniV2.mobileSessionConfigCommand(config.uuid))
+    return when (config) {
+      is SessionConfig.Mobile ->
+        sendV2AndAwait(AirBeamProtocol.MiniV2.mobileSessionConfigCommand(config.uuid), 10.seconds)
 
-        val response = withTimeoutOrNull(10.seconds) {
-          peripheral.observe(AirBeamGatt.MiniV2.response)
-            .mapNotNull { AirBeamProtocol.MiniV2.CommandResponse.parse(it) }
-            .first { it !is AirBeamProtocol.MiniV2.CommandResponse.Ack }
-        }
-
-        return when (response) {
-          is AirBeamProtocol.MiniV2.CommandResponse.Ready -> ConfigResult.Success
-          is AirBeamProtocol.MiniV2.CommandResponse.Nack -> {
-            log.e { "Mini V2 mobile setup failed with Nack: ${response.errorCode}" }
-            mapNackToConfigResult(response.errorCode)
-          }
-          else -> {
-            log.i { "Mini V2 mobile setup completed (no Nack received)" }
-            ConfigResult.Success
-          }
-        }
-      }
-
-      is SessionConfig.FixedWiFi -> {
-        sendV2Command(
-          AirBeamProtocol.MiniV2.fixedWifiSessionConfigCommand(
-            uuid = config.uuid,
-            authToken = config.authToken,
-            ssid = config.ssid,
-            password = config.password,
-            pm1Index = config.pm1Index,
-            pm25Index = config.pm25Index,
-          )
-        )
-
-        // Device attempts to connect to WiFi: WiFi OK -> session starts; WiFi Failed -> Nack(0x05 InvalidWifiCredentials)
-        val response = withTimeoutOrNull(15.seconds) {
-          peripheral.observe(AirBeamGatt.MiniV2.response)
-            .mapNotNull { AirBeamProtocol.MiniV2.CommandResponse.parse(it) }
-            .first { it !is AirBeamProtocol.MiniV2.CommandResponse.Ack }
-        }
-
-        return when (response) {
-          is AirBeamProtocol.MiniV2.CommandResponse.Ready -> ConfigResult.Success
-          is AirBeamProtocol.MiniV2.CommandResponse.Nack -> {
-            log.e { "Mini V2 fixed WiFi setup failed with Nack: ${response.errorCode}" }
-            mapNackToConfigResult(response.errorCode)
-          }
-          else -> {
-            log.i { "Mini V2 fixed WiFi setup completed (no Nack received)" }
-            ConfigResult.Success
-          }
-        }
-      }
+      // Device attempts to connect to WiFi: WiFi OK -> session starts; WiFi Failed -> Nack(0x05 InvalidWifiCredentials)
+      is SessionConfig.FixedWiFi -> sendV2AndAwait(
+        AirBeamProtocol.MiniV2.fixedWifiSessionConfigCommand(
+          uuid = config.uuid,
+          authToken = config.authToken,
+          ssid = config.ssid,
+          password = config.password,
+          pm1Index = config.pm1Index,
+          pm25Index = config.pm25Index,
+        ),
+        15.seconds,
+      )
 
       is SessionConfig.FixedCellular -> {
         log.e { "Mini V2 does not support FixedCellular configuration" }
-        return ConfigResult.BadConfigFailure
+        ConfigResult.BadConfigFailure
       }
+    }
+  }
+
+  /**
+   * Sends [command] and waits for the device's verdict. Listening starts before the write, so a
+   * fast reply can't slip past. No verdict within [timeout] counts as success, as before.
+   */
+  private suspend fun sendV2AndAwait(command: ByteArray, timeout: Duration): ConfigResult = coroutineScope {
+    val verdict = async(start = CoroutineStart.UNDISPATCHED) {
+      withTimeoutOrNull(timeout) {
+        peripheral.observe(AirBeamGatt.MiniV2.response)
+          .mapNotNull { CommandResponse.parse(it) }
+          .first { it !is CommandResponse.Ack }
+      }
+    }
+    sendV2Command(command)
+    when (val response = verdict.await()) {
+      is CommandResponse.Nack -> {
+        log.e { "Mini V2 rejected command 0x${command[0].toString(16)}: ${response.errorCode}" }
+        mapNackToConfigResult(response.errorCode)
+      }
+      else -> ConfigResult.Success
     }
   }
 
@@ -288,19 +319,16 @@ private class BleConnection(
   }
 }
 
-private fun failedConnection(reason: FailureReason): AirBeamConnection =
-  object : AirBeamConnection {
-    override val status = MutableStateFlow<ConnectionStatus>(ConnectionStatus.Failed(reason))
-    override val deviceState = null
-    override suspend fun configure(config: SessionConfig) = ConfigResult.UnknownFailure
-    override suspend fun disconnect() {}
-  }
+/** A failed observation (missing characteristic, link dropping) ends that one subscription, not the app. */
+private fun <T> Flow<T>.logFailures() = catch { Logger.withTag("BleConnection").w(it) { "Observation ended" } }
 
-private suspend fun Peripheral.disconnectQuietly() {
+/** Disconnects and disposes: a Kable [Peripheral] holds its own scope until [Peripheral.close]. */
+private suspend fun Peripheral.release() {
   try {
     disconnect()
   } catch (_: Exception) {
   }
+  close()
 }
 
 

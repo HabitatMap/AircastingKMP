@@ -15,29 +15,34 @@ import pl.llp.aircasting.bluetooth.AirBeamConnection
 import pl.llp.aircasting.bluetooth.AirBeamConnector
 import pl.llp.aircasting.bluetooth.AirBeamDevice
 import pl.llp.aircasting.bluetooth.ConfigResult
+import pl.llp.aircasting.bluetooth.ConnectResult
 import pl.llp.aircasting.bluetooth.ConnectionStatus
 import pl.llp.aircasting.bluetooth.DeviceId
 import pl.llp.aircasting.bluetooth.DiscoveredAirBeam
 import pl.llp.aircasting.bluetooth.FailureReason
+import pl.llp.aircasting.bluetooth.SensorReading
 import pl.llp.aircasting.bluetooth.SessionConfig
 import pl.llp.aircasting.bluetooth.Transport
 import pl.llp.aircasting.bluetooth.protocol.AirBeamProtocol
 import pl.llp.aircasting.bluetooth.transport.accumulateDistinct
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeout
 import java.io.IOException
 import java.util.UUID
 import kotlin.let
@@ -91,26 +96,32 @@ class ClassicAirBeamConnector(
   }.accumulateDistinct()
 
   @SuppressLint("MissingPermission")
-  override suspend fun connect(target: DiscoveredAirBeam): AirBeamConnection {
-    val adapter = adapter ?: return failed(FailureReason.RadioOrPermissionMissing)
+  override suspend fun connect(target: DiscoveredAirBeam): ConnectResult {
+    val adapter = adapter ?: return ConnectResult.Failed(FailureReason.RadioOrPermissionMissing)
     adapter.cancelDiscovery() // inquiry saturates the radio — always stop before connecting
 
     val socket = adapter.getRemoteDevice(target.id.value)
       .createRfcommSocketToServiceRecord(SPP_UUID)
 
-    return withContext(Dispatchers.IO) {
+    return coroutineScope {
+      // socket.connect() blocks and ignores cancellation; closing the socket is what aborts it.
+      val watchdog = launch {
+        delay(CONNECT_TIMEOUT_MS.milliseconds)
+        socket.safeClose()
+      }
       try {
-        withTimeout(CONNECT_TIMEOUT_MS.milliseconds) {
-          socket.connect()      // blocking until linked or IOException
-        }
+        runInterruptible(Dispatchers.IO) { socket.connect() }
+        watchdog.cancel()
         delay(ESTIMATED_CONNECTING_TIME_MS.milliseconds)
-        ClassicConnection(socket, target.device)
-      } catch (e: TimeoutCancellationException) {
-        socket.safeClose()
-        failed(FailureReason.LinkTimeout)
+        ConnectResult.Connected(ClassicConnection(socket, target.device))
       } catch (_: IOException) {
+        val timedOut = watchdog.isCompleted // ran to the end: it closed the socket on us
+        watchdog.cancel()
         socket.safeClose()
-        failed(FailureReason.HandshakeFailed)
+        ConnectResult.Failed(if (timedOut) FailureReason.LinkTimeout else FailureReason.HandshakeFailed)
+      } catch (cancel: CancellationException) {
+        socket.safeClose()
+        throw cancel
       }
     }
   }
@@ -118,36 +129,38 @@ class ClassicAirBeamConnector(
 
 private class ClassicConnection(
   private val socket: BluetoothSocket,
-  val device: AirBeamDevice,
+  override val device: AirBeamDevice,
 ) : AirBeamConnection {
   private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-  private val _status = MutableStateFlow<ConnectionStatus>(ConnectionStatus.Ready(device))
+  private val _status = MutableStateFlow(ConnectionStatus.Ready)
   override val status: StateFlow<ConnectionStatus> = _status.asStateFlow()
   override val deviceState = null // AB2 does not report its own state
   private val log = Logger.withTag("ClassicConnection")
-  private var isDisconnectingExplicitly = false
+  private val received = Channel<SensorReading>(Channel.UNLIMITED)
+  override val readings = received.receiveAsFlow()
 
   init {
+    // AB2 streams one ASCII measurement line at a time (legacy AirBeam2Reader).
     scope.launch {
-      val buffer = ByteArray(1024)
       try {
-        while (!isDisconnectingExplicitly && socket.isConnected) {
-          val bytesRead = socket.inputStream.read(buffer)
-          if (bytesRead == -1) break
+        val lines = socket.inputStream.bufferedReader()
+        while (true) {
+          val line = runInterruptible { lines.readLine() } ?: break
+          AirBeamProtocol.Standard.parseReading(line)?.let { received.trySend(it) }
         }
       } catch (e: IOException) {
         log.d { "Classic socket read loop ended: ${e.message}" }
       } finally {
-        if (!isDisconnectingExplicitly && _status.value !is ConnectionStatus.Disconnected) {
+        received.close()
+        if (_status.compareAndSet(ConnectionStatus.Ready, ConnectionStatus.DisconnectedUnexpectedly)) {
           log.w { "Classic connection dropped unexpectedly" }
-          _status.value = ConnectionStatus.DisconnectedUnexpectedly
         }
       }
     }
   }
 
   override suspend fun configure(config: SessionConfig): ConfigResult {
-    log.i { "Configuring AirBeam2 ($device) with config: $config" }
+    log.i { "Configuring AirBeam2 ($device) with $config" }
     return try {
       when (config) {
         is SessionConfig.Mobile -> configureMobile()
@@ -159,6 +172,9 @@ private class ClassicConnection(
       ConfigResult.UnknownFailure
     }
   }
+
+  /** Legacy `AirBeam2Configurator.reconnectMobileSession`: mobile mode again. */
+  override suspend fun resumeMobileSession(config: SessionConfig.Mobile): ConfigResult = configure(config)
 
   private suspend fun configureMobile(): ConfigResult {
     // Mobile Session (Bluetooth): Send [0x01, 0xFF]
@@ -210,18 +226,10 @@ private class ClassicConnection(
   }
 
   override suspend fun disconnect() {
-    isDisconnectingExplicitly = true
+    _status.compareAndSet(ConnectionStatus.Ready, ConnectionStatus.Disconnected)
     scope.cancel()
     withContext(Dispatchers.IO) { socket.safeClose() }
-    _status.value = ConnectionStatus.Disconnected
   }
-}
-
-private fun failed(reason: FailureReason): AirBeamConnection = object : AirBeamConnection {
-  override val status = MutableStateFlow<ConnectionStatus>(ConnectionStatus.Failed(reason))
-  override val deviceState = null
-  override suspend fun configure(config: SessionConfig) = ConfigResult.UnknownFailure
-  override suspend fun disconnect() {}
 }
 
 private fun BluetoothSocket.safeClose() {

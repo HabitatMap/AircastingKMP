@@ -2,6 +2,8 @@ package pl.llp.aircasting.bluetooth.transport
 
 import app.cash.turbine.test
 import pl.llp.aircasting.bluetooth.AirBeamDevice
+import pl.llp.aircasting.bluetooth.ConnectResult
+import pl.llp.aircasting.bluetooth.FailureReason
 import pl.llp.aircasting.bluetooth.DeviceId
 import pl.llp.aircasting.bluetooth.DiscoveredAirBeam
 import pl.llp.aircasting.bluetooth.Transport
@@ -11,7 +13,6 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
 import kotlin.test.assertSame
 
 private val ab3 = DiscoveredAirBeam(DeviceId("ble-1"), "AirBeam3", AirBeamDevice.AirBeam3)
@@ -50,22 +51,26 @@ class CompositeAirBeamConnectorTest {
     val ble = FakeConnector(setOf(Transport.BLE))
     val classic = FakeConnector(setOf(Transport.CLASSIC_SERIAL))
     val composite = CompositeAirBeamConnector(listOf(ble, classic))
+    val connection = FakeConnection(AirBeamDevice.AirBeam2)
+    classic.willConnect(connection.connected())
 
-    val connection = composite.connect(ab2) // CLASSIC_SERIAL
+    val result = composite.connect(ab2) // CLASSIC_SERIAL
 
-    assertSame(FakeConnection, connection)
+    assertSame(connection, (result as ConnectResult.Connected).connection)
     assertEquals(ab2, classic.connectedTarget) // classic was used
     assertEquals(null, ble.connectedTarget)     // ble was not touched
   }
 
+  /** iOS has no classic-serial connector; an AirBeam2 target must fail, not crash. */
   @Test
   fun connect_fails_when_no_delegate_supports_the_transport() = runTest {
     val composite = CompositeAirBeamConnector(
       listOf(FakeConnector(setOf(Transport.BLE)))
     )
-    assertFailsWith<IllegalStateException> {
-      composite.connect(ab2) // CLASSIC_SERIAL — unsupported
-    }
+    assertEquals(
+      ConnectResult.Failed(FailureReason.WrongCommunicationSurface),
+      composite.connect(ab2), // CLASSIC_SERIAL — unsupported
+    )
   }
 
   @Test

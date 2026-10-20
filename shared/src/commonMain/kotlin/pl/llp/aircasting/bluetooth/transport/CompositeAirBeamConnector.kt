@@ -1,8 +1,9 @@
 package pl.llp.aircasting.bluetooth.transport
 
-import pl.llp.aircasting.bluetooth.AirBeamConnection
 import pl.llp.aircasting.bluetooth.AirBeamConnector
+import pl.llp.aircasting.bluetooth.ConnectResult
 import pl.llp.aircasting.bluetooth.DiscoveredAirBeam
+import pl.llp.aircasting.bluetooth.FailureReason
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 
@@ -19,8 +20,9 @@ class CompositeAirBeamConnector(
         .flatten()
     }
 
-  override suspend fun connect(target: DiscoveredAirBeam): AirBeamConnection =
+  /** No delegate for the transport — e.g. an AirBeam2 on iOS — is a failure, not a crash. */
+  override suspend fun connect(target: DiscoveredAirBeam): ConnectResult =
     delegates.firstOrNull { target.device.transport in it.supportedTransports }
       ?.connect(target)
-      ?: error("No connector for transport ${target.device.transport}")
+      ?: ConnectResult.Failed(FailureReason.WrongCommunicationSurface)
 }

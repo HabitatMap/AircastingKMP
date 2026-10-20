@@ -2,19 +2,19 @@ package pl.llp.aircasting.bluetooth.ui.scan
 
 import app.cash.turbine.test
 import pl.llp.aircasting.bluetooth.AirBeamDevice
-import pl.llp.aircasting.bluetooth.ConnectionStatus
-import pl.llp.aircasting.bluetooth.DefaultAirBeamSessionController
+import pl.llp.aircasting.bluetooth.ConnectResult
+import pl.llp.aircasting.bluetooth.DefaultAirBeamLink
 import pl.llp.aircasting.bluetooth.DeviceId
 import pl.llp.aircasting.bluetooth.DiscoveredAirBeam
 import pl.llp.aircasting.bluetooth.FailureReason
 import pl.llp.aircasting.bluetooth.Transport
-import pl.llp.aircasting.bluetooth.transport.ControllableConnection
+import pl.llp.aircasting.bluetooth.transport.FakeConnection
 import pl.llp.aircasting.bluetooth.transport.FakeConnector
+import pl.llp.aircasting.bluetooth.transport.connected
 import pl.llp.aircasting.scan.ConnectionUiState
 import pl.llp.aircasting.scan.ScanViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -37,16 +37,16 @@ class ScanViewModelTest {
   @Test
   fun connection_state_starts_as_None() = runTest {
     val connector = FakeConnector(setOf(Transport.BLE))
-    val controller = DefaultAirBeamSessionController(connector, externalScope = backgroundScope)
-    val vm = ScanViewModel(connector, controller)
+    val link = DefaultAirBeamLink(connector, backgroundScope)
+    val vm = ScanViewModel(connector, link)
     assertEquals(ConnectionUiState.None, vm.connection.value)
   }
 
   @Test
   fun onConnectClicked_routes_the_target_to_the_connector() = runTest {
     val connector = FakeConnector(setOf(Transport.BLE))
-    val controller = DefaultAirBeamSessionController(connector, externalScope = backgroundScope)
-    val vm = ScanViewModel(connector, controller)
+    val link = DefaultAirBeamLink(connector, backgroundScope)
+    val vm = ScanViewModel(connector, link)
 
     vm.onConnectClicked(ab3)
     testScheduler.advanceUntilIdle()
@@ -56,18 +56,16 @@ class ScanViewModelTest {
 
   @Test
   fun onConnectClicked_emits_Connecting_then_Connected_on_Ready() = runTest {
-    val connStatus = MutableStateFlow<ConnectionStatus>(ConnectionStatus.Connecting)
-    val conn = ControllableConnection(status = connStatus)
-    val connector = FakeConnector(setOf(Transport.BLE), connection = conn)
-    val controller = DefaultAirBeamSessionController(connector, externalScope = backgroundScope)
-    val vm = ScanViewModel(connector, controller)
+    val connector = FakeConnector(setOf(Transport.BLE))
+    val link = DefaultAirBeamLink(connector, backgroundScope)
+    val vm = ScanViewModel(connector, link)
 
     vm.connection.test {
       assertEquals(ConnectionUiState.None, awaitItem())
       vm.onConnectClicked(ab3)
       assertEquals(ConnectionUiState.Connecting, awaitItem())
 
-      connStatus.value = ConnectionStatus.Ready(AirBeamDevice.AirBeam3)
+      connector.willConnect(FakeConnection().connected())
       assertEquals(
         ConnectionUiState.Connected(AirBeamDevice.AirBeam3),
         awaitItem(),
@@ -78,18 +76,16 @@ class ScanViewModelTest {
 
   @Test
   fun onConnectClicked_emits_Failed_when_connection_reports_Failure() = runTest {
-    val connStatus = MutableStateFlow<ConnectionStatus>(ConnectionStatus.Connecting)
-    val conn = ControllableConnection(status = connStatus)
-    val connector = FakeConnector(setOf(Transport.BLE), connection = conn)
-    val controller = DefaultAirBeamSessionController(connector, externalScope = backgroundScope)
-    val vm = ScanViewModel(connector, controller)
+    val connector = FakeConnector(setOf(Transport.BLE))
+    val link = DefaultAirBeamLink(connector, backgroundScope)
+    val vm = ScanViewModel(connector, link)
 
     vm.connection.test {
       assertEquals(ConnectionUiState.None, awaitItem())
       vm.onConnectClicked(ab3)
       assertEquals(ConnectionUiState.Connecting, awaitItem())
 
-      connStatus.value = ConnectionStatus.Failed(FailureReason.HandshakeFailed)
+      connector.willConnect(ConnectResult.Failed(FailureReason.HandshakeFailed))
       assertEquals(ConnectionUiState.Failed(FailureReason.HandshakeFailed), awaitItem())
       cancelAndIgnoreRemainingEvents()
     }

@@ -1,49 +1,81 @@
 package pl.llp.aircasting.bluetooth.transport
 
-import pl.llp.aircasting.bluetooth.AirBeamConnection
-import pl.llp.aircasting.bluetooth.AirBeamConnector
-import pl.llp.aircasting.bluetooth.ConnectionStatus
-import pl.llp.aircasting.bluetooth.DiscoveredAirBeam
-import pl.llp.aircasting.bluetooth.Transport
-import pl.llp.aircasting.bluetooth.v2_firmware_specific.DeviceReportedState
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
-
+import kotlinx.coroutines.flow.receiveAsFlow
+import pl.llp.aircasting.bluetooth.AirBeamConnection
+import pl.llp.aircasting.bluetooth.AirBeamConnector
+import pl.llp.aircasting.bluetooth.AirBeamDevice
 import pl.llp.aircasting.bluetooth.ConfigResult
+import pl.llp.aircasting.bluetooth.ConnectResult
+import pl.llp.aircasting.bluetooth.ConnectionStatus
+import pl.llp.aircasting.bluetooth.DiscoveredAirBeam
+import pl.llp.aircasting.bluetooth.SensorReading
 import pl.llp.aircasting.bluetooth.SessionConfig
+import pl.llp.aircasting.bluetooth.Transport
 
+/**
+ * `connect` answers with whatever the test queued via [willConnect], in order. With nothing
+ * queued it suspends until something is — that is how a test holds a connect attempt open.
+ */
 class FakeConnector(
   override val supportedTransports: Set<Transport>,
   private val scanFlow: Flow<List<DiscoveredAirBeam>> = flowOf(emptyList()),
-  private val connection: AirBeamConnection = FakeConnection,
 ) : AirBeamConnector {
-  var connectedTarget: DiscoveredAirBeam? = null
+  val targets = mutableListOf<DiscoveredAirBeam>()
+  val connectedTarget get() = targets.lastOrNull()
+  private val results = Channel<ConnectResult>(Channel.UNLIMITED)
+
+  fun willConnect(vararg next: ConnectResult) = next.forEach { results.trySend(it) }
+
   override fun scan() = scanFlow
-  override suspend fun connect(target: DiscoveredAirBeam): AirBeamConnection {
-    connectedTarget = target
-    return connection
+
+  override suspend fun connect(target: DiscoveredAirBeam): ConnectResult {
+    targets += target
+    return results.receive()
   }
 }
 
-object FakeConnection : AirBeamConnection {
-  override val status = MutableStateFlow<ConnectionStatus>(ConnectionStatus.Disconnected)
-  override val deviceState = null
-  override suspend fun configure(config: SessionConfig): ConfigResult = ConfigResult.Success
-  override suspend fun disconnect() {}
-}
-
-class ControllableConnection(
-  override val status: MutableStateFlow<ConnectionStatus>,
-  override val deviceState: MutableStateFlow<DeviceReportedState>? = null,
+class FakeConnection(
+  override val device: AirBeamDevice = AirBeamDevice.AirBeam3,
+  var configureResult: ConfigResult = ConfigResult.Success,
+  var resumeResult: ConfigResult = ConfigResult.Success,
 ) : AirBeamConnection {
-  var disconnectCalled = false
-  var configuredConfig: SessionConfig? = null
-  override suspend fun configure(config: SessionConfig): ConfigResult {
-    configuredConfig = config
-    return ConfigResult.Success
+  override val status = MutableStateFlow(ConnectionStatus.Ready)
+  override val deviceState = null
+  private val sent = Channel<SensorReading>(Channel.UNLIMITED)
+  override val readings = sent.receiveAsFlow()
+
+  val configured = mutableListOf<SessionConfig>()
+  val resumed = mutableListOf<SessionConfig.Mobile>()
+  var disconnects = 0
+    private set
+
+  fun drop() {
+    status.value = ConnectionStatus.DisconnectedUnexpectedly
   }
+
+  fun send(reading: SensorReading) {
+    sent.trySend(reading)
+  }
+
+  override suspend fun configure(config: SessionConfig): ConfigResult {
+    configured += config
+    return configureResult
+  }
+
+  override suspend fun resumeMobileSession(config: SessionConfig.Mobile): ConfigResult {
+    resumed += config
+    return resumeResult
+  }
+
   override suspend fun disconnect() {
-    disconnectCalled = true
+    disconnects++
+    status.compareAndSet(ConnectionStatus.Ready, ConnectionStatus.Disconnected)
+    sent.close()
   }
 }
+
+fun FakeConnection.connected() = ConnectResult.Connected(this)

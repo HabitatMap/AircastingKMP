@@ -8,9 +8,9 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
-import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
+import androidx.core.app.ServiceCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -20,12 +20,16 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
-import pl.llp.aircasting.bluetooth.AirBeamSessionController
-import pl.llp.aircasting.bluetooth.SessionState
+import pl.llp.aircasting.bluetooth.AirBeamLink
+import pl.llp.aircasting.bluetooth.LinkState
 
+/**
+ * Keeps the process alive while the AirBeam link is up. It holds no connection itself — the
+ * shared [AirBeamLink] does; this only mirrors its state and stops when the link ends.
+ */
 class AirBeamForegroundService : Service(), KoinComponent {
 
-  private val sessionController: AirBeamSessionController by inject()
+  private val link: AirBeamLink by inject()
   private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
   companion object {
@@ -34,12 +38,7 @@ class AirBeamForegroundService : Service(), KoinComponent {
     private const val NOTIFICATION_ID = 1001
 
     fun start(context: Context) {
-      val intent = Intent(context, AirBeamForegroundService::class.java)
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        context.startForegroundService(intent)
-      } else {
-        context.startService(intent)
-      }
+      context.startForegroundService(Intent(context, AirBeamForegroundService::class.java))
     }
 
     fun stop(context: Context) {
@@ -51,13 +50,17 @@ class AirBeamForegroundService : Service(), KoinComponent {
   override fun onCreate() {
     super.onCreate()
     createNotificationChannel()
-    observeSessionState()
+    observeLink()
   }
 
   override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
     val initialNotification = buildNotification("AirBeam service active")
-    startForegroundWithCompat(initialNotification)
-    return START_STICKY
+    // ServiceCompat drops the service type below API 29, where the overload doesn't exist.
+    ServiceCompat.startForeground(
+      this, NOTIFICATION_ID, initialNotification, ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE,
+    )
+    // A restarted process has an idle link and nothing to restore it from — don't come back.
+    return START_NOT_STICKY
   }
 
   override fun onBind(intent: Intent?): IBinder? = null
@@ -67,35 +70,27 @@ class AirBeamForegroundService : Service(), KoinComponent {
     super.onDestroy()
   }
 
-  private fun observeSessionState() {
-    sessionController.state
-      .dropWhile { it is SessionState.Idle }
+  private fun observeLink() {
+    link.state
+      .dropWhile { it is LinkState.Idle }
       .onEach { state ->
         when (state) {
-          SessionState.Idle, is SessionState.Failed -> {
+          LinkState.Idle, is LinkState.Failed -> {
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
           }
-          is SessionState.Connecting -> updateNotification("Connecting to ${state.target.name}...")
-          is SessionState.Connected -> updateNotification("Connected to AirBeam")
-          is SessionState.Configuring -> updateNotification("Configuring session...")
-          is SessionState.Recording -> updateNotification("Recording active session")
-          is SessionState.Reconnecting -> updateNotification("Reconnecting to ${state.target.name} (Attempt ${state.attempt})...")
+          is LinkState.Connecting -> updateNotification("Connecting to ${state.target.name}...")
+          is LinkState.Connected -> updateNotification("Connected to ${state.target.name}")
+          is LinkState.Reconnecting -> updateNotification("Reconnecting to ${state.target.name} (Attempt ${state.attempt})...")
         }
       }
       .launchIn(serviceScope)
   }
 
   private fun createNotificationChannel() {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-      val channel = NotificationChannel(
-        CHANNEL_ID,
-        CHANNEL_NAME,
-        NotificationManager.IMPORTANCE_LOW
-      )
-      val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-      manager.createNotificationChannel(channel)
-    }
+    val channel = NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_LOW)
+    val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+    manager.createNotificationChannel(channel)
   }
 
   private fun buildNotification(contentText: String): Notification {
@@ -113,17 +108,5 @@ class AirBeamForegroundService : Service(), KoinComponent {
     val notification = buildNotification(contentText)
     val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
     manager.notify(NOTIFICATION_ID, notification)
-  }
-
-  private fun startForegroundWithCompat(notification: Notification) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-      startForeground(
-        NOTIFICATION_ID,
-        notification,
-        ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE
-      )
-    } else {
-      startForeground(NOTIFICATION_ID, notification)
-    }
   }
 }

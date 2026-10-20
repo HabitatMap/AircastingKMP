@@ -8,22 +8,51 @@ import kotlin.uuid.Uuid
 interface AirBeamConnector {
   val supportedTransports: Set<Transport>
   fun scan(): Flow<List<DiscoveredAirBeam>>
-  suspend fun connect(target: DiscoveredAirBeam): AirBeamConnection
+
+  /** Link + handshake. Device and radio trouble is a [ConnectResult.Failed], never a throw. */
+  suspend fun connect(target: DiscoveredAirBeam): ConnectResult
 }
 
+sealed interface ConnectResult {
+  data class Connected(val connection: AirBeamConnection) : ConnectResult
+  data class Failed(val reason: FailureReason) : ConnectResult
+}
+
+/**
+ * One live, handshaken link. Holds platform resources (GATT client, socket) until
+ * [disconnect] — call it even after the link dropped by itself.
+ */
 interface AirBeamConnection {
+  val device: AirBeamDevice
+
+  /** Starts [ConnectionStatus.Ready] and leaves it once; a connection never comes back. */
   val status: StateFlow<ConnectionStatus>
   val deviceState: StateFlow<DeviceReportedState>?
+
+  /**
+   * Everything the device measures — live, and for Mini V2 the stored backlog it streams after
+   * a reconnect. Buffered from connect on, so nothing is lost before the first collector; meant
+   * for exactly one collector.
+   */
+  val readings: Flow<SensorReading>
+
   suspend fun configure(config: SessionConfig): ConfigResult
+
+  /**
+   * Picks up a mobile session that was running before the link dropped. Not [configure]
+   * again: Mini V2 still runs its session and would reject a new config.
+   */
+  suspend fun resumeMobileSession(config: SessionConfig.Mobile): ConfigResult
+
   suspend fun disconnect()
 }
 
-sealed interface ConnectionStatus {
-  data object Disconnected : ConnectionStatus
-  data object Connecting : ConnectionStatus
-  data class Ready(val device: AirBeamDevice) : ConnectionStatus
-  data class Failed(val reason: FailureReason) : ConnectionStatus
-  data object DisconnectedUnexpectedly : ConnectionStatus
+enum class ConnectionStatus {
+  Ready,
+  /** We called [AirBeamConnection.disconnect]. */
+  Disconnected,
+  /** The link dropped on its own: out of range, battery, radio off. */
+  DisconnectedUnexpectedly,
 }
 
 sealed interface FailureReason {
@@ -32,6 +61,8 @@ sealed interface FailureReason {
   data object WrongCommunicationSurface: FailureReason
   data object HandshakeFailed: FailureReason
   data object RadioOrPermissionMissing: FailureReason
+  /** A ready link dropped with no session to reconnect for. */
+  data object ConnectionLost: FailureReason
 }
 
 sealed interface ConfigResult {
@@ -40,6 +71,8 @@ sealed interface ConfigResult {
   data object WifiPassFailure: ConfigResult
   data object BadConfigFailure: ConfigResult
   data object NotSyncedFailure: ConfigResult
+  /** Nothing to configure: no ready link at the time of the call. */
+  data object NotConnected: ConfigResult
 }
 
 sealed interface SessionConfig {

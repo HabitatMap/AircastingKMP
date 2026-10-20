@@ -1,5 +1,8 @@
 package pl.llp.aircasting.di
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import org.koin.core.context.startKoin
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.KoinAppDeclaration
@@ -8,9 +11,8 @@ import pl.llp.aircasting.auth.AuthRepository
 import pl.llp.aircasting.auth.AuthViewModel
 import pl.llp.aircasting.auth.ForgotPasswordViewModel
 import pl.llp.aircasting.auth.NetworkAuthRepository
-import pl.llp.aircasting.bluetooth.AirBeamConnector
-import pl.llp.aircasting.bluetooth.AirBeamSessionController
-import pl.llp.aircasting.bluetooth.DefaultAirBeamSessionController
+import pl.llp.aircasting.bluetooth.AirBeamLink
+import pl.llp.aircasting.bluetooth.DefaultAirBeamLink
 import pl.llp.aircasting.bluetooth.transport.ble.BleAirBeamConnector
 import pl.llp.aircasting.data.auth.AuthSession
 import pl.llp.aircasting.data.auth.StoredAuthSession
@@ -51,7 +53,8 @@ val onboardingModule = module {
 
 val bleModule = module {
   single { BleAirBeamConnector() }
-  single<AirBeamSessionController> { DefaultAirBeamSessionController(get(), get()) }
+  // Process-lifetime scope: the link outlives every screen, like the upload loop.
+  single<AirBeamLink> { DefaultAirBeamLink(get(), CoroutineScope(SupervisorJob() + Dispatchers.Default)) }
   viewModelOf(::ScanViewModel)
 }
 

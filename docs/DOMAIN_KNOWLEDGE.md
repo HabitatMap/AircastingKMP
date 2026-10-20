@@ -118,6 +118,17 @@ Enums:
    `DISCONNECTED`; a 2s-interval reconnect loop starts (no hard cap).
 6. **Resume** — reconnect success → `RECORDING`. User can also disconnect deliberately
    (standalone mode) keeping the session.
+   **Reconnect rules, exactly** (`AirBeamService.onMessageEvent(SensorDisconnectedUnexpectedlyEvent)`,
+   `AirBeamReconnector`): only for a **mobile** session (fixed sessions record on the device);
+   not in standalone mode; one loop at a time; every **2 s**, **no cap** — it ends on
+   success, user stop/disconnect, or sync start. On success the device is **resumed, not
+   reconfigured** (`reconnectMobileSession()`): AB3/Mini V1 get the mobile-mode config again;
+   AB2 gets its mobile-mode message; **Mini V2 keeps running its session through the drop** —
+   it gets a time sync, then `ContinueSession` if it reports `HasSavedSession`, nothing if
+   `Running`; legacy logs and carries on for any other state. Re-sending a V2 session config
+   would be wrong (it would be rejected or start a second session).
+   In the rewrite these live in `AirBeamLink` (connection) — whether a drop means
+   `DISCONNECTED` or a finished session is the recording side's call.
 7. **Finish** — `StopRecordingEvent` → final averaging *(dropped in the rewrite — §7)*, delete active-session rows, status
    `FINISHED`, backend sync. All services/connectors self-tear-down.
 
@@ -177,6 +188,31 @@ Path A (live V1) is the older variant: it stamps `LocationHelper.lastLocation()`
 `DEFAULT_LOCATION`, refreshed once per full set of streams so a set shares one location.
 
 Fixed-session measurements carry no per-measurement location (it lives on the session).
+
+### Live readings off the device — **KEEP** (as implemented in the rewrite, 2026-10-20)
+
+What `AirBeamConnection.readings` emits (`SensorReading`: sensor name, unit symbol, value,
+device time or none). Sensor name + unit are the stream identity the v3 create call sends.
+
+| Device | Source | Format | Time |
+|--------|--------|--------|------|
+| AB3 | notify `ffe1` temp F, `ffe3` humidity, `ffe4` PM1, `ffe5` PM2.5, `ffe6` PM10 (`AirBeam3Configurator`) | ASCII line, below | none — stamp on receipt |
+| Mini V1 | notify `ffe4`, `ffe5` (`AirBeamMiniConfigurator`; its `ffe7` sends only battery `"85%"`) | ASCII line | none |
+| AB2 | RFCOMM socket, one line per reading (`AirBeam2Reader`) | ASCII line | none |
+| Mini V2 | indicate `…0005` live, `…0006` sync backlog | binary LE (`ble_mobile_app_guide.md` §6) | device epoch seconds |
+
+- **ASCII line** (`ResponseParser`): `value;package;sensor name;type;short type;unit name;
+  unit symbol;T1;T2;T3;T4;T5` — 12 fields, the five thresholds integers. Anything else
+  (battery text, torn line) is dropped.
+- **Mini V2 names** carry no metadata on the wire; legacy uploads them as
+  `AirBeamMini-PM1` / `AirBeamMini-PM2.5`, unit `µg/m³`
+  (`AirBeamMiniV2Configurator.postLiveMeasurementEvents`). Keep these exact names so the
+  backend streams line up with legacy-recorded sessions.
+- **MTU** (Android only; iOS negotiates itself): V1 BLE devices request 517
+  (`SyncableAirBeamConfigurator.MAX_MTU`) — a line doesn't fit the default 20-byte payload;
+  Mini V2 requests 247 (fits a 244-byte sync chunk). A refused request is logged, not fatal.
+- The V2 sync backlog flows through the same `readings` as live data, so the recording side
+  has one save path (dedup on `(stream, time)` makes replays harmless).
 
 UI consumes the DB reactively: Room `LiveData` → repository projections → `SessionsObserver`
 (diff engine) → dashboard cards. DB is the intended single source of truth.

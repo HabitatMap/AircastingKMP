@@ -16,6 +16,8 @@ import org.koin.dsl.module
 import pl.llp.aircasting.AppVersion
 import pl.llp.aircasting.data.local.AndroidDatabaseDriverFactory
 import pl.llp.aircasting.data.local.DatabaseDriverFactory
+import pl.llp.aircasting.data.network.upload.UploadBackstop
+import pl.llp.aircasting.data.network.upload.WorkManagerUploadBackstop
 import pl.llp.aircasting.settings.mic.AndroidMicrophoneLevelSource
 import pl.llp.aircasting.settings.mic.MicrophoneLevelSource
 
@@ -33,6 +35,7 @@ actual fun platformModule() = module {
   single { get<Context>().getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager }
   single<LocationProvider> { AndroidLocationProvider(get()) }
   single<DatabaseDriverFactory> { AndroidDatabaseDriverFactory(get()) }
+  single<UploadBackstop> { WorkManagerUploadBackstop(get()) }
   single {
     val ctx = get<Context>()
     @Suppress("DEPRECATION") // PackageInfoFlags overload needs API 33; minSdk here is 28

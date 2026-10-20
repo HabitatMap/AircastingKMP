@@ -37,7 +37,7 @@ class ScanViewModelTest {
   @Test
   fun connection_state_starts_as_None() = runTest {
     val connector = FakeConnector(setOf(Transport.BLE))
-    val controller = DefaultAirBeamSessionController(connector)
+    val controller = DefaultAirBeamSessionController(connector, externalScope = backgroundScope)
     val vm = ScanViewModel(connector, controller)
     assertEquals(ConnectionUiState.None, vm.connection.value)
   }
@@ -45,7 +45,7 @@ class ScanViewModelTest {
   @Test
   fun onConnectClicked_routes_the_target_to_the_connector() = runTest {
     val connector = FakeConnector(setOf(Transport.BLE))
-    val controller = DefaultAirBeamSessionController(connector)
+    val controller = DefaultAirBeamSessionController(connector, externalScope = backgroundScope)
     val vm = ScanViewModel(connector, controller)
 
     vm.onConnectClicked(ab3)
@@ -59,7 +59,7 @@ class ScanViewModelTest {
     val connStatus = MutableStateFlow<ConnectionStatus>(ConnectionStatus.Connecting)
     val conn = ControllableConnection(status = connStatus)
     val connector = FakeConnector(setOf(Transport.BLE), connection = conn)
-    val controller = DefaultAirBeamSessionController(connector)
+    val controller = DefaultAirBeamSessionController(connector, externalScope = backgroundScope)
     val vm = ScanViewModel(connector, controller)
 
     vm.connection.test {
@@ -81,7 +81,7 @@ class ScanViewModelTest {
     val connStatus = MutableStateFlow<ConnectionStatus>(ConnectionStatus.Connecting)
     val conn = ControllableConnection(status = connStatus)
     val connector = FakeConnector(setOf(Transport.BLE), connection = conn)
-    val controller = DefaultAirBeamSessionController(connector)
+    val controller = DefaultAirBeamSessionController(connector, externalScope = backgroundScope)
     val vm = ScanViewModel(connector, controller)
 
     vm.connection.test {

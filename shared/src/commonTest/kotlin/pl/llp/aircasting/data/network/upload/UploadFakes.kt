@@ -11,6 +11,7 @@ internal class FakeUploadOutbox : UploadOutbox {
   val rows = mutableListOf<Measurement>()
   override suspend fun pending(sessionUuid: String, limit: Int) = rows.sortedBy { it.time }.take(limit)
   override suspend fun acknowledge(measurements: List<Measurement>) { rows -= measurements.toSet() }
+  override fun observeSessionsWithPending(): Flow<List<String>> = error("unused")
 }
 
 internal class FakeStreamRepository(streams: List<MeasurementStream>) : MeasurementStreamRepository {

@@ -108,5 +108,6 @@ fun initKoin(extra: KoinAppDeclaration = {}) = startKoin {
     appSettingsModule,
     onboardingModule,
     recordModule,
+    uploadModule,
   )
-}
+}.also { startUploadLoop(it.koin) }

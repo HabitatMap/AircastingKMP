@@ -80,6 +80,17 @@ class MobileSessionUploadTest {
     assertEquals(listOf(2, 1), streams.streams.map { it.sensorTypeId })
   }
 
+  /** A key that is present, even as null, makes the server treat the stream as a custom sensor. */
+  @Test
+  fun known_sensor_streams_send_only_sensor_name_and_unit_symbol() = runTest {
+    upload().upload(UUID)
+
+    val body = Json.parseToJsonElement(requests.single { it.url.encodedPath == CREATE_PATH }.bodyText()).jsonObject
+    body["streams"]!!.jsonArray.forEach { stream ->
+      assertEquals(setOf("sensor_name", "unit_symbol"), stream.jsonObject.keys)
+    }
+  }
+
   @Test
   fun pending_measurements_go_out_with_the_ids_the_create_just_assigned() = runTest {
     outbox.rows += Measurement(streamId = 1, time = START, value = 12.5, location = LOCATION)
@@ -178,6 +189,7 @@ class MobileSessionUploadTest {
     override suspend fun updateStatus(uuid: String, status: SessionStatus) = error("unused")
     override suspend fun finish(uuid: String, endTime: Instant) = error("unused")
     override suspend fun delete(uuid: String) = error("unused")
+    override fun observeAwaitingFinish(): Flow<List<String>> = error("unused")
   }
   private companion object {
     const val UUID = "8d7a3f2e-0000-4000-8000-000000000001"

@@ -1,8 +1,11 @@
 package pl.llp.aircasting.data.local
 
+import app.cash.sqldelight.coroutines.asFlow
+import app.cash.sqldelight.coroutines.mapToList
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import pl.llp.aircasting.data.local.db.PendingUploadQueries
 import pl.llp.aircasting.domain.session.Measurement
@@ -28,4 +31,8 @@ class LocalUploadOutbox(
         measurements.forEach { queries.acknowledge(it.streamId, it.time) }
       }
     }
+
+  override fun observeSessionsWithPending(): Flow<List<String>> =
+    queries.selectSessionsWithPending().asFlow().mapToList(ioDispatcher)
+
 }

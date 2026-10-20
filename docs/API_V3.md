@@ -247,14 +247,19 @@ once) for each such session:
    radio wakeups, not bytes, drive battery cost).
 4. Failure → exponential backoff (e.g. 30 s … ~10 min), reset on success. Heals the future-`finished_at` `400`.
 
-`flushNow()` exists for one case: the **app going to background** with work pending (lifecycle, not data).
+React to state in our DB; call imperatively only for OS events. The loop is started once, in `initKoin`
+(`startUploadLoop`), and runs for the life of the process.
 
-**Platform backstop**, for when the process may die with work left:
-- **Android:** unique one-off WorkManager work, `NetworkType.CONNECTED` + backoff. Replaces the legacy
-  `ConnectivityReceiver`. No periodic work — one-off work persists until it succeeds.
-- **iOS:** no WorkManager equivalent. `beginBackgroundTask` (~30 s) on backgrounding, drain on next
-  foreground/launch. **Known limit:** after a force-quit, pending uploads wait for the next launch — delayed,
-  never lost (SQLite).
+**Platform backstop** (`UploadBackstop.schedule()`), called when the app goes to background — the process
+may die with work left. Both run one `MobileUploadLoop.drainOnce()`, which shares a `Mutex` with the loop
+so the two never upload side by side:
+- **Android:** `WorkManagerUploadBackstop` — unique one-off work (`"mobile-upload"`, `KEEP`),
+  `NetworkType.CONNECTED`, WorkManager's own backoff via `Result.retry()`. Hook: `ProcessLifecycleOwner`
+  `ON_STOP` in `AircastingApp`. Replaces the legacy `ConnectivityReceiver`. No periodic work — one-off work
+  persists (process death, reboot) until it succeeds.
+- **iOS:** `IosUploadBackstop` — no WorkManager equivalent; one drain inside `beginBackgroundTask` (~30 s).
+  Hook: `scenePhase == .background` in `iOSApp.swift`. **Known limit:** after a force-quit, pending uploads
+  wait for the next launch — delayed, never lost (SQLite).
 
 While recording, the process is alive on both platforms (Android foreground service, iOS
 `bluetooth-central`), so the live path needs no platform scheduler.

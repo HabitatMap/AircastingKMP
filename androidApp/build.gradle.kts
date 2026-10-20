@@ -17,6 +17,7 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.compose.uiToolingPreview)
     implementation(libs.androidx.core.splashscreen)
+    implementation(libs.androidx.lifecycle.process)
 
     debugImplementation(libs.compose.uiTooling)
 }

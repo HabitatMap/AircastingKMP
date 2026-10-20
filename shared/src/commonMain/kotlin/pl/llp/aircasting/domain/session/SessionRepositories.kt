@@ -12,6 +12,9 @@ interface SessionRepository {
   suspend fun updateStatus(uuid: String, status: SessionStatus)
   suspend fun finish(uuid: String, endTime: Instant)
   suspend fun delete(uuid: String)
+
+  /** Uuids of mobile sessions stopped locally whose `end_time` the server doesn't have yet. */
+  fun observeAwaitingFinish(): Flow<List<String>>
 }
 
 interface MeasurementStreamRepository {

@@ -48,6 +48,7 @@ kotlin {
       implementation(libs.ktor.client.okhttp)
       implementation(libs.play.services.location)
       implementation(libs.sqldelight.android.driver)
+      implementation(libs.androidx.work.runtime)
     }
     commonMain.dependencies {
       implementation(libs.ktor.client.core)

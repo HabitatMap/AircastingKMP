@@ -1,17 +1,28 @@
 package pl.llp.aircasting.recording
 
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.TimeZone
 import pl.llp.aircasting.bluetooth.AirBeamDevice
 import pl.llp.aircasting.bluetooth.ConfigResult
 import pl.llp.aircasting.bluetooth.DeviceId
 import pl.llp.aircasting.bluetooth.DiscoveredAirBeam
+import pl.llp.aircasting.bluetooth.FailureReason
 import pl.llp.aircasting.bluetooth.FakeAirBeamLink
+import pl.llp.aircasting.bluetooth.LinkState
+import pl.llp.aircasting.bluetooth.SensorReading
 import pl.llp.aircasting.bluetooth.SessionConfig
+import pl.llp.aircasting.data.local.LocalMeasurementRepository
 import pl.llp.aircasting.data.local.LocalMeasurementStreamRepository
 import pl.llp.aircasting.data.local.LocalSessionRepository
+import pl.llp.aircasting.data.local.LocalUploadOutbox
 import pl.llp.aircasting.data.local.testDatabase
+import pl.llp.aircasting.domain.GeoLocation
+import pl.llp.aircasting.domain.session.Measurement
 import pl.llp.aircasting.domain.session.Session
 import pl.llp.aircasting.domain.session.SessionStatus
 import pl.llp.aircasting.domain.session.SessionType
@@ -28,15 +39,26 @@ import kotlin.time.Instant
 class RecordingEngineTest {
 
   private val db = testDatabase()
-  private val sessions = LocalSessionRepository(db.sessionQueries)
-  private val streams = LocalMeasurementStreamRepository(db.measurementStreamQueries)
+  // Unconfined: repository writes run inline, so `runCurrent()` alone settles the collector.
+  private val sessions = LocalSessionRepository(db.sessionQueries, Dispatchers.Unconfined)
+  private val streams = LocalMeasurementStreamRepository(db.measurementStreamQueries, Dispatchers.Unconfined)
+  private val measurements =
+    LocalMeasurementRepository(
+      db.measurementQueries,
+      db.pendingUploadQueries,
+      Dispatchers.Unconfined
+    )
+  private val outbox = LocalUploadOutbox(db.pendingUploadQueries, Dispatchers.Unconfined)
   private val link = FakeAirBeamLink()
   private val host = FakeBackgroundHost()
+  private var phone: GeoLocation? = GeoLocation(50.06, 19.94)
   private var time = Instant.parse("2026-10-20T10:00:00Z")
   private val clock = object : Clock {
     override fun now() = time
   }
-  private val engine = RecordingEngine(link, sessions, streams, host, clock, TimeZone.of("Europe/Warsaw"))
+  private val engine = RecordingEngine(
+    link, sessions, streams, measurements, { phone }, host, clock, TimeZone.of("Europe/Warsaw"),
+  )
   private val miniV2 = DiscoveredAirBeam(DeviceId("AA:BB:CC:DD:EE:FF"), "AirBeamMini-1234", AirBeamDevice.Mini.V2)
   private val details = NewSessionDetails(name = "Morning walk", tags = listOf("bike", "commute"))
 
@@ -129,6 +151,124 @@ class RecordingEngineTest {
     assertEquals(1, link.disconnects)
     assertFalse(host.running)
   }
+
+  @Test
+  fun a_reading_during_a_session_is_stored_and_queued_for_upload() = runTest {
+    val uuid = recording()
+    val at = Instant.parse("2026-10-20T10:00:05Z")
+
+    link.send(pm25(12.0, at))
+    runCurrent()
+
+    assertEquals(
+      listOf(Measurement(streamId(uuid, "AirBeamMini-PM2.5"), at, 12.0, GeoLocation(50.06, 19.94))),
+      outbox.pending(uuid, limit = 10),
+    )
+  }
+  /** V1 devices send no time; the phone clock at receipt stands in. */
+  @Test
+  fun a_reading_without_device_time_takes_the_phone_clock() = runTest {
+    val uuid = recording()
+
+    link.send(pm25(12.0, at = null))
+    runCurrent()
+
+    assertEquals(listOf(time), outbox.pending(uuid, limit = 10).map { it.time })
+  }
+  /** v3 mobile frames have no "no location" value: before the first fix, legacy's default. */
+  @Test
+  fun no_phone_fix_yet_stamps_the_default_location() = runTest {
+    phone = null
+    val uuid = recording()
+
+    link.send(pm25(12.0, time))
+    runCurrent()
+
+    assertEquals(listOf(GeoLocation(40.7128, -74.0060)), outbox.pending(uuid, limit = 10).map { it.location })
+  }
+  /** A V2 backlog replays what may already be stored; the (stream, time) key absorbs it. */
+  @Test
+  fun a_repeated_reading_is_stored_and_queued_once() = runTest {
+    val uuid = recording()
+
+    link.send(pm25(12.0, time))
+    link.send(pm25(12.0, time))
+    runCurrent()
+
+    assertEquals(1, outbox.pending(uuid, limit = 10).size)
+  }
+
+  @Test
+  fun readings_outside_a_session_are_dropped() = runTest {
+    running()
+    link.send(pm25(1.0, time))       // before start
+    runCurrent()
+    val uuid = recording(alreadyRunning = true)
+    engine.stop()
+    link.send(pm25(2.0, time + 1.seconds)) // after stop
+    runCurrent()
+
+    assertEquals(emptyList(), outbox.pending(uuid, limit = 10))
+  }
+
+  /** It has no stream — and v3 could never take it — so it's dropped, not crashed on. */
+  @Test
+  fun a_reading_from_an_uncatalogued_sensor_is_dropped() = runTest {
+    val uuid = recording()
+
+    link.send(SensorReading("AirBeam3-PM10", "µg/m³", 5.0, time))
+    link.send(pm25(12.0, time))
+    runCurrent()
+
+    assertEquals(listOf(12.0), outbox.pending(uuid, limit = 10).map { it.value })
+  }
+
+  @Test
+  fun the_session_follows_the_link_through_a_reconnect() = runTest {
+    val uuid = recording()
+
+    link.state.value = LinkState.Reconnecting(miniV2, attempt = 1)
+    runCurrent()
+    assertEquals(SessionStatus.DISCONNECTED, sessions.find(uuid)!!.status)
+
+    link.state.value = LinkState.Connected(miniV2)
+    runCurrent()
+    assertEquals(SessionStatus.RECORDING, sessions.find(uuid)!!.status)
+  }
+
+  /** Nothing more will come over this link; the user finishes the session from the UI. */
+  @Test
+  fun a_failed_link_leaves_the_session_disconnected_not_finished() = runTest {
+    val uuid = recording()
+
+    link.state.value = LinkState.Failed(FailureReason.ConnectionLost)
+    runCurrent()
+
+    val session = sessions.find(uuid)!!
+    assertEquals(SessionStatus.DISCONNECTED, session.status)
+    assertNull(session.endTime)
+  }
+
+  // --- helpers ---
+
+  private fun TestScope.running() {
+    backgroundScope.launch { engine.run() }
+    runCurrent()
+  }
+
+  /** A Mini V2 session in progress, the engine collecting; returns its uuid. */
+  private suspend fun TestScope.recording(alreadyRunning: Boolean = false): String {
+    if (!alreadyRunning) running()
+    link.state.value = LinkState.Connected(miniV2)
+    engine.start(miniV2, details)
+    runCurrent()
+    return link.configured.last().uuid.toString()
+  }
+  private suspend fun streamId(uuid: String, sensor: String) =
+    streams.findBySession(uuid).single { it.sensorName == sensor }.id
+
+  private fun pm25(value: Double, at: Instant?) = SensorReading("AirBeamMini-PM2.5", "µg/m³", value, at)
+
 }
 
 private class FakeBackgroundHost : BackgroundSessionHost {

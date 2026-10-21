@@ -5,7 +5,7 @@ import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.DefaultRequest
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
-const val DefaultBackendUrl = "https://aircasting.org"
+const val DefaultBackendUrl = "https://experimental.aircasting.org"
 /**
  * AirCasting requires HTTPS for all traffic to prevent 301 redirects from dropping POST bodies.
  * Strips trailing slashes, enforces the https:// protocol, and preserves custom ports.

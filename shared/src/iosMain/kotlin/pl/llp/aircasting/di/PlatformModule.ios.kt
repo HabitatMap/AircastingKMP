@@ -15,6 +15,10 @@ import pl.llp.aircasting.data.local.DatabaseDriverFactory
 import pl.llp.aircasting.data.local.IosDatabaseDriverFactory
 import pl.llp.aircasting.data.network.upload.IosUploadBackstop
 import pl.llp.aircasting.data.network.upload.UploadBackstop
+import pl.llp.aircasting.recording.BackgroundSessionHost
+import pl.llp.aircasting.recording.PhoneLocation
+import pl.llp.aircasting.recording.TrackedPhoneLocation
+import pl.llp.aircasting.recording.iosLocationFixes
 import pl.llp.aircasting.settings.mic.IosMicrophoneLevelSource
 import pl.llp.aircasting.settings.mic.MicrophoneLevelSource
 import platform.Foundation.NSBundle
@@ -26,6 +30,14 @@ actual fun platformModule() = module {
   single<AirBeamConnector> { CompositeAirBeamConnector(listOf(get<BleAirBeamConnector>())) }
   single<LocationProvider> { IosLocationProvider() }
   single<DatabaseDriverFactory> { IosDatabaseDriverFactory() }
+  single<PhoneLocation> { TrackedPhoneLocation(iosLocationFixes()) }
+  // bluetooth-central + location background modes keep the process alive; nothing to start.
+  single<BackgroundSessionHost> {
+    object : BackgroundSessionHost {
+      override fun start() {}
+      override fun stop() {}
+    }
+  }
   single<UploadBackstop> { IosUploadBackstop(get()) }
   single {
     AppVersion(

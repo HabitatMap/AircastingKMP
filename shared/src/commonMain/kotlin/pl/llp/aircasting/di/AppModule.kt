@@ -3,6 +3,9 @@ package pl.llp.aircasting.di
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import kotlinx.datetime.TimeZone
+import org.koin.core.Koin
 import org.koin.core.context.startKoin
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.KoinAppDeclaration
@@ -27,12 +30,15 @@ import pl.llp.aircasting.data.network.MobileSessionsApi
 import pl.llp.aircasting.data.network.ServerProbe
 import pl.llp.aircasting.data.network.ThresholdAlertsApi
 import pl.llp.aircasting.data.network.createAircastingHttpClient
+import pl.llp.aircasting.data.network.upload.MobileUploadLoop
 import pl.llp.aircasting.home.FakeHomeRepository
 import pl.llp.aircasting.home.HomeRepository
 import pl.llp.aircasting.home.HomeViewModel
 import pl.llp.aircasting.onboarding.OnboardingRepository
 import pl.llp.aircasting.onboarding.StoredOnboardingRepository
 import pl.llp.aircasting.record.NewSessionViewModel
+import pl.llp.aircasting.record.RecordingViewModel
+import pl.llp.aircasting.recording.RecordingEngine
 import pl.llp.aircasting.scan.ScanViewModel
 import pl.llp.aircasting.settings.account.AccountRepository
 import pl.llp.aircasting.settings.account.AccountViewModel
@@ -44,7 +50,20 @@ import pl.llp.aircasting.settings.server.CustomDataServerViewModel
 import kotlin.time.Clock
 
 val recordModule = module {
+  single {
+    RecordingEngine(
+      get(),
+      get(),
+      get(),
+      get(),
+      get(),
+      get(),
+      get(),
+      TimeZone.currentSystemDefault()
+    )
+  }
   viewModelOf(::NewSessionViewModel)
+  viewModelOf(::RecordingViewModel)
 }
 
 val onboardingModule = module {
@@ -113,4 +132,19 @@ fun initKoin(extra: KoinAppDeclaration = {}) = startKoin {
     recordModule,
     uploadModule,
   )
-}.also { startUploadLoop(it.koin) }
+}.also {
+  startUploadLoop(it.koin)
+  startRecordingEngine(it.koin)
+}
+
+private fun startRecordingEngine(koin: Koin) {
+  val engine = koin.get<RecordingEngine>()
+  CoroutineScope(SupervisorJob() + Dispatchers.Default).launch { engine.run() }
+}
+
+
+/** Runs for the life of the process; nothing cancels it. */
+private fun startUploadLoop(koin: Koin) {
+  val loop = koin.get<MobileUploadLoop>()
+  CoroutineScope(SupervisorJob() + Dispatchers.Default).launch { loop.run() }
+}

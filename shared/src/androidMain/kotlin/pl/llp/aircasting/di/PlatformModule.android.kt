@@ -18,6 +18,9 @@ import pl.llp.aircasting.data.local.AndroidDatabaseDriverFactory
 import pl.llp.aircasting.data.local.DatabaseDriverFactory
 import pl.llp.aircasting.data.network.upload.UploadBackstop
 import pl.llp.aircasting.data.network.upload.WorkManagerUploadBackstop
+import pl.llp.aircasting.recording.PhoneLocation
+import pl.llp.aircasting.recording.TrackedPhoneLocation
+import pl.llp.aircasting.recording.androidLocationFixes
 import pl.llp.aircasting.settings.mic.AndroidMicrophoneLevelSource
 import pl.llp.aircasting.settings.mic.MicrophoneLevelSource
 
@@ -31,6 +34,7 @@ actual fun platformModule() = module {
       get<Context>().getSharedPreferences("aircasting_settings", Context.MODE_PRIVATE),
     )
   }
+  single<PhoneLocation> { TrackedPhoneLocation(androidLocationFixes(get())) }
   single { ClassicAirBeamConnector(get(), get<BluetoothManager>().adapter) }
   single { get<Context>().getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager }
   single<LocationProvider> { AndroidLocationProvider(get()) }

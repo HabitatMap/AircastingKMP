@@ -1,5 +1,6 @@
 package pl.llp.aircasting.service
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel
@@ -7,10 +8,12 @@ import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
+import androidx.core.content.ContextCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -56,11 +59,18 @@ class AirBeamForegroundService : Service(), KoinComponent {
   override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
     val initialNotification = buildNotification("AirBeam service active")
     // ServiceCompat drops the service type below API 29, where the overload doesn't exist.
-    ServiceCompat.startForeground(
-      this, NOTIFICATION_ID, initialNotification, ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE,
-    )
+    ServiceCompat.startForeground(this, NOTIFICATION_ID, initialNotification, serviceType())
+
     // A restarted process has an idle link and nothing to restore it from — don't come back.
     return START_NOT_STICKY
+  }
+
+  /** Location type only with permission: Android 14 throws when asked for it without. */
+  private fun serviceType(): Int {
+    val location = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) ==
+      PackageManager.PERMISSION_GRANTED
+    return ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE or
+      (if (location) ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION else 0)
   }
 
   override fun onBind(intent: Intent?): IBinder? = null

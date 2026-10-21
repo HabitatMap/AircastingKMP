@@ -178,6 +178,25 @@ class RecordingEngine(
   process alive and holds the engine's scope.
 - **Fixed sessions** don't record locally — the engine for fixed just creates the backend
   session, configures the device, and hands off to the download service (§5).
+- **Planned (2026-10-21): a "preparing" step between Start and recording.** Today Start
+  configures the device immediately, so readings can arrive before the phone has a GPS fix
+  (`DOMAIN_KNOWLEDGE.md` §3, "NYC at the start of a session"). Plan:
+  - `StartState.Starting` becomes `Preparing(step)` — `Locating`, `Configuring`, later
+    `CreatingOnServer` (fixed) and `Syncing` (`NotSyncedFailure` → sync, then start). One
+    generic progress screen renders whatever step is current; the waiting logic lives in the
+    VM/engine, not in the UI.
+  - **Configure only once there's a real fix**, so no reading exists without a location.
+    **Never block forever:** after a timeout (~10–15 s, e.g. indoors) continue, automatically
+    or via "Start without location", falling back to the cached fix (which is why the
+    cached-fix seed is still needed).
+  - **Warm GPS early, as legacy did:** run it while the wizard is open, so the fix is usually
+    ready by Start and the screen only flashes past. This needs a GPS owner beyond the engine
+    (a "wizard open" scope).
+  - **Skip the wait** for locationless sessions; fixed sessions need their single location
+    once, so they get their own rule.
+  - Run preparation in the engine's process scope with an explicit cancel, not in
+    `viewModelScope`. That also closes today's gap: backing out mid-configure can leave the
+    device configured with no session row.
 
 ---
 

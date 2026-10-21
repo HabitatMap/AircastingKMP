@@ -18,6 +18,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,6 +33,8 @@ import pl.llp.aircasting.ui.wizard.WizardScaffold
 fun DevicePickerScreen(
   devices: List<DiscoveredAirBeam>,
   selected: DiscoveredAirBeam?,
+  permissionGranted: Boolean,
+  onRequestPermission: () -> Unit,
   onSelect: (DiscoveredAirBeam) -> Unit,
   onBack: () -> Unit,
   onCancel: () -> Unit,
@@ -63,7 +66,9 @@ fun DevicePickerScreen(
         color = MaterialTheme.colorScheme.outline,
       )
       Spacer(Modifier.height(16.dp))
-      if (devices.isNotEmpty()) {
+      if (!permissionGranted) {
+        BluetoothPermissionCard(onAllow = onRequestPermission)
+      } else if (devices.isNotEmpty()) {
         Column(
           Modifier
             .fillMaxWidth()
@@ -110,5 +115,24 @@ private fun DeviceRow(name: String, selected: Boolean, onSelect: () -> Unit) {
         unselectedColor = MaterialTheme.colorScheme.onSurfaceVariant,
       ),
     )
+  }
+}
+
+@Composable
+private fun BluetoothPermissionCard(onAllow: () -> Unit) {
+  val strings = LocalStrings.current
+  Column(
+    Modifier
+      .fillMaxWidth()
+      .background(MaterialTheme.colorScheme.surfaceContainerLowest, RoundedCornerShape(16.dp))
+      .padding(16.dp),
+    verticalArrangement = Arrangement.spacedBy(8.dp),
+  ) {
+    Text(
+      strings.bluetoothPermissionNeeded,
+      style = MaterialTheme.typography.bodyMedium,
+      color = MaterialTheme.colorScheme.onSurface,
+    )
+    TextButton(onClick = onAllow) { Text(strings.bluetoothPermissionAllow) }
   }
 }

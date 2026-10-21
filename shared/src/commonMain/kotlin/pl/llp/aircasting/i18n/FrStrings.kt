@@ -57,6 +57,8 @@ val FrStrings = Strings(
   methodMicTitle = "Mesure du bruit avec votre téléphone",
   methodMicBody = "Mesurez le niveau sonore partout avec le microphone intégré de votre téléphone.",
   next = "Suivant",
+  bluetoothPermissionNeeded = "Autorisez l'accès Bluetooth pour trouver les AirBeam à proximité.",
+  bluetoothPermissionAllow = "Autoriser le Bluetooth",
   // TODO(design): placeholder copy, verbatim from Figma. Only the two buttons are real UI, so
   // only they are translated.
   onboardingMeasureTitle = "Placeholder heading",

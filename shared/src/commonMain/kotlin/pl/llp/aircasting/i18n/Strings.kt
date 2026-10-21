@@ -41,6 +41,8 @@ data class Strings(
   val methodFixedConfirm: String,
   val methodMicConfirm: String,
   val next: String,
+  val bluetoothPermissionNeeded: String,
+  val bluetoothPermissionAllow: String,
   // New session wizard — "Name your session"
   val newSessionDetailsTitle: String,
   val newSessionDetailsBody: String,

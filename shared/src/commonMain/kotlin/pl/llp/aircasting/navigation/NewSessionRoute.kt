@@ -16,6 +16,7 @@ import pl.llp.aircasting.record.SessionDetailsScreen
 import pl.llp.aircasting.record.StartState
 import pl.llp.aircasting.scan.ScanUiState
 import pl.llp.aircasting.scan.ScanViewModel
+import pl.llp.aircasting.scan.rememberBluetoothPermission
 
 @Serializable
 data object NewSessionRoute
@@ -54,11 +55,20 @@ fun NewSessionDestination(onExit: () -> Unit) {
       onStart = { recorder.start(state.form) },
     )
     NewSessionStep.Device -> {
+      val permission = rememberBluetoothPermission()
       val scanVm = koinViewModel<ScanViewModel>()
-      val scan by scanVm.state.collectAsStateWithLifecycle()
+      // Subscribing is what starts the scan (WhileSubscribed), so we only subscribe once allowed.
+      val devices = if (permission.granted) {
+        val scan by scanVm.state.collectAsStateWithLifecycle()
+        (scan as? ScanUiState.Scanning)?.devices.orEmpty()
+      } else {
+        emptyList()
+      }
       DevicePickerScreen(
-        devices = (scan as? ScanUiState.Scanning)?.devices.orEmpty(),
+        devices = devices,
         selected = state.form.device,
+        permissionGranted = permission.granted,
+        onRequestPermission = permission::request,
         onSelect = vm::selectDevice,
         onBack = back,
         onCancel = onExit,

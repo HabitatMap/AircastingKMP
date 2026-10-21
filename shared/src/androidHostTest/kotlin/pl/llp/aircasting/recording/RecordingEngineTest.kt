@@ -189,6 +189,17 @@ class RecordingEngineTest {
     assertEquals(listOf(GeoLocation(40.7128, -74.0060)), outbox.pending(uuid, limit = 10).map { it.location })
   }
 
+  @Test
+  fun recording_is_on_from_start_until_stop() = runTest {
+    assertFalse(engine.recording.first())
+
+    recording()
+    assertTrue(engine.recording.first())
+
+    engine.stop()
+    assertFalse(engine.recording.first())
+  }
+
   /** GPS costs battery; only a session recording over the link stamps fixes. */
   @Test
   fun the_phone_location_is_tracked_only_while_recording() = runTest {

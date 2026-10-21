@@ -1,6 +1,7 @@
 package pl.llp.aircasting.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.serialization.Serializable
@@ -8,8 +9,10 @@ import org.koin.compose.viewmodel.koinViewModel
 import pl.llp.aircasting.record.NewSessionStep
 import pl.llp.aircasting.record.NewSessionViewModel
 import pl.llp.aircasting.record.RecordMethodScreen
+import pl.llp.aircasting.record.RecordingViewModel
 import pl.llp.aircasting.record.SessionConfirmScreen
 import pl.llp.aircasting.record.SessionDetailsScreen
+import pl.llp.aircasting.record.StartState
 
 @Serializable
 data object NewSessionRoute
@@ -17,7 +20,10 @@ data object NewSessionRoute
 @Composable
 fun NewSessionDestination(onExit: () -> Unit) {
   val vm = koinViewModel<NewSessionViewModel>()
+  val recorder = koinViewModel<RecordingViewModel>()
   val state by vm.state.collectAsStateWithLifecycle()
+  val startState by recorder.startState.collectAsStateWithLifecycle()
+  LaunchedEffect(startState) { if (startState == StartState.Started) onExit() }
   val back: () -> Unit = { if (state.step == NewSessionStep.Method) onExit() else vm.back() }
 
   when (state.step) {
@@ -42,7 +48,7 @@ fun NewSessionDestination(onExit: () -> Unit) {
       state = state,
       onBack = back,
       onCancel = onExit,
-      onStart = { /* TODO: create the Session and start recording */ },
+      onStart = { recorder.start(state.form) },
     )
   }
 }

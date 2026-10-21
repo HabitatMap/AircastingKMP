@@ -2,6 +2,7 @@ package pl.llp.aircasting.recording
 
 import co.touchlab.kermit.Logger
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -62,6 +63,7 @@ class RecordingEngine(
    */
   private val writes = Mutex()
 
+
   /** Never returns; cancel the calling scope to stop. Launched once for the life of the process. */
   suspend fun run(): Unit = coroutineScope {
     launch { saveReadings() }
@@ -69,11 +71,11 @@ class RecordingEngine(
     followLink()
   }
 
-  /** GPS runs only while a session records over the link: that's the only time fixes get stamped. */
+  /** Whether a session is recording over the link right now. */
+  val recording: Flow<Boolean> = active.map { it != null }.distinctUntilChanged()
+
   private suspend fun trackLocation() {
-    active.map { it != null }.distinctUntilChanged().collectLatest { recording ->
-      if (recording) location.track()
-    }
+    recording.collectLatest { on -> if (on) location.track() }
   }
 
   /** Configures the device first and writes nothing unless it answers [ConfigResult.Success]. */

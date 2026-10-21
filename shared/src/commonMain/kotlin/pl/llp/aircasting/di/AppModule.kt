@@ -37,6 +37,7 @@ import pl.llp.aircasting.home.HomeViewModel
 import pl.llp.aircasting.onboarding.OnboardingRepository
 import pl.llp.aircasting.onboarding.StoredOnboardingRepository
 import pl.llp.aircasting.record.NewSessionViewModel
+import pl.llp.aircasting.record.RecordingViewModel
 import pl.llp.aircasting.recording.RecordingEngine
 import pl.llp.aircasting.scan.ScanViewModel
 import pl.llp.aircasting.settings.account.AccountRepository
@@ -62,6 +63,7 @@ val recordModule = module {
     )
   }
   viewModelOf(::NewSessionViewModel)
+  viewModelOf(::RecordingViewModel)
 }
 
 val onboardingModule = module {

@@ -189,6 +189,39 @@ Path A (live V1) is the older variant: it stamps `LocationHelper.lastLocation()`
 
 Fixed-session measurements carry no per-measurement location (it lives on the session).
 
+#### In the rewrite (as of 2026-10-21)
+
+- **Live stamping** (`RecordingEngine.save`): `PhoneLocation.latest()` — the newest fix of
+  continuous tracking — else `DEFAULT_LOCATION`. Steps 1–2 above are not built yet (no
+  `tracked_locations` buffer, no per-session last-known lookup); they matter for the V2 backlog
+  and standalone mode, not for live readings.
+- **Tracking runs only while a session records over the link.** `RecordingEngine.run()` calls
+  `PhoneLocation.track()` while `recording` is true; `stop()` / `goStandalone()` cancel it.
+  Platforms supply a `Flow<GeoLocation>` (`androidLocationFixes`: fused 1 s HIGH_ACCURACY, as
+  legacy; `iosLocationFixes`: `CLLocationManager` with background updates); the shared
+  `TrackedPhoneLocation` keeps the newest fix, and keeps it across sessions.
+- **Known gap — NYC at the start of a session.** Confirmed in the first real Mini V2 run
+  (2026-10-21): GPS registered at Start and the first fix came ~3 s later, so the first 6
+  readings were stamped New York. On the backend that stretched the session's bounding box from
+  New York to Kraków. The legacy app avoided this in two ways the rewrite doesn't yet: it
+  started GPS when the new-session wizard opened (`NewSessionController.startNewSessionWizard`),
+  and it fell back to the phone's cached fix (step 3). **Planned fix, both parts:**
+  1. **Seed from the cached fix** — emit the platform's last known location first when
+     tracking starts (Android `FusedLocationProviderClient.lastLocation`, dropped if a live fix
+     already landed; iOS `CLLocationManager.location`). The cached fix can be stale; it only
+     covers the seconds before the first live fix, and is still far better than NYC.
+  2. **A "preparing" step before recording** that waits for a real fix, with a timeout —
+     see `KMP_ARCHITECTURE.md` §4.
+- **Open question — dropping the defaults entirely.** The v3 mobile frame is fixed-layout
+  (`float64` lat/lng, no "no location" value), so nulls can't be sent. Storing `null` locally
+  and resolving at upload (the session's first real fix; hold rows until one exists) would
+  remove `DEFAULT_LOCATION` without mutating `measurements`. A session that never gets any fix
+  would still need a sentinel; `(200, 200)` is the backend's convention for indoor *fixed*
+  sessions, but **it is unverified whether mobile upload accepts it** — `invalid_location`
+  exists and is undocumented. Best outcome would be the backend accepting `NaN` as explicit
+  "no location". Not decided; `(200, 200)` for user-chosen locationless sessions is a separate,
+  still-unbuilt feature.
+
 ### Live readings off the device — **KEEP** (as implemented in the rewrite, 2026-10-20)
 
 What `AirBeamConnection.readings` emits (`SensorReading`: sensor name, unit symbol, value,
@@ -213,6 +246,13 @@ device time or none). Sensor name + unit are the stream identity the v3 create c
   Mini V2 requests 247 (fits a 244-byte sync chunk). A refused request is logged, not fatal.
 - The V2 sync backlog flows through the same `readings` as live data, so the recording side
   has one save path (dedup on `(stream, time)` makes replays harmless).
+- **Mini V2 skips one second every ~23 s — accepted, won't be addressed.** Observed in the
+  first real run (2026-10-21): a regular 2 s step in both streams' timestamps, every ~23 s.
+  The firmware samples slightly slower than 1 Hz and stamps whole RTC seconds, so a second
+  goes unused now and then. Nothing is lost — no reading is dropped. Legacy stores the same
+  device timestamps, so it has the same gaps. Don't treat a 2 s step as a gap, and don't
+  "fix" it by restamping with the phone clock (that would break dedup against the sync
+  backlog, which carries the same device times).
 
 UI consumes the DB reactively: Room `LiveData` → repository projections → `SessionsObserver`
 (diff engine) → dashboard cards. DB is the intended single source of truth.
@@ -444,6 +484,17 @@ Mini V2 mobile. Level banding lives in `Measurement.getLevel`.
   bluetooth (scan/connect S+), camera, nearby-wifi (V2 SoftAP). **PLATFORM**.
 - **Location** (`LocationHelper`): FusedLocationProvider singleton, 1s HIGH_ACCURACY, emits
   `LocationChanged`; attaches coords to measurements/notes. **PLATFORM** (iOS CoreLocation).
+  Legacy lifecycle: `start()` when the new-session wizard or a map opens, `stop()` only in
+  `MainActivity.onDestroy` — so after the first wizard GPS ran for the rest of the app's
+  life. Background access via `ACCESS_BACKGROUND_LOCATION` ("Allow all the time").
+  **Rewrite:** GPS runs only while a session records (§3 "In the rewrite"). Background
+  access comes from the foreground service's `location` type
+  (`foregroundServiceType="connectedDevice|location"` + `FOREGROUND_SERVICE_LOCATION`) —
+  no background-location permission. The type is requested only when fine location is
+  granted, because Android 14 throws otherwise. iOS: `location` in `UIBackgroundModes` plus
+  `allowsBackgroundLocationUpdates` — the two must ship together, or setting the property
+  crashes. Verified on a OnePlus 7T (Android 12L): fixes continued with the app in the
+  background, the screen off, and the phone in forced deep Doze.
 - **Connectivity** (`ConnectivityReceiver`): on-connect triggers backend sync; **suppresses
   auto-sync while a V2 SoftAP sync is in progress**. **PLATFORM**.
 - **Background execution:** foreground **Services** only — **no WorkManager**. Sync is

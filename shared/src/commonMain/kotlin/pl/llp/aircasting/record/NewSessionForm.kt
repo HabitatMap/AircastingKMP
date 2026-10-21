@@ -1,5 +1,6 @@
 package pl.llp.aircasting.record
 
+import pl.llp.aircasting.bluetooth.DiscoveredAirBeam
 import pl.llp.aircasting.i18n.Strings
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
@@ -23,6 +24,7 @@ fun Strings.label(interval: SamplingInterval): String = when (interval) {
 
 data class NewSessionForm(
   val method: RecordingMethod? = null,
+  val device: DiscoveredAirBeam? = null,
   val name: String = "",
   val tagsInput: String = "",
   val interval: SamplingInterval = SamplingInterval.OneSecond,
@@ -31,7 +33,12 @@ data class NewSessionForm(
     get() = tagsInput.split(',').map { it.trim() }.filter { it.isNotEmpty() }.distinct()
 }
 
-enum class NewSessionStep { Method, Details, Confirm }
+/** The steps this form actually walks through: the phone mic needs no device. */
+val NewSessionForm.steps: List<NewSessionStep>
+  get() = if (method == RecordingMethod.PhoneMicrophone) NewSessionStep.entries - NewSessionStep.Device
+  else NewSessionStep.entries
+
+enum class NewSessionStep { Method, Device, Details, Confirm }
 
 val NewSessionStep.progress: Float
   get() = (ordinal + 1).toFloat() / NewSessionStep.entries.size

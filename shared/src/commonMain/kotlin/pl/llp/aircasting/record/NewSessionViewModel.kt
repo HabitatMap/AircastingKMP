@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import pl.llp.aircasting.bluetooth.DiscoveredAirBeam
 
 data class NewSessionState(
   val step: NewSessionStep = NewSessionStep.Method,
@@ -14,6 +15,7 @@ data class NewSessionState(
   val canContinue: Boolean
     get() = when (step) {
       NewSessionStep.Method -> form.method != null
+      NewSessionStep.Device -> form.device != null
       NewSessionStep.Details -> form.name.isNotBlank()
       NewSessionStep.Confirm -> true
     }
@@ -37,13 +39,15 @@ class NewSessionViewModel : ViewModel() {
 
   fun setInterval(interval: SamplingInterval) = edit { it.copy(interval = interval) }
 
-  fun next() = _state.update { state ->
-    if (!state.canContinue) state
-    else state.copy(step = NewSessionStep.entries.getOrElse(state.step.ordinal + 1) { state.step })
-  }
+  fun selectDevice(device: DiscoveredAirBeam) = edit { it.copy(device = device) }
 
-  fun back() = _state.update { state ->
-    state.copy(step = NewSessionStep.entries.getOrElse(state.step.ordinal - 1) { state.step })
+  fun next() = _state.update { state -> if (!state.canContinue) state else state.moveBy(1) }
+
+  fun back() = _state.update { it.moveBy(-1) }
+
+  private fun NewSessionState.moveBy(offset: Int): NewSessionState {
+    val steps = form.steps
+    return copy(step = steps.getOrElse(steps.indexOf(step) + offset) { step })
   }
 
   private fun edit(block: (NewSessionForm) -> NewSessionForm) =

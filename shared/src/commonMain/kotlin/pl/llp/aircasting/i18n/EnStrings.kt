@@ -28,6 +28,9 @@ val EnStrings = Strings(
   samplingMinutes = { count -> "$count min" },
   newSessionDetailsTitle = "Name your session",
   newSessionDetailsBody = "Add details so you can find and share it later.",
+  newSessionDeviceTitle = "Choose the device you would like to record with.",
+  newSessionDeviceBody = "Choose the method that fits your setup and session goal.",
+  newSessionDeviceAirBeamHeader = "AIRBEAM",
   sessionNameLabel = "Session name",
   sessionNamePlaceholder = "eg. \u201CSchool noise pollution\u201D",
   sessionTagsLabel = "Tags",
@@ -63,6 +66,8 @@ val EnStrings = Strings(
   methodMicTitle = "Noise measurement with your phone",
   methodMicBody = "Measure noise levels anywhere using your phone's built-in microphone.",
   next = "Next",
+  bluetoothPermissionNeeded = "Allow Bluetooth access to find AirBeams nearby.",
+  bluetoothPermissionAllow = "Allow Bluetooth",
   // TODO(design): placeholder copy, verbatim from Figma — identical on all three pages until
   // the real copy lands. The per-page fields exist so that swap is a value change, nothing more.
   onboardingMeasureTitle = "Placeholder heading",

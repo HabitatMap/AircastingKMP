@@ -40,7 +40,8 @@ class StringsCompletenessTest {
     "appSettingCelsius",
     "micDecibels",
     "customServerUrlLabel",
-    "customServerPortLabel"
+    "customServerPortLabel",
+    "newSessionDeviceAirBeamHeader",
   ) + onboardingPlaceholders
 
   /** Only the plain `String` fields; the parameterised ones are lambdas and can't be compared. */

@@ -22,6 +22,9 @@ data class Strings(
   // New session wizard — "How will you record?"
   val newSessionMethodTitle: String,
   val newSessionMethodBody: String,
+  val newSessionDeviceTitle: String,
+  val newSessionDeviceBody: String,
+  val newSessionDeviceAirBeamHeader: String,
   val methodMobileTag: String,
   val methodMobileTitle: String,
   val methodMobileBody: String,
@@ -38,6 +41,8 @@ data class Strings(
   val methodFixedConfirm: String,
   val methodMicConfirm: String,
   val next: String,
+  val bluetoothPermissionNeeded: String,
+  val bluetoothPermissionAllow: String,
   // New session wizard — "Name your session"
   val newSessionDetailsTitle: String,
   val newSessionDetailsBody: String,

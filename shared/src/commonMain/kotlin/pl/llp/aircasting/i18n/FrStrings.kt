@@ -14,6 +14,9 @@ val FrStrings = Strings(
   startRecording = "Démarrer l'enregistrement",
   newSessionDetailsTitle = "Nommez votre session",
   newSessionDetailsBody = "Ajoutez des détails pour la retrouver et la partager plus tard.",
+  newSessionDeviceTitle = "Choisissez l'appareil avec lequel vous souhaitez mesurer.",
+  newSessionDeviceBody = "Choisissez la méthode adaptée à votre matériel et à votre objectif.",
+  newSessionDeviceAirBeamHeader = "AIRBEAM",
   sessionNameLabel = "Nom de la session",
   sessionNamePlaceholder = "ex. « Bruit de l'école »",
   sessionTagsLabel = "Étiquettes",
@@ -54,6 +57,8 @@ val FrStrings = Strings(
   methodMicTitle = "Mesure du bruit avec votre téléphone",
   methodMicBody = "Mesurez le niveau sonore partout avec le microphone intégré de votre téléphone.",
   next = "Suivant",
+  bluetoothPermissionNeeded = "Autorisez l'accès Bluetooth pour trouver les AirBeam à proximité.",
+  bluetoothPermissionAllow = "Autoriser le Bluetooth",
   // TODO(design): placeholder copy, verbatim from Figma. Only the two buttons are real UI, so
   // only they are translated.
   onboardingMeasureTitle = "Placeholder heading",

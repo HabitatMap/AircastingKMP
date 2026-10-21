@@ -24,9 +24,3 @@ val uploadModule = module {
     )
   }
 }
-
-/** Runs for the life of the process; nothing cancels it. */
-internal fun startUploadLoop(koin: Koin) {
-  val loop = koin.get<MobileUploadLoop>()
-  CoroutineScope(SupervisorJob() + Dispatchers.Default).launch { loop.run() }
-}

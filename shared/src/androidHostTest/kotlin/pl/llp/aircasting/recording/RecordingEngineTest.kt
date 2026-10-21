@@ -1,6 +1,7 @@
 package pl.llp.aircasting.recording
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
@@ -51,13 +52,14 @@ class RecordingEngineTest {
   private val outbox = LocalUploadOutbox(db.pendingUploadQueries, Dispatchers.Unconfined)
   private val link = FakeAirBeamLink()
   private val host = FakeBackgroundHost()
-  private var phone: GeoLocation? = GeoLocation(50.06, 19.94)
   private var time = Instant.parse("2026-10-20T10:00:00Z")
   private val clock = object : Clock {
     override fun now() = time
   }
+  private val location = FakePhoneLocation(GeoLocation(50.06, 19.94))
+
   private val engine = RecordingEngine(
-    link, sessions, streams, measurements, { phone }, host, clock, TimeZone.of("Europe/Warsaw"),
+    link, sessions, streams, measurements, location, host, clock, TimeZone.of("Europe/Warsaw"),
   )
   private val miniV2 = DiscoveredAirBeam(DeviceId("AA:BB:CC:DD:EE:FF"), "AirBeamMini-1234", AirBeamDevice.Mini.V2)
   private val details = NewSessionDetails(name = "Morning walk", tags = listOf("bike", "commute"))
@@ -178,13 +180,38 @@ class RecordingEngineTest {
   /** v3 mobile frames have no "no location" value: before the first fix, legacy's default. */
   @Test
   fun no_phone_fix_yet_stamps_the_default_location() = runTest {
-    phone = null
+    location.fix = null
     val uuid = recording()
 
     link.send(pm25(12.0, time))
     runCurrent()
 
     assertEquals(listOf(GeoLocation(40.7128, -74.0060)), outbox.pending(uuid, limit = 10).map { it.location })
+  }
+
+  /** GPS costs battery; only a session recording over the link stamps fixes. */
+  @Test
+  fun the_phone_location_is_tracked_only_while_recording() = runTest {
+    running()
+    assertFalse(location.tracking)
+
+    recording(alreadyRunning = true)
+    assertTrue(location.tracking)
+
+    engine.stop()
+    runCurrent()
+    assertFalse(location.tracking)
+  }
+
+  /** Standalone: the AirBeam records alone; its backlog is placed later, not with live fixes. */
+  @Test
+  fun standalone_stops_tracking_the_phone_location() = runTest {
+    recording()
+
+    engine.goStandalone()
+    runCurrent()
+
+    assertFalse(location.tracking)
   }
   /** A V2 backlog replays what may already be stored; the (stream, time) key absorbs it. */
   @Test
@@ -281,5 +308,21 @@ private class FakeBackgroundHost : BackgroundSessionHost {
 
   override fun stop() {
     running = false
+  }
+}
+
+private class FakePhoneLocation(var fix: GeoLocation?) : PhoneLocation {
+  var tracking = false
+    private set
+
+  override fun latest() = fix
+
+  override suspend fun track() {
+    tracking = true
+    try {
+      awaitCancellation()
+    } finally {
+      tracking = false
+    }
   }
 }

@@ -51,7 +51,8 @@ class RecordingViewModelTest {
     Clock.System,
     TimeZone.UTC,
   )
-  private val vm = RecordingViewModel(link, engine)
+  // Lazy: built after `setMain`, or `viewModelScope` binds to the real Main and never runs.
+  private val vm by lazy { RecordingViewModel(link, engine) }
   private val miniV2 = DiscoveredAirBeam(DeviceId("AA:BB:CC:DD:EE:FF"), "AirBeamMini-1234", AirBeamDevice.Mini.V2)
   private val form = NewSessionForm(
     method = RecordingMethod.AirBeamMobile,

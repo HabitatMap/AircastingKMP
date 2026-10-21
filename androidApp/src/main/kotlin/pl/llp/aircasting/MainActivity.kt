@@ -2,7 +2,6 @@ package pl.llp.aircasting
 
 import android.Manifest
 import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -19,14 +18,6 @@ private val LOCATION_PERMISSIONS = arrayOf(
   Manifest.permission.ACCESS_COARSE_LOCATION,
 )
 
-// TEMP: asked with location at startup until the connect step asks in context.
-private val BLUETOOTH_PERMISSIONS =
-  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-    arrayOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT)
-  } else {
-    emptyArray()
-  }
-
 class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     installSplashScreen()
@@ -39,18 +30,14 @@ class MainActivity : ComponentActivity() {
       ) { /* result picked up by App's ON_RESUME reload — nothing to do here */ }
 
       App(
-        onRequestLocation = {
-          // Either location grant is enough; each Bluetooth one is needed.
-          val location = if (LOCATION_PERMISSIONS.any(::granted)) emptyList() else LOCATION_PERMISSIONS.toList()
-          val missing = location + BLUETOOTH_PERMISSIONS.filterNot(::granted)
-          if (missing.isNotEmpty()) launcher.launch(missing.toTypedArray())
-        },
+        onRequestLocation = { if (!hasLocationPermission()) launcher.launch(LOCATION_PERMISSIONS) },
       )
     }
   }
 
-  private fun granted(permission: String) =
-    ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
+  private fun hasLocationPermission() = LOCATION_PERMISSIONS.any {
+    ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED
+  }
 }
 
 @Preview

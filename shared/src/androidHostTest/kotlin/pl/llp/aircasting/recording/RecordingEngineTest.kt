@@ -114,13 +114,25 @@ class RecordingEngineTest {
   }
 
   /** A session with no streams could never be uploaded. */
+  /** A session with no streams could never be uploaded. */
   @Test
   fun a_device_with_no_catalogued_streams_is_never_configured() = runTest {
-    val ab3 = DiscoveredAirBeam(DeviceId("11:22:33:44:55:66"), "AirBeam3-1234", AirBeamDevice.AirBeam3)
+    val miniV1 = DiscoveredAirBeam(DeviceId("11:22:33:44:55:66"), "AirBeamMini-1234", AirBeamDevice.Mini.V1)
 
-    assertEquals(ConfigResult.BadConfigFailure, engine.start(ab3, details))
+    assertEquals(ConfigResult.BadConfigFailure, engine.start(miniV1, details))
     assertEquals(emptyList(), link.configured)
     assertEquals(emptyList(), sessions.observeAll().first())
+  }
+
+  /** v3 `device.model`; legacy never sent one for mobile, so it follows the CSV `deviceName`. */
+  @Test
+  fun an_airbeam3_session_carries_its_model() = runTest {
+    val ab3 = DiscoveredAirBeam(DeviceId("11:22:33:44:55:66"), "AirBeam3-1234", AirBeamDevice.AirBeam3)
+
+    assertEquals(ConfigResult.Success, engine.start(ab3, details))
+
+    val uuid = link.configured.single().uuid.toString()
+    assertEquals("AirBeam3", sessions.find(uuid)?.deviceModel)
   }
   /** Stop is all the upload loop needs: it drains the outbox and calls /finish on its own. */
   @Test

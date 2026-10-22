@@ -136,10 +136,18 @@ class BleAirBeamConnector() : AirBeamConnector {
  */
 private fun Peripheral.readings(device: AirBeamDevice, linkScope: CoroutineScope): Flow<SensorReading> {
   val received = Channel<SensorReading>(Channel.UNLIMITED)
+  val line = { bytes: ByteArray ->
+    val text = bytes.decodeToString()
+    Logger.withTag("BleConnection").v { "V1 line: $text" } // TEMP: verify AB3 names/units, then remove
+    listOfNotNull(AirBeamProtocol.Standard.parseReading(text))
+  }
   linkScope.coroutineContext.job.invokeOnCompletion { received.close() }
   readingSources(device).forEach { (characteristic, parse) ->
     observe(characteristic)
-      .onEach { bytes -> parse(bytes).forEach { received.trySend(it) } }
+      .onEach { bytes ->
+        line(bytes)
+        parse(bytes).forEach { received.trySend(it) }
+      }
       .logFailures()
       .launchIn(linkScope)
   }

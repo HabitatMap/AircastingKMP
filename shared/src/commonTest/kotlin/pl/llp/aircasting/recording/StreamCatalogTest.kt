@@ -31,10 +31,24 @@ class StreamCatalogTest {
     val catalog = streamsFor(AirBeamDevice.Mini.V2)
     readings.forEach { assertTrue(StreamSpec(it.sensorName, it.unitSymbol) in catalog, "no stream for $it") }
   }
+  /** Legacy names: SD-card sync (`AB3CSVLineParameterHandler`) writes into these same streams. */
+  @Test
+  fun airbeam3_records_temperature_humidity_and_pm() {
+    assertEquals(
+      listOf(
+        StreamSpec("AirBeam3-F", "F"),
+        StreamSpec("AirBeam3-RH", "%"),
+        StreamSpec("AirBeam3-PM1", "µg/m³"),
+        StreamSpec("AirBeam3-PM2.5", "µg/m³"),
+        StreamSpec("AirBeam3-PM10", "µg/m³"),
+      ),
+      streamsFor(AirBeamDevice.AirBeam3),
+    )
+  }
   /** Not catalogued until each gets a hardware run; the engine won't start a session for them. */
   @Test
   fun other_devices_have_no_streams_yet() {
-    listOf(AirBeamDevice.AirBeam2, AirBeamDevice.AirBeam3, AirBeamDevice.Mini.V1).forEach {
+    listOf(AirBeamDevice.AirBeam2, AirBeamDevice.Mini.V1).forEach {
       assertEquals(emptyList(), streamsFor(it), "$it")
     }
   }

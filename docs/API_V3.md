@@ -162,8 +162,25 @@ already existed is `session_uuid_taken` (409) — stop retrying, continue with t
 | `cluster` | `latitude`, `longitude` (mean of members), `count` (≥ 2), `value?` (mean of members' values) |
 
 **`value`** is present **only when exactly one measurement type is selected**, rounded to an integer.
-AirBeam: last hourly average (newest reading while there's none yet); gov: newest reading; several
-streams of the type on one item: their mean. Temperature is **Fahrenheit** (server default).
+AirBeam: last hourly average (newest reading while there's none yet); gov: newest reading. Temperature
+is **Fahrenheit** (server default).
+
+**Each filter = exactly one sensor per source** (BE `Explore::Parameters::CATALOGUE`,
+HabitatMap/AirCasting PR #1247, read 2026-10-22):
+
+| `measurement_type` | AirBeam sensor | Government sensor |
+|---|---|---|
+| Particulate Matter | `AirBeam-PM2.5` (any model spelling: `AirBeamMini-PM2.5`, `AirBeam3-PM2.5`, …) | `Government-PM2.5` |
+| Nitrogen Dioxide | — | `Government-NO2` |
+| Ozone | — | `Government-Ozone` |
+| Temperature | `AirBeam-F` | — |
+| Humidity | `AirBeam-RH` | — |
+
+So "Particulate Matter" is **PM2.5 only** — PM1/PM10 are never mixed in. The spec's "several streams
+of the type: their mean" only covers a government station with a duplicated stream. A station's
+`value` is therefore always one known sensor's reading, colourable by that sensor's thresholds.
+**Clusters are never colour-coded** (plain blue dot in the design), so the client ignores a cluster's
+`value`.
 
 **No unit, thresholds or level in the response** — colouring is the client's job, from the user's
 local thresholds (`DOMAIN_KNOWLEDGE.md` → *Explore map*).

@@ -392,7 +392,9 @@ Replaces the legacy per-sensor `/api/fixed/active/sessions.json` search with the
   the user will be able to edit them in the app, and the map must follow. The endpoint returns a bare
   `value` with no thresholds anyway. Same idea as legacy `SearchFollowViewModel.follow()`, which
   overwrote a followed session's stream thresholds with the user's saved ones
-  (`setSessionThresholdsAccordingToUserSettings`).
+  (`setSessionThresholdsAccordingToUserSettings`). Lookup key = the station's one sensor for the
+  selected type: `(source, measurement type)` → sensor name per the catalogue in `API_V3.md` →
+  *Explore map*. Clusters are never coloured.
 - **Temperature is Fahrenheit on the wire.** Celsius is a UI-only setting, converted at display time
   (legacy `Settings.isCelsiusScaleEnabled` + `TemperatureConverter`, which also converts the HLU
   threshold bounds). Thresholds are stored in °F.

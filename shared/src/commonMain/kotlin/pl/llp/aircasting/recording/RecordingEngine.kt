@@ -81,11 +81,6 @@ class RecordingEngine(
   /** Configures the device first and writes nothing unless it answers [ConfigResult.Success]. */
   suspend fun start(target: DiscoveredAirBeam, details: NewSessionDetails): ConfigResult {
     val specs = streamsFor(target.device)
-    if (specs.isEmpty()) {
-      log.w { "No streams catalogued for ${target.device}; not starting" }
-      return ConfigResult.BadConfigFailure
-    }
-
     val uuid = Uuid.random()
     val result = link.configure(SessionConfig.Mobile(uuid, location = location.latest() ?: DEFAULT_LOCATION))
     if (result != ConfigResult.Success) return result
@@ -167,9 +162,7 @@ private val DEFAULT_LOCATION = GeoLocation(40.7128, -74.0060)
 /** v3 `device.model`. Legacy sends none for mobile; these follow its CSV `deviceName`s. */
 private val AirBeamDevice.model: String
   get() = when (this) {
-    AirBeamDevice.Mini.V2 -> "AirBeamMini"
+    AirBeamDevice.Mini.V1, AirBeamDevice.Mini.V2 -> "AirBeamMini"
     AirBeamDevice.AirBeam3 -> "AirBeam3"
     AirBeamDevice.AirBeam2 -> "AirBeam2"
-    AirBeamDevice.Mini.V1 ->
-      error("$this is not catalogued; start() stops before asking for its model")
   }

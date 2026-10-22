@@ -24,7 +24,6 @@ fun streamsFor(device: AirBeamDevice): List<StreamSpec> = when (device) {
     StreamSpec("AirBeam3-PM2.5", "µg/m³"),
     StreamSpec("AirBeam3-PM10", "µg/m³"),
   )
-  // Hardware run 2026-10-22: what the AB2 firmware sends; same naming as AB3.
   AirBeamDevice.AirBeam2 -> listOf(
     StreamSpec("AirBeam2-F", "F"),
     StreamSpec("AirBeam2-RH", "%"),
@@ -33,5 +32,8 @@ fun streamsFor(device: AirBeamDevice): List<StreamSpec> = when (device) {
     StreamSpec("AirBeam2-PM10", "µg/m³"),
   )
   // Empty = not catalogued yet; the engine won't start a session it couldn't upload.
-  AirBeamDevice.Mini.V1 -> emptyList()
+  AirBeamDevice.Mini.V1, AirBeamDevice.Mini.V2 -> listOf(
+    StreamSpec("AirBeamMini-PM1", "µg/m³"),
+    StreamSpec("AirBeamMini-PM2.5", "µg/m³"),
+  )
 }

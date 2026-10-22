@@ -45,10 +45,16 @@ class StreamCatalogTest {
       streamsFor(AirBeamDevice.AirBeam3),
     )
   }
-  /** Not catalogued until each gets a hardware run; the engine won't start a session for them. */
+  /** Legacy uploads both Minis as "AirBeamMini" (`ABMiniCSVLineParameterHandler`), so V1 and V2 share streams. */
   @Test
-  fun other_devices_have_no_streams_yet() {
-    assertEquals(emptyList(), streamsFor(AirBeamDevice.Mini.V1))
+  fun mini_v1_records_pm1_and_pm25_like_mini_v2() {
+    assertEquals(
+      listOf(
+        StreamSpec("AirBeamMini-PM1", "µg/m³"),
+        StreamSpec("AirBeamMini-PM2.5", "µg/m³"),
+      ),
+      streamsFor(AirBeamDevice.Mini.V1),
+    )
   }
 
   /** Hardware run 2026-10-22: exactly what the AB2 firmware sends. */

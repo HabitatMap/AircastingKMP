@@ -287,6 +287,11 @@ truth for these devices; where the rewrite's own protocol code disagreed with it
   Also, it's the user's long-lived credential, so it shouldn't go over Bluetooth needlessly.
 - **v3 `device.model`** — legacy sends none for mobile sessions; the rewrite uses the CSV
   `deviceName`s: `AirBeam3`, `AirBeam2`, `AirBeamMini`.
+- **Mini V1 records as `AirBeamMini-PM1` / `AirBeamMini-PM2.5` (`µg/m³`), model `AirBeamMini`** —
+    the same streams and model as Mini V2. From legacy `ABMiniCSVLineParameterHandler`
+    (`deviceName = "AirBeamMini"`, `sensorName = "$deviceName-$sensor"`); config is the shared
+    AB3 path (`SyncableAirBeamConfigurator`). Not yet confirmed on hardware — check the raw-line
+    log on the first run.
 
 UI consumes the DB reactively: Room `LiveData` → repository projections → `SessionsObserver`
 (diff engine) → dashboard cards. DB is the intended single source of truth.

@@ -50,6 +50,7 @@ fun NewSessionDestination(onExit: () -> Unit) {
     )
     NewSessionStep.Confirm -> SessionConfirmScreen(
       state = state,
+      preparing = (startState as? StartState.Preparing)?.step,
       onBack = back,
       onCancel = onExit,
       onStart = { recorder.start(state.form) },

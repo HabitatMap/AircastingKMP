@@ -146,6 +146,7 @@ private class ClassicConnection(
         val lines = socket.inputStream.bufferedReader()
         while (true) {
           val line = runInterruptible { lines.readLine() } ?: break
+          log.v { line }
           AirBeamProtocol.Standard.parseReading(line)?.let { received.trySend(it) }
         }
       } catch (e: IOException) {
@@ -163,7 +164,7 @@ private class ClassicConnection(
     log.i { "Configuring AirBeam2 ($device) with $config" }
     return try {
       when (config) {
-        is SessionConfig.Mobile -> configureMobile()
+        is SessionConfig.Mobile -> configureMobile(config)
         is SessionConfig.FixedWiFi -> configureFixedWiFi(config)
         is SessionConfig.FixedCellular -> configureFixedCellular(config)
       }
@@ -173,12 +174,25 @@ private class ClassicConnection(
     }
   }
 
-  /** Legacy `AirBeam2Configurator.reconnectMobileSession`: mobile mode again. */
-  override suspend fun resumeMobileSession(config: SessionConfig.Mobile): ConfigResult = configure(config)
+  /** Legacy `AirBeam2Configurator.reconnectMobileSession`: mobile mode only; the UUID is already set. */
+  override suspend fun resumeMobileSession(config: SessionConfig.Mobile): ConfigResult = try {
+    sendCommand(AirBeamProtocol.Standard.startMobileCommand())
+    ConfigResult.Success
+  } catch (e: IOException) {
+    log.e(e) { "Resuming mobile mode failed for AirBeam2" }
+    ConfigResult.UnknownFailure
+  }
 
-  private suspend fun configureMobile(): ConfigResult {
-    // Mobile Session (Bluetooth): Send [0x01, 0xFF]
-    sendCommand(AirBeamProtocol.AirBeam2.startMobileCommand())
+  /**
+   * Legacy `AirBeam2Configurator` (UUID, 3 s, then mobile mode), framed `0xFE … 0xFF` like every
+   * V1 device (`HexMessagesBuilder`) — hence `Standard`, not `AirBeam2`. Legacy also sends the
+   * auth token, but that's only for the device's own uploads in fixed sessions: the hardware run
+   * (2026-10-22) streamed at 1 Hz without it.
+   */
+  private suspend fun configureMobile(config: SessionConfig.Mobile): ConfigResult {
+    sendCommand(AirBeamProtocol.Standard.setUuidCommand(config.uuid))
+    delay(HANDSHAKE_SETTLE_MS.milliseconds)
+    sendCommand(AirBeamProtocol.Standard.startMobileCommand())
     return ConfigResult.Success
   }
 

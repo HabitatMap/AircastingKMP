@@ -85,6 +85,25 @@ class RecordingEngineTest {
       sessions.find(uuid),
     )
   }
+
+  /** AB3 hardware run (2026-10-22): without a location it sends a reading set only every ~21 s. */
+  @Test
+  fun start_hands_the_airbeam_the_latest_phone_fix() = runTest {
+    engine.start(miniV2, details)
+
+    assertEquals(GeoLocation(50.06, 19.94), (link.configured.single() as SessionConfig.Mobile).location)
+  }
+
+  /** Legacy `Session.Location.get(null)`: no fix yet still gives the device a location. */
+  @Test
+  fun start_without_a_phone_fix_hands_the_airbeam_the_default_location() = runTest {
+    location.fix = null
+
+    engine.start(miniV2, details)
+
+    assertEquals(GeoLocation(40.7128, -74.0060), (link.configured.single() as SessionConfig.Mobile).location)
+  }
+
   /** v3 can't add a stream later, so all of them exist before the first upload. */
   @Test
   fun start_creates_every_stream_of_the_device() = runTest {
@@ -113,14 +132,36 @@ class RecordingEngineTest {
     assertFalse(host.running)
   }
 
-  /** A session with no streams could never be uploaded. */
+  /** Same model as V2: legacy's CSV `deviceName` and `SessionParams` both say "AirBeamMini". */
   @Test
-  fun a_device_with_no_catalogued_streams_is_never_configured() = runTest {
+  fun a_mini_v1_session_carries_its_model() = runTest {
+    val miniV1 = DiscoveredAirBeam(DeviceId("11:22:33:44:55:66"), "AirBeamMini-1234", AirBeamDevice.Mini.V1)
+
+    assertEquals(ConfigResult.Success, engine.start(miniV1, details))
+
+    val uuid = link.configured.single().uuid.toString()
+    assertEquals("AirBeamMini", sessions.find(uuid)?.deviceModel)
+  }
+
+  /** v3 `device.model`; legacy never sent one for mobile, so it follows the CSV `deviceName`. */
+  @Test
+  fun an_airbeam3_session_carries_its_model() = runTest {
     val ab3 = DiscoveredAirBeam(DeviceId("11:22:33:44:55:66"), "AirBeam3-1234", AirBeamDevice.AirBeam3)
 
-    assertEquals(ConfigResult.BadConfigFailure, engine.start(ab3, details))
-    assertEquals(emptyList(), link.configured)
-    assertEquals(emptyList(), sessions.observeAll().first())
+    assertEquals(ConfigResult.Success, engine.start(ab3, details))
+
+    val uuid = link.configured.single().uuid.toString()
+    assertEquals("AirBeam3", sessions.find(uuid)?.deviceModel)
+  }
+
+  @Test
+  fun an_airbeam2_session_carries_its_model() = runTest {
+    val ab2 = DiscoveredAirBeam(DeviceId("00:18:96:10:71:9F"), "AirBeam2:00189610719F", AirBeamDevice.AirBeam2)
+
+    assertEquals(ConfigResult.Success, engine.start(ab2, details))
+
+    val uuid = link.configured.single().uuid.toString()
+    assertEquals("AirBeam2", sessions.find(uuid)?.deviceModel)
   }
   /** Stop is all the upload loop needs: it drains the outbox and calls /finish on its own. */
   @Test
@@ -327,6 +368,8 @@ private class FakePhoneLocation(var fix: GeoLocation?) : PhoneLocation {
     private set
 
   override fun latest() = fix
+
+  override suspend fun awaitFix() = fix ?: awaitCancellation()
 
   override suspend fun track() {
     tracking = true

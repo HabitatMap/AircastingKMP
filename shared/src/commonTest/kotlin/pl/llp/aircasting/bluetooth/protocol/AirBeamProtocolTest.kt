@@ -48,11 +48,11 @@ class AirBeamProtocolTest {
     assertContentEquals(expected, AirBeamProtocol.Standard.setAuthCommand("abc"))
   }
 
+  /** Legacy `HexMessagesBuilder.locationMessage`: V1 firmware takes longitude first. */
   @Test
-  fun ab3_location_command_returns_latitude_first() {
-    val expectedPayload = "52.229700,21.012200"
+  fun ab3_location_command_sends_longitude_first() {
     val expected = byteArrayOf(0xFE.toByte(), 0x06) +
-      expectedPayload.encodeToByteArray() +
+      "21.012200,52.229700".encodeToByteArray() +
       byteArrayOf(0xFF.toByte())
     assertContentEquals(expected, AirBeamProtocol.Standard.setLocationCommand(52.2297, 21.0122))
   }

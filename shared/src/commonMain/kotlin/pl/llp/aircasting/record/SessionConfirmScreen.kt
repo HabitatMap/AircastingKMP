@@ -24,6 +24,7 @@ import pl.llp.aircasting.ui.wizard.WizardScaffold
 @Composable
 fun SessionConfirmScreen(
   state: NewSessionState,
+  preparing: PrepareStep?,
   onBack: () -> Unit,
   onCancel: () -> Unit,
   onStart: () -> Unit,
@@ -34,7 +35,14 @@ fun SessionConfirmScreen(
     progress = state.step.progress,
     onBack = onBack,
     onCancel = onCancel,
-    footer = { WizardButton(strings.startRecording, onStart, showChevron = false) },
+    footer = {
+      val label = when (preparing) {
+        null -> strings.startRecording
+        PrepareStep.Locating -> strings.preparingLocating
+        PrepareStep.Configuring -> strings.preparingConfiguring
+      }
+      WizardButton(label, onStart, enabled = preparing == null, showChevron = false)
+    },
   ) {
     Column {
       Text(

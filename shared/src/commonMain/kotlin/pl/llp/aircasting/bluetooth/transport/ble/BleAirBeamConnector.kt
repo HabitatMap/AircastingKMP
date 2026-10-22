@@ -136,10 +136,15 @@ class BleAirBeamConnector() : AirBeamConnector {
  */
 private fun Peripheral.readings(device: AirBeamDevice, linkScope: CoroutineScope): Flow<SensorReading> {
   val received = Channel<SensorReading>(Channel.UNLIMITED)
+  val log = Logger.withTag("BleConnection")
   linkScope.coroutineContext.job.invokeOnCompletion { received.close() }
   readingSources(device).forEach { (characteristic, parse) ->
     observe(characteristic)
-      .onEach { bytes -> parse(bytes).forEach { received.trySend(it) } }
+      .onEach { bytes ->
+        // V2 frames are binary; AB3 / Mini V1 send ASCII measurement lines.
+        log.v { if (device is AirBeamDevice.Mini.V2) bytes.toHexString() else bytes.decodeToString().trimEnd() }
+        parse(bytes).forEach { received.trySend(it) }
+      }
       .logFailures()
       .launchIn(linkScope)
   }
@@ -232,6 +237,7 @@ private class BleConnection(
     sendCommand(AirBeamProtocol.Standard.setUuidCommand(config.uuid))
     when (config) {
       is SessionConfig.Mobile -> {
+        config.location?.let { sendCommand(AirBeamProtocol.Standard.setLocationCommand(it.latitude, it.longitude)) }
         sendCommand(AirBeamProtocol.Standard.startMobileCommand())
       }
       is SessionConfig.FixedWiFi -> {

@@ -1,5 +1,8 @@
 package pl.llp.aircasting.di
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import com.russhwolf.settings.NSUserDefaultsSettings
 import com.russhwolf.settings.Settings
 import pl.llp.aircasting.bluetooth.AirBeamConnector
@@ -30,7 +33,7 @@ actual fun platformModule() = module {
   single<AirBeamConnector> { CompositeAirBeamConnector(listOf(get<BleAirBeamConnector>())) }
   single<LocationProvider> { IosLocationProvider() }
   single<DatabaseDriverFactory> { IosDatabaseDriverFactory() }
-  single<PhoneLocation> { TrackedPhoneLocation(iosLocationFixes()) }
+  single<PhoneLocation> { TrackedPhoneLocation(iosLocationFixes(), CoroutineScope(SupervisorJob() + Dispatchers.Default)) }
   // bluetooth-central + location background modes keep the process alive; nothing to start.
   single<BackgroundSessionHost> {
     object : BackgroundSessionHost {

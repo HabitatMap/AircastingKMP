@@ -254,6 +254,34 @@ device time or none). Sensor name + unit are the stream identity the v3 create c
   "fix" it by restamping with the phone clock (that would break dedup against the sync
   backlog, which carries the same device times).
 
+### V1 devices on real hardware (2026-10-22) — **KEEP**
+
+Confirmed by logging every raw line on an AB3 and an AB2. The legacy app is the source of
+truth for these devices; where the rewrite's own protocol code disagreed with it, legacy won.
+
+- **Stream names and units, exactly as the firmware sends them** (5 streams on both devices):
+  `<Model>-F` (`F`), `<Model>-RH` (`%`), `<Model>-PM1`, `<Model>-PM2.5`, `<Model>-PM10`
+  (`µg/m³`, micro sign U+00B5), with `<Model>` = `AirBeam3` / `AirBeam2`. They match legacy's
+  SD-card CSV names (`AB3CSVLineParameterHandler`: `"$deviceName-$sensor"`). The 5 lines of a
+  set arrive in no fixed order. AB2 also sends a non-reading line `BC:SP=00` right after
+  configure; the parser drops it.
+- **AB3 mobile config needs a location.** With time → UUID → mobile mode only, the AB3
+  streamed a set every ~21 s; adding the location (`0x06`) gave 1 Hz. Legacy
+  (`SyncableAirBeamConfigurator.configureMobileSession`) always sends it, falling back to
+  `DEFAULT_LOCATION` (`Session.Location.get`).
+- **Location payload is `lng,lat`** (`HexMessagesBuilder.locationMessage`) — longitude first.
+- **AB2 commands are framed `0xFE … 0xFF`, like AB3.** Legacy builds them with the same
+  `HexMessagesBuilder`. The rewrite's `AirBeamProtocol.AirBeam2` (no `0xFE`, raw auth token)
+  does not match legacy — don't use it. AB2 mobile in the rewrite: UUID, wait 3 s, then
+  `0xFE 0x01 0xFF` → 1 Hz. On reconnect, only mobile mode (legacy `reconnectMobileSession`).
+- **The auth token is not sent in mobile sessions.** `Base64("$token:X")` is an HTTP Basic
+  credential, the firmware's for its *own* uploads (fixed sessions over WiFi/cellular). Legacy
+  sent it for mobile too only because `NewSessionController.goToSessionDetails` posts
+  `SendSessionAuth` for every AirBeam session. Hardware runs without it: AB3 and AB2 both 1 Hz.
+  Also, it's the user's long-lived credential, so it shouldn't go over Bluetooth needlessly.
+- **v3 `device.model`** — legacy sends none for mobile sessions; the rewrite uses the CSV
+  `deviceName`s: `AirBeam3`, `AirBeam2`, `AirBeamMini`.
+
 UI consumes the DB reactively: Room `LiveData` → repository projections → `SessionsObserver`
 (diff engine) → dashboard cards. DB is the intended single source of truth.
 

@@ -48,8 +48,21 @@ class StreamCatalogTest {
   /** Not catalogued until each gets a hardware run; the engine won't start a session for them. */
   @Test
   fun other_devices_have_no_streams_yet() {
-    listOf(AirBeamDevice.AirBeam2, AirBeamDevice.Mini.V1).forEach {
-      assertEquals(emptyList(), streamsFor(it), "$it")
-    }
+    assertEquals(emptyList(), streamsFor(AirBeamDevice.Mini.V1))
+  }
+
+  /** Hardware run 2026-10-22: exactly what the AB2 firmware sends. */
+  @Test
+  fun airbeam2_records_temperature_humidity_and_pm() {
+    assertEquals(
+      listOf(
+        StreamSpec("AirBeam2-F", "F"),
+        StreamSpec("AirBeam2-RH", "%"),
+        StreamSpec("AirBeam2-PM1", "µg/m³"),
+        StreamSpec("AirBeam2-PM2.5", "µg/m³"),
+        StreamSpec("AirBeam2-PM10", "µg/m³"),
+      ),
+      streamsFor(AirBeamDevice.AirBeam2),
+    )
   }
 }

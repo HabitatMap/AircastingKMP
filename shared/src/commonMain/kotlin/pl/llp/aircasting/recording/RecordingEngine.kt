@@ -169,6 +169,7 @@ private val AirBeamDevice.model: String
   get() = when (this) {
     AirBeamDevice.Mini.V2 -> "AirBeamMini"
     AirBeamDevice.AirBeam3 -> "AirBeam3"
-    AirBeamDevice.AirBeam2, AirBeamDevice.Mini.V1 ->
+    AirBeamDevice.AirBeam2 -> "AirBeam2"
+    AirBeamDevice.Mini.V1 ->
       error("$this is not catalogued; start() stops before asking for its model")
   }

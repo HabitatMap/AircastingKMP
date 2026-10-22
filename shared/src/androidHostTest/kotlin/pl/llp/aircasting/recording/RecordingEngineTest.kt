@@ -153,6 +153,16 @@ class RecordingEngineTest {
     val uuid = link.configured.single().uuid.toString()
     assertEquals("AirBeam3", sessions.find(uuid)?.deviceModel)
   }
+
+  @Test
+  fun an_airbeam2_session_carries_its_model() = runTest {
+    val ab2 = DiscoveredAirBeam(DeviceId("00:18:96:10:71:9F"), "AirBeam2:00189610719F", AirBeamDevice.AirBeam2)
+
+    assertEquals(ConfigResult.Success, engine.start(ab2, details))
+
+    val uuid = link.configured.single().uuid.toString()
+    assertEquals("AirBeam2", sessions.find(uuid)?.deviceModel)
+  }
   /** Stop is all the upload loop needs: it drains the outbox and calls /finish on its own. */
   @Test
   fun stop_finishes_the_session_for_upload() = runTest {

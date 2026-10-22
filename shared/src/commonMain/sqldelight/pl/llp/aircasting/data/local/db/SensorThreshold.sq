@@ -6,6 +6,30 @@ CREATE TABLE sensor_thresholds (
     high INTEGER NOT NULL,
     very_high INTEGER NOT NULL
 );
+
+-- Defaults per sensor (server GET /api/thresholds/{sensor}; mic from legacy MicrophoneReader).
+-- Seeded on DB creation only; users overwrite them via insertOrReplaceThreshold.
+INSERT INTO sensor_thresholds (sensor_name, very_low, low, medium, high, very_high) VALUES
+    ('AirBeam-PM2.5',     0,  9,  35,  55, 150),
+    ('AirBeamMini-PM1',   0,  9,  35,  55, 150),
+    ('AirBeamMini-PM2.5', 0,  9,  35,  55, 150),
+    ('AirBeam3-PM1',      0,  9,  35,  55, 150),
+    ('AirBeam3-PM2.5',    0,  9,  35,  55, 150),
+    ('AirBeam3-PM10',     0, 20,  50, 100, 200),
+    ('AirBeam3-F',       15, 45,  75, 105, 135),
+    ('AirBeam3-RH',       0, 25,  50,  75, 100),
+    ('AirBeam2-PM1',      0,  9,  35,  55, 150),
+    ('AirBeam2-PM2.5',    0,  9,  35,  55, 150),
+    ('AirBeam2-PM10',     0, 20,  50, 100, 200),
+    ('AirBeam2-F',       15, 45,  75, 105, 135),
+    ('AirBeam2-RH',       0, 25,  50,  75, 100),
+    ('AirBeam-F',        15, 45,  75, 105, 135),
+    ('AirBeam-RH',        0, 25,  50,  75, 100),
+    ('Government-PM2.5',  0, 12,  35,  55, 150),
+    ('Government-NO2',    0, 53, 100, 360, 649),
+    ('Government-Ozone',  0, 59,  75,  95, 115),
+    ('Phone Microphone', 20, 60,  70,  80, 100);
+
 selectAllThresholds:
 SELECT *
 FROM sensor_thresholds;

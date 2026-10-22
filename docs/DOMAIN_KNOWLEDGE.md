@@ -533,6 +533,17 @@ Stored globally per sensor, created lazily from a stream's own threshold fields 
 sight. Initial values come from backend payloads, or hardcoded in the V2 configurator for
 Mini V2 mobile. Level banding lives in `Measurement.getLevel`.
 
+**Rewrite (*decided 2026-10-22*):** `sensor_thresholds` is **seeded with defaults at DB creation**
+(unlabeled `INSERT` in `SensorThreshold.sq` → runs in `AppDatabase.Schema.create()`), so colour
+coding always has a reference point; the user later edits them (sliders → `insertOrReplaceThreshold`).
+Values = server defaults (*Explore map* above); `Phone Microphone` 20·60·70·80·100 from legacy
+`MicrophoneReader` (server agrees). Seeded keys = every name in `streamsFor(device)` + every Explore
+`sensorNameFor` name; `DefaultThresholdsTest` fails if a new sensor lands without a default.
+Existing installs only get new defaults via a `.sqm` migration.
+**Open decision:** keys are exact sensor names, like legacy — a slider on `AirBeam3-PM2.5` won't
+move `AirBeamMini-PM2.5` or Explore's `AirBeam-PM2.5`. Decide per-sensor vs per-family key when
+building the slider screen.
+
 ---
 
 ## 8. Cross-Cutting Concerns

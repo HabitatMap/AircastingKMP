@@ -34,6 +34,12 @@ object ApiEndpoints {
   // Mobile app: Export & sharing
   // =========================================================================
   const val ExportSessionByUuid = "/api/sessions/export_by_uuid.json"
+
+  // =========================================================================
+  // Mobile app: Explore map v3 (public, no auth)
+  // =========================================================================
+  const val V3ExploreMap = "/api/v3/explore/map"
+
   // =========================================================================
   // Fixed Stations & Map Query (Home screen & explore)
   // =========================================================================

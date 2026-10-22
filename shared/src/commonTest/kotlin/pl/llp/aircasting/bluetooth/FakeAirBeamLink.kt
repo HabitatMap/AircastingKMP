@@ -20,8 +20,15 @@ class FakeAirBeamLink(var configureResult: ConfigResult = ConfigResult.Success) 
     sent.trySend(reading)
   }
 
-  override suspend fun connect(target: DiscoveredAirBeam): LinkState =
-    LinkState.Connected(target).also { state.value = it }
+  val connects = mutableListOf<DiscoveredAirBeam>()
+  /** Makes every [connect] settle as [LinkState.Failed] with this reason. */
+  var connectFailure: FailureReason? = null
+
+  override suspend fun connect(target: DiscoveredAirBeam): LinkState {
+    connects += target
+    val settled = connectFailure?.let { LinkState.Failed(it) } ?: LinkState.Connected(target)
+    return settled.also { state.value = it }
+  }
 
   override suspend fun configure(config: SessionConfig): ConfigResult {
     configured += config

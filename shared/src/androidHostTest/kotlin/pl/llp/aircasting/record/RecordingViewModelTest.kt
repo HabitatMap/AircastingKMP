@@ -13,6 +13,7 @@ import pl.llp.aircasting.bluetooth.AirBeamDevice
 import pl.llp.aircasting.bluetooth.ConfigResult
 import pl.llp.aircasting.bluetooth.DeviceId
 import pl.llp.aircasting.bluetooth.DiscoveredAirBeam
+import pl.llp.aircasting.bluetooth.FailureReason
 import pl.llp.aircasting.bluetooth.FakeAirBeamLink
 import pl.llp.aircasting.bluetooth.LinkState
 import pl.llp.aircasting.data.local.LocalMeasurementRepository
@@ -54,10 +55,12 @@ class RecordingViewModelTest {
   // Lazy: built after `setMain`, or `viewModelScope` binds to the real Main and never runs.
   private val vm by lazy { RecordingViewModel(link, engine) }
   private val miniV2 = DiscoveredAirBeam(DeviceId("AA:BB:CC:DD:EE:FF"), "AirBeamMini-1234", AirBeamDevice.Mini.V2)
+  private val otherMini = DiscoveredAirBeam(DeviceId("11:22:33:44:55:66"), "AirBeamMini-9999", AirBeamDevice.Mini.V2)
   private val form = NewSessionForm(
     method = RecordingMethod.AirBeamMobile,
     name = "Morning walk",
     tagsInput = "bike, commute",
+    device = miniV2,
   )
   @Test
   fun start_records_the_form_on_the_connected_airbeam() = runTest {
@@ -73,11 +76,59 @@ class RecordingViewModelTest {
   }
 
   @Test
-  fun start_without_a_connected_airbeam_fails_without_configuring() = runTest {
+  fun start_connects_the_picked_airbeam_and_records_on_it() = runTest {
+    vm.start(form)
+    runCurrent()
+
+    assertEquals(listOf(miniV2), link.connects)
+    assertEquals(StartState.Started, vm.startState.value)
+    assertEquals(miniV2.id.value, sessions.find(link.configured.single().uuid.toString())?.deviceId)
+  }
+
+  /** Connecting again would tear down a working link and redo the handshake for nothing. */
+  @Test
+  fun start_reuses_a_link_already_on_the_picked_airbeam() = runTest {
+    link.state.value = LinkState.Connected(miniV2)
+
+    vm.start(form)
+    runCurrent()
+
+    assertEquals(emptyList(), link.connects)
+    assertEquals(StartState.Started, vm.startState.value)
+  }
+
+  @Test
+  fun start_switches_to_the_picked_airbeam_when_linked_to_another() = runTest {
+    link.state.value = LinkState.Connected(otherMini)
+
+    vm.start(form)
+    runCurrent()
+
+    assertEquals(listOf(miniV2), link.connects)
+    assertEquals(miniV2.id.value, sessions.find(link.configured.single().uuid.toString())?.deviceId)
+  }
+
+  @Test
+  fun a_failed_connect_fails_without_configuring() = runTest {
+    link.connectFailure = FailureReason.NoDeviceFound
+
     vm.start(form)
     runCurrent()
 
     assertEquals(StartState.Failed(ConfigResult.NotConnected), vm.startState.value)
+    assertEquals(emptyList(), link.configured)
+  }
+
+  /** The wizard can't get here without a pick, but the VM mustn't fall back to whatever is linked. */
+  @Test
+  fun start_without_a_picked_airbeam_fails_without_connecting() = runTest {
+    link.state.value = LinkState.Connected(miniV2)
+
+    vm.start(form.copy(device = null))
+    runCurrent()
+
+    assertEquals(StartState.Failed(ConfigResult.NotConnected), vm.startState.value)
+    assertEquals(emptyList(), link.connects)
     assertEquals(emptyList(), link.configured)
   }
 

@@ -17,6 +17,8 @@ import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.okhttp.OkHttp
 import org.koin.dsl.module
 import pl.llp.aircasting.AppVersion
+import pl.llp.aircasting.bluetooth.AndroidBluetoothRadio
+import pl.llp.aircasting.bluetooth.BluetoothRadio
 import pl.llp.aircasting.data.local.AndroidDatabaseDriverFactory
 import pl.llp.aircasting.data.local.DatabaseDriverFactory
 import pl.llp.aircasting.data.network.upload.UploadBackstop
@@ -43,6 +45,7 @@ actual fun platformModule() = module {
   single<PhoneLocation> { TrackedPhoneLocation(androidLocationFixes(get()), CoroutineScope(SupervisorJob() + Dispatchers.Default)) }
   single { ClassicAirBeamConnector(get(), get<BluetoothManager>().adapter) }
   single { get<Context>().getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager }
+  single<BluetoothRadio> { AndroidBluetoothRadio(get(), get<BluetoothManager>().adapter) }
   single<LocationProvider> { AndroidLocationProvider(get()) }
   single<DatabaseDriverFactory> { AndroidDatabaseDriverFactory(get()) }
   single<UploadBackstop> { WorkManagerUploadBackstop(get()) }

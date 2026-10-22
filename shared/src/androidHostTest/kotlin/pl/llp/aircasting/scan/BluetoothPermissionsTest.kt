@@ -15,7 +15,7 @@ class BluetoothPermissionsTest {
   }
 
   @Test
-  fun `Android 11 and older ask for fine location, which gates BLE scans there`() {
+  fun `Android 11 and older ask for fine location which gates BLE scans there`() {
     assertEquals(
       listOf(Manifest.permission.ACCESS_FINE_LOCATION),
       bluetoothPermissionsFor(sdkInt = 30),

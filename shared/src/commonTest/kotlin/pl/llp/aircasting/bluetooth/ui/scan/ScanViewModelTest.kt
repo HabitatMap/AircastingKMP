@@ -15,10 +15,18 @@ import pl.llp.aircasting.scan.ConnectionUiState
 import pl.llp.aircasting.scan.ScanViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import pl.llp.aircasting.scan.SCAN_WINDOW
+import pl.llp.aircasting.scan.ScanUiState
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -89,5 +97,50 @@ class ScanViewModelTest {
       assertEquals(ConnectionUiState.Failed(FailureReason.HandshakeFailed), awaitItem())
       cancelAndIgnoreRemainingEvents()
     }
+  }
+  private fun TestScope.scanVm(scan: kotlinx.coroutines.flow.Flow<List<DiscoveredAirBeam>>): ScanViewModel {
+    val connector = FakeConnector(setOf(Transport.BLE), scanFlow = scan)
+    val vm = ScanViewModel(connector, DefaultAirBeamLink(connector, backgroundScope))
+    backgroundScope.launch { vm.state.collect {} } // a subscriber is what starts the scan
+    return vm
+  }
+
+  @Test
+  fun scan_lists_devices_then_finishes_when_the_window_closes() = runTest {
+    val vm = scanVm(flow { emit(listOf(ab3)); awaitCancellation() })
+    runCurrent()
+
+    assertEquals(ScanUiState.Scanning(listOf(ab3)), vm.state.value)
+
+    advanceTimeBy(SCAN_WINDOW)
+    runCurrent()
+    assertEquals(ScanUiState.Finished(listOf(ab3)), vm.state.value)
+  }
+
+  @Test
+  fun scan_finishes_empty_when_nothing_is_found() = runTest {
+    val vm = scanVm(flow { emit(emptyList()); awaitCancellation() })
+
+    advanceTimeBy(SCAN_WINDOW)
+    runCurrent()
+    assertEquals(ScanUiState.Finished(emptyList()), vm.state.value)
+  }
+
+  @Test
+  fun rescan_after_a_failure_starts_a_fresh_scan() = runTest {
+    var attempts = 0
+    val vm = scanVm(
+      flow {
+        if (attempts++ == 0) error("radio off")
+        emit(listOf(ab3))
+        awaitCancellation()
+      },
+    )
+    runCurrent()
+    assertEquals(ScanUiState.Error(FailureReason.RadioOrPermissionMissing), vm.state.value)
+
+    vm.rescan()
+    runCurrent()
+    assertEquals(ScanUiState.Scanning(listOf(ab3)), vm.state.value)
   }
 }

@@ -65,6 +65,18 @@ data class Strings(
   val startRecording: String,
   val preparingLocating: String,
   val preparingConfiguring: String,
+  // New session wizard — device step states
+  val bluetoothPermissionTitle: String,
+  val bluetoothPermissionBody: String,
+  val bluetoothOffTitle: String,
+  val bluetoothOffBody: String,
+  val noDevicesTitle: String,
+  val noDevicesBody: String,
+  val noDevicesStepPowerOn: String,
+  val noDevicesStepMoveCloser: String,
+  val noDevicesStepBluetoothOn: String,
+  val tryAgain: String,
+  val refresh: String,
   // Onboarding — TODO(design): Figma still has lorem ipsum, this copy needs sign-off
   val onboardingMeasureTitle: String,
   val onboardingMeasureBody: String,

@@ -14,6 +14,8 @@ import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.darwin.Darwin
 import org.koin.dsl.module
 import pl.llp.aircasting.AppVersion
+import pl.llp.aircasting.bluetooth.BluetoothRadio
+import pl.llp.aircasting.bluetooth.IosBluetoothRadio
 import pl.llp.aircasting.data.local.DatabaseDriverFactory
 import pl.llp.aircasting.data.local.IosDatabaseDriverFactory
 import pl.llp.aircasting.data.network.upload.IosUploadBackstop
@@ -34,6 +36,7 @@ actual fun platformModule() = module {
   single<Settings> { NSUserDefaultsSettings(NSUserDefaults.standardUserDefaults) }
   single<MicrophoneLevelSource> { IosMicrophoneLevelSource() }
   single<AirBeamConnector> { CompositeAirBeamConnector(listOf(get<BleAirBeamConnector>())) }
+  single<BluetoothRadio> { IosBluetoothRadio() }
   single<LocationProvider> { IosLocationProvider() }
   single<DatabaseDriverFactory> { IosDatabaseDriverFactory() }
   single<PhoneLocation> { TrackedPhoneLocation(iosLocationFixes(), CoroutineScope(SupervisorJob() + Dispatchers.Default)) }

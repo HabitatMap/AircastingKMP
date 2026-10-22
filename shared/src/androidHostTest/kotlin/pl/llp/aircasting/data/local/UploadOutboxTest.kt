@@ -158,7 +158,7 @@ class UploadOutboxTest {
 
   /** The loop's "batchable work" signal: re-emits as rows are recorded and acknowledged. */
   @Test
-  fun `recording lists the session once, acknowledging the last row clears it`() = runTest {
+  fun `recording lists the session once acknowledging the last row clears it`() = runTest {
     val stream = seedStream()
     val rows = listOf(Measurement(stream, t0, 12.0), Measurement(stream, t0 + 1.seconds, 13.0))
 

@@ -1,11 +1,14 @@
 package pl.llp.aircasting.record
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import pl.llp.aircasting.bluetooth.DiscoveredAirBeam
+import pl.llp.aircasting.recording.PhoneLocation
 
 data class NewSessionState(
   val step: NewSessionStep = NewSessionStep.Method,
@@ -21,9 +24,15 @@ data class NewSessionState(
     }
 }
 
-class NewSessionViewModel : ViewModel() {
+class NewSessionViewModel(location: PhoneLocation) : ViewModel() {
   private val _state = MutableStateFlow(NewSessionState())
   val state: StateFlow<NewSessionState> = _state.asStateFlow()
+
+  init {
+    // Warm the GPS while the user fills the wizard, as legacy `startNewSessionWizard` did,
+    // so Start usually finds a fix ready. Stops with the wizard.
+    viewModelScope.launch { location.track() }
+  }
 
   fun select(method: RecordingMethod) = edit { it.copy(method = method) }
 

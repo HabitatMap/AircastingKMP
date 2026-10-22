@@ -369,6 +369,8 @@ private class FakePhoneLocation(var fix: GeoLocation?) : PhoneLocation {
 
   override fun latest() = fix
 
+  override suspend fun awaitFix() = fix ?: awaitCancellation()
+
   override suspend fun track() {
     tracking = true
     try {

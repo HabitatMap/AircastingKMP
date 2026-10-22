@@ -63,6 +63,8 @@ data class Strings(
   val summaryTagsLabel: String,
   val summaryIntervalLabel: String,
   val startRecording: String,
+  val preparingLocating: String,
+  val preparingConfiguring: String,
   // Onboarding — TODO(design): Figma still has lorem ipsum, this copy needs sign-off
   val onboardingMeasureTitle: String,
   val onboardingMeasureBody: String,

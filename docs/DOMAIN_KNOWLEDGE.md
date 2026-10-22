@@ -195,23 +195,29 @@ Fixed-session measurements carry no per-measurement location (it lives on the se
   continuous tracking — else `DEFAULT_LOCATION`. Steps 1–2 above are not built yet (no
   `tracked_locations` buffer, no per-session last-known lookup); they matter for the V2 backlog
   and standalone mode, not for live readings.
-- **Tracking runs only while a session records over the link.** `RecordingEngine.run()` calls
-  `PhoneLocation.track()` while `recording` is true; `stop()` / `goStandalone()` cancel it.
+- **Who runs the GPS** (as of 2026-10-22). `TrackedPhoneLocation` shares one GPS session
+  (`stateIn`, `WhileSubscribed`) among everyone tracking, and keeps it 5 s past the last one
+  (`GpsHandOff`) so the wizard hands it to the engine without a restart:
+  - **the new-session wizard** — `NewSessionViewModel` tracks for as long as it lives, as legacy
+    `NewSessionController.startNewSessionWizard` started GPS when the wizard opened;
+  - **the engine** — `RecordingEngine.run()` tracks while a session records over the link;
+    `stop()` / `goStandalone()` cancel it.
   Platforms supply a `Flow<GeoLocation>` (`androidLocationFixes`: fused 1 s HIGH_ACCURACY, as
-  legacy; `iosLocationFixes`: `CLLocationManager` with background updates); the shared
-  `TrackedPhoneLocation` keeps the newest fix, and keeps it across sessions.
-- **Known gap — NYC at the start of a session.** Confirmed in the first real Mini V2 run
-  (2026-10-21): GPS registered at Start and the first fix came ~3 s later, so the first 6
-  readings were stamped New York. On the backend that stretched the session's bounding box from
-  New York to Kraków. The legacy app avoided this in two ways the rewrite doesn't yet: it
-  started GPS when the new-session wizard opened (`NewSessionController.startNewSessionWizard`),
-  and it fell back to the phone's cached fix (step 3). **Planned fix, both parts:**
-  1. **Seed from the cached fix** — emit the platform's last known location first when
-     tracking starts (Android `FusedLocationProviderClient.lastLocation`, dropped if a live fix
-     already landed; iOS `CLLocationManager.location`). The cached fix can be stale; it only
-     covers the seconds before the first live fix, and is still far better than NYC.
-  2. **A "preparing" step before recording** that waits for a real fix, with a timeout —
-     see `KMP_ARCHITECTURE.md` §4.
+  legacy; `iosLocationFixes`: `CLLocationManager` with background updates). The newest fix is
+  kept across GPS sessions (`latest()`, legacy step 3).
+- **Start waits for a real fix** (fixes the NYC gap, 2026-10-22). Confirmed in the first real
+  Mini V2 run (2026-10-21): GPS registered at Start, the first fix came ~3 s later, so the first
+  6 readings were stamped New York and the session's backend bounding box stretched from New York
+  to Kraków. Now `RecordingViewModel.start` goes `Preparing(Locating)` → `Preparing(Configuring)`:
+  it waits on `PhoneLocation.awaitFix()` — the first fix of the *running* GPS session, never one
+  left from an earlier session — before configuring the device, so readings (which start right
+  after configure) have a fix to copy. With the wizard's warm GPS that is usually instant.
+  **Timeout `LocatingTimeout` = 10 s** (indoors): then it records anyway, from the last known fix
+  or `DEFAULT_LOCATION`. Legacy had no such wait; it relied on the warm GPS plus the cached fix.
+- **Still open — seed from the cached fix.** Emitting the platform's last known location when
+  the GPS starts (Android `FusedLocationProviderClient.lastLocation`; iOS
+  `CLLocationManager.location`) would cover the timeout case and a fresh install's first session,
+  where `latest()` is still null. Not built.
 - **Open question — dropping the defaults entirely.** The v3 mobile frame is fixed-layout
   (`float64` lat/lng, no "no location" value), so nulls can't be sent. Storing `null` locally
   and resolving at upload (the session's first real fix; hold rows until one exists) would

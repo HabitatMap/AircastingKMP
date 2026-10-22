@@ -1,5 +1,8 @@
 package pl.llp.aircasting.di
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import android.bluetooth.BluetoothManager
 import android.content.Context
 import com.russhwolf.settings.Settings
@@ -34,7 +37,7 @@ actual fun platformModule() = module {
       get<Context>().getSharedPreferences("aircasting_settings", Context.MODE_PRIVATE),
     )
   }
-  single<PhoneLocation> { TrackedPhoneLocation(androidLocationFixes(get())) }
+  single<PhoneLocation> { TrackedPhoneLocation(androidLocationFixes(get()), CoroutineScope(SupervisorJob() + Dispatchers.Default)) }
   single { ClassicAirBeamConnector(get(), get<BluetoothManager>().adapter) }
   single { get<Context>().getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager }
   single<LocationProvider> { AndroidLocationProvider(get()) }

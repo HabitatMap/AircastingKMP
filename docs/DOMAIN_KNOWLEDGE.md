@@ -384,6 +384,24 @@ shared code; map level→color in the UI layer.
 geographic region, download session+streams+measurements, trim to last 24h, apply user
 thresholds, persist locally on follow. Place search = Google Places (**PLATFORM**).
 
+### Explore map — rewrite rules (*decided 2026-10-22*)
+Replaces the legacy per-sensor `/api/fixed/active/sessions.json` search with the server-clustered
+`GET /api/v3/explore/map` (`API_V3.md` → *Explore map*).
+- **Fixed sessions + government stations only** — mobile sessions never appear on Explore.
+- **Colours come from the user's own thresholds** (local `sensor_thresholds`), never from the server —
+  the user will be able to edit them in the app, and the map must follow. The endpoint returns a bare
+  `value` with no thresholds anyway. Same idea as legacy `SearchFollowViewModel.follow()`, which
+  overwrote a followed session's stream thresholds with the user's saved ones
+  (`setSessionThresholdsAccordingToUserSettings`).
+- **Temperature is Fahrenheit on the wire.** Celsius is a UI-only setting, converted at display time
+  (legacy `Settings.isCelsiusScaleEnabled` + `TemperatureConverter`, which also converts the HLU
+  threshold bounds). Thresholds are stored in °F.
+- Server default thresholds (`GET /api/thresholds/{sensor}?unit_symbol=`, read 2026-10-22), used by
+  legacy to seed `sensor_thresholds` lazily from stream payloads:
+  `AirBeam-PM1`/`AirBeam-PM2.5` 0·9·35·55·150 · `Government-PM2.5` 0·12·35·55·150 ·
+  `AirBeam-PM10` 0·20·50·100·200 · `Government-NO2` 0·53·100·360·649 ·
+  `Government-Ozone` 0·59·75·95·115 · `AirBeam-F` 15·45·75·105·135 · `AirBeam-RH` 0·25·50·75·100.
+
 ### Session actions
 Per-tab action bottom sheets: edit (rename/relocate), delete (per-stream or all),
 share (link or CSV file), follow/unfollow, threshold alerts. Follow/unfollow is

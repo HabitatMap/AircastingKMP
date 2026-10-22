@@ -135,6 +135,45 @@ already existed is `session_uuid_taken` (409) — stop retrying, continue with t
 
 ---
 
+## Explore map — tag `Mobile app: Explore map`
+
+*Added to this doc 2026-10-22.* One public endpoint (`security: []`, no auth) behind the Explore tab.
+
+| Method | Path | Query | |
+|---|---|---|---|
+| GET | `/api/v3/explore/map` | `west`, `east`, `south`, `north`, `zoom` (all req), `sources`, `measurement_types` | active fixed sessions + gov stations in a viewport, clustered **[A]** |
+
+- **Content:** active, outdoor, public **AirBeam fixed sessions** and **government stations** (EPA) —
+  never mobile sessions.
+- **Viewport:** `west > east` when it crosses the antimeridian. `zoom` = the map's zoom **rounded to a
+  whole number** (0–22).
+- **Filters:** `sources` = comma-separated `airbeam,government`; `measurement_types` = comma-separated
+  `Particulate Matter,Nitrogen Dioxide,Ozone,Temperature,Humidity`. Omitted/empty = all. An unknown value
+  is `400 validation_error` (with `fields`). An item is returned when it measures **any** selected type.
+- **Clustering is server-side.** The viewport is snapped outward to whole grid cells (so off-screen
+  items can come back); items sharing a cell become one `cluster`, a lone item stays a `station`.
+  From **zoom 16** nothing is clustered. The client renders what it gets — no client clustering.
+
+**`200`:** `{ items: [...] }`, each item discriminated by `type`:
+
+| `type` | Fields |
+|---|---|
+| `station` | `uuid` (session uuid for AirBeam, station uuid for gov), `source` (`airbeam`/`government`), `title`, `provider` (AirBeam: owner's username; gov: agency name, e.g. `US EPA AirNow`), `latitude`, `longitude`, `last_measured_at` (epoch **ms**, UTC — newest of its selected streams), `measurement_types[]` (selected types it measures, catalogue order), `value?` |
+| `cluster` | `latitude`, `longitude` (mean of members), `count` (≥ 2), `value?` (mean of members' values) |
+
+**`value`** is present **only when exactly one measurement type is selected**, rounded to an integer.
+AirBeam: last hourly average (newest reading while there's none yet); gov: newest reading; several
+streams of the type on one item: their mean. Temperature is **Fahrenheit** (server default).
+
+**No unit, thresholds or level in the response** — colouring is the client's job, from the user's
+local thresholds (`DOMAIN_KNOWLEDGE.md` → *Explore map*).
+
+**Not covered yet (later BE work):** tapping an item → details / follow. There is no `Mobile app:`
+endpoint that reads a public fixed session or gov station by `uuid` (`/api/v3/fixed_sessions/{uuid}`
+is auth'd and own-sessions-only).
+
+---
+
 ## Binary measurement upload
 
 Both `POST .../measurements` endpoints take a raw binary body. Same envelope, **different frame size**.

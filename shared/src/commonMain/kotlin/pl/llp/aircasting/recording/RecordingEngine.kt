@@ -87,7 +87,7 @@ class RecordingEngine(
     }
 
     val uuid = Uuid.random()
-    val result = link.configure(SessionConfig.Mobile(uuid))
+    val result = link.configure(SessionConfig.Mobile(uuid, location = location.latest() ?: DEFAULT_LOCATION))
     if (result != ConfigResult.Success) return result
 
     val session = Session(

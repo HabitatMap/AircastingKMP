@@ -3,6 +3,7 @@ package pl.llp.aircasting.bluetooth
 import pl.llp.aircasting.bluetooth.v2_firmware_specific.DeviceReportedState
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
+import pl.llp.aircasting.domain.GeoLocation
 import kotlin.uuid.Uuid
 
 interface AirBeamConnector {
@@ -82,7 +83,9 @@ sealed interface SessionConfig {
 
   data class Mobile(
     override val uuid: Uuid,
-    val authToken: String? = null
+    val authToken: String? = null,
+    /** V1 devices only (AB3 streams slowly without one); Mini V2 ignores it. */
+    val location: GeoLocation? = null,
   ) : SessionConfig {
     override fun toString() = "Mobile(uuid=$uuid)"
   }

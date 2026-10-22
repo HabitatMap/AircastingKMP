@@ -85,6 +85,25 @@ class RecordingEngineTest {
       sessions.find(uuid),
     )
   }
+
+  /** AB3 hardware run (2026-10-22): without a location it sends a reading set only every ~21 s. */
+  @Test
+  fun start_hands_the_airbeam_the_latest_phone_fix() = runTest {
+    engine.start(miniV2, details)
+
+    assertEquals(GeoLocation(50.06, 19.94), (link.configured.single() as SessionConfig.Mobile).location)
+  }
+
+  /** Legacy `Session.Location.get(null)`: no fix yet still gives the device a location. */
+  @Test
+  fun start_without_a_phone_fix_hands_the_airbeam_the_default_location() = runTest {
+    location.fix = null
+
+    engine.start(miniV2, details)
+
+    assertEquals(GeoLocation(40.7128, -74.0060), (link.configured.single() as SessionConfig.Mobile).location)
+  }
+
   /** v3 can't add a stream later, so all of them exist before the first upload. */
   @Test
   fun start_creates_every_stream_of_the_device() = runTest {

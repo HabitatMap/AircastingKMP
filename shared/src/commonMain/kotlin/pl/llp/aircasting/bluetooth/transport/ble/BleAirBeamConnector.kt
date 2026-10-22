@@ -240,6 +240,7 @@ private class BleConnection(
     sendCommand(AirBeamProtocol.Standard.setUuidCommand(config.uuid))
     when (config) {
       is SessionConfig.Mobile -> {
+        config.location?.let { sendCommand(AirBeamProtocol.Standard.setLocationCommand(it.latitude, it.longitude)) }
         sendCommand(AirBeamProtocol.Standard.startMobileCommand())
       }
       is SessionConfig.FixedWiFi -> {

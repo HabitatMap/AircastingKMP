@@ -55,9 +55,10 @@ sealed class AirBeamProtocol {
     fun setAuthCommand(token: String): ByteArray =
       byteArrayOf(BEGIN, SET_AUTH) + Base64.encode("$token:X".encodeToByteArray()).encodeToByteArray() + byteArrayOf(END)
 
+    /** Legacy `HexMessagesBuilder.locationMessage`: longitude first. */
     fun setLocationCommand(lat: Double, long: Double): ByteArray =
       byteArrayOf(BEGIN, SET_LOCATION) +
-        "${lat.toAirbeamPayload()},${long.toAirbeamPayload()}".encodeToByteArray() +
+        "${long.toAirbeamPayload()},${lat.toAirbeamPayload()}".encodeToByteArray() +
         byteArrayOf(END)
 
     fun startFixedCommand(ssid: String, pass: String, zoneOffset: Int): ByteArray {

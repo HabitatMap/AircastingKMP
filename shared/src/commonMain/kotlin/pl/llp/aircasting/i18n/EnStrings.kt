@@ -55,6 +55,18 @@ val EnStrings = Strings(
   recordRecoverBody = "Import stored sessions from your AirBeam 3 or AirBeam Mini device.",
   newSessionMethodTitle = "How will you record?",
   newSessionMethodBody = "Choose the method that fits your setup and session goal.",
+  bluetoothPermissionTitle = "Allow nearby devices",
+  bluetoothPermissionBody = "AirCasting needs this permission to find and connect to your AirBeam.",
+  bluetoothPermissionAllow = "Allow",
+  bluetoothOffTitle = "Turn on bluetooth",
+  bluetoothOffBody = "Turn on bluetooth on your phone to connect with the AirBeam device",
+  noDevicesTitle = "No AirBeam device found",
+  noDevicesBody = "We couldn't detect an AirBeam nearby. Try these steps to get connected.",
+  noDevicesStepPowerOn = "Make sure your AirBeam is on",
+  noDevicesStepMoveCloser = "Move closer to your AirBeam",
+  noDevicesStepBluetoothOn = "Make sure Bluetooth is on",
+  tryAgain = "Try again",
+  refresh = "Refresh",
   methodMobileTag = "AIRBEAM MOBILE",
   // Figma reads "Air measurment" — typo, fixed here.
   methodMobileTitle = "Air measurement on the go",
@@ -69,7 +81,6 @@ val EnStrings = Strings(
   methodMicBody = "Measure noise levels anywhere using your phone's built-in microphone.",
   next = "Next",
   bluetoothPermissionNeeded = "Allow Bluetooth access to find AirBeams nearby.",
-  bluetoothPermissionAllow = "Allow Bluetooth",
   // TODO(design): placeholder copy, verbatim from Figma — identical on all three pages until
   // the real copy lands. The per-page fields exist so that swap is a value change, nothing more.
   onboardingMeasureTitle = "Placeholder heading",

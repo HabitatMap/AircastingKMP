@@ -57,3 +57,22 @@ fun DataSource.sensorNameFor(type: MeasurementType): String? = when (this) {
     MeasurementType.Temperature, MeasurementType.Humidity -> null
   }
 }
+
+/** The filter dialog's selection. Null [source] / empty [measurementTypes] = "Show all". */
+data class ExploreFilters(
+  val source: DataSource? = null,
+  val measurementTypes: Set<MeasurementType> = emptySet(),
+) {
+  /** The one type stations are coloured by; null unless exactly one is selected (only then does the server send a value). */
+  val colourType: MeasurementType? get() = measurementTypes.singleOrNull()
+}
+
+/**
+ * Colour of this station's [value] for [type], from the user's [thresholds] keyed by
+ * sensor name. Null = nothing to colour (no value, or no threshold row).
+ */
+fun MapStation.levelFor(type: MeasurementType, thresholds: Map<String, SensorThreshold>): MeasurementLevel? {
+  val value = value ?: return null
+  val sensorName = source.sensorNameFor(type) ?: return null
+  return thresholds[sensorName]?.levelFor(value.toDouble())
+}

@@ -403,6 +403,10 @@ Replaces the legacy per-sensor `/api/fixed/active/sessions.json` search with the
   `AirBeam-PM1`/`AirBeam-PM2.5` 0·9·35·55·150 · `Government-PM2.5` 0·12·35·55·150 ·
   `AirBeam-PM10` 0·20·50·100·200 · `Government-NO2` 0·53·100·360·649 ·
   `Government-Ozone` 0·59·75·95·115 · `AirBeam-F` 15·45·75·105·135 · `AirBeam-RH` 0·25·50·75·100.
+- **Starts centred on the user**, zoom 10 (legacy `SearchLocationResultFragment.onMapReady` →
+    `newLatLngZoom(location, 10f)`, used there for the searched place). Location via Home's
+    `LocationProvider`, looked up once per `ExploreViewModel`. No permission / no fix → stays on the
+    contiguous-US default; Explore never asks for permission itself.
 
 ### Session actions
 Per-tab action bottom sheets: edit (rename/relocate), delete (per-stream or all),

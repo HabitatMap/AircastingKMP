@@ -22,6 +22,7 @@ import pl.llp.aircasting.domain.MapViewport
 import pl.llp.aircasting.domain.MeasurementLevel
 import pl.llp.aircasting.domain.MeasurementType
 import pl.llp.aircasting.domain.SensorThreshold
+import pl.llp.aircasting.home.FakeLocationProvider
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -51,7 +52,7 @@ class ExploreViewModelTest {
   @Test
   fun fetches_nothing_until_the_map_reports_a_viewport() = runTest {
     val repo = FakeExploreMapRepository()
-    subscribe(ExploreViewModel(repo, thresholds))
+    subscribe(ExploreViewModel(repo, thresholds, NO_LOCATION))
 
     advanceUntilIdle()
 
@@ -61,7 +62,7 @@ class ExploreViewModelTest {
   @Test
   fun fetches_once_for_the_last_viewport_after_the_camera_settles() = runTest {
     val repo = FakeExploreMapRepository()
-    val vm = ExploreViewModel(repo, thresholds)
+    val vm = ExploreViewModel(repo, thresholds, NO_LOCATION)
     subscribe(vm)
 
     vm.onCameraIdle(NYC)
@@ -78,7 +79,7 @@ class ExploreViewModelTest {
       if (viewport == NYC) delay(5_000) // slow response
       emptyList()
     }
-    val vm = ExploreViewModel(repo, thresholds)
+    val vm = ExploreViewModel(repo, thresholds, NO_LOCATION)
     subscribe(vm)
 
     vm.onCameraIdle(NYC)
@@ -92,7 +93,7 @@ class ExploreViewModelTest {
   @Test
   fun applying_filters_refetches_with_them() = runTest {
     val repo = FakeExploreMapRepository()
-    val vm = ExploreViewModel(repo, thresholds)
+    val vm = ExploreViewModel(repo, thresholds, NO_LOCATION)
     subscribe(vm)
     vm.onCameraIdle(NYC)
     advanceUntilIdle()
@@ -108,7 +109,7 @@ class ExploreViewModelTest {
   @Test
   fun with_one_type_selected_each_station_is_coloured_by_its_own_sensor_and_clusters_never() = runTest {
     val repo = FakeExploreMapRepository { _, _ -> listOf(AIRBEAM_12, GOV_12, CLUSTER) }
-    val vm = ExploreViewModel(repo, thresholds)
+    val vm = ExploreViewModel(repo, thresholds, NO_LOCATION)
     subscribe(vm)
 
     vm.applyFilters(PM_ONLY)
@@ -130,7 +131,7 @@ class ExploreViewModelTest {
   fun with_all_or_several_types_selected_stations_are_uncoloured() = runTest {
     // Defensive: even if a value arrived, two selected types give no single threshold to apply.
     val repo = FakeExploreMapRepository { _, _ -> listOf(AIRBEAM_12) }
-    val vm = ExploreViewModel(repo, thresholds)
+    val vm = ExploreViewModel(repo, thresholds, NO_LOCATION)
     subscribe(vm)
     vm.onCameraIdle(NYC)
     advanceUntilIdle()
@@ -146,7 +147,7 @@ class ExploreViewModelTest {
   @Test
   fun a_threshold_edit_recolours_without_refetching() = runTest {
     val repo = FakeExploreMapRepository { _, _ -> listOf(AIRBEAM_12) }
-    val vm = ExploreViewModel(repo, thresholds)
+    val vm = ExploreViewModel(repo, thresholds, NO_LOCATION)
     subscribe(vm)
     vm.applyFilters(PM_ONLY)
     vm.onCameraIdle(NYC)
@@ -166,7 +167,7 @@ class ExploreViewModelTest {
       if (offline) error("offline")
       listOf(AIRBEAM_12)
     }
-    val vm = ExploreViewModel(repo, thresholds)
+    val vm = ExploreViewModel(repo, thresholds, NO_LOCATION)
     subscribe(vm)
     vm.applyFilters(PM_ONLY)
     vm.onCameraIdle(NYC)
@@ -179,7 +180,28 @@ class ExploreViewModelTest {
     assertTrue(vm.state.value.error)
     assertEquals(listOf(ExploreMarker.Station(AIRBEAM_12, MeasurementLevel.MEDIUM)), vm.state.value.markers)
   }
+  @Test
+  fun starts_centred_on_the_user() = runTest {
+    val vm = ExploreViewModel(FakeExploreMapRepository(), thresholds, FakeLocationProvider(HERE))
+    subscribe(vm)
+
+    advanceUntilIdle()
+
+    assertEquals(HERE, vm.state.value.startCentre)
+  }
+
+  @Test
+  fun without_a_location_the_map_keeps_its_default_start() = runTest {
+    val vm = ExploreViewModel(FakeExploreMapRepository(), thresholds, NO_LOCATION)
+    subscribe(vm)
+
+    advanceUntilIdle()
+
+    assertNull(vm.state.value.startCentre)
+  }
   private companion object {
+    val HERE = GeoLocation(40.78, -73.96)
+    val NO_LOCATION = FakeLocationProvider(null)
     val NYC = MapViewport(GeoSquare(north = 40.95, south = 40.5, east = -73.7, west = -74.3), zoom = 10.0)
     val NEWARK = MapViewport(GeoSquare(north = 40.8, south = 40.7, east = -74.1, west = -74.2), zoom = 12.0)
     val PM_ONLY = ExploreFilters(measurementTypes = setOf(MeasurementType.ParticulateMatter))

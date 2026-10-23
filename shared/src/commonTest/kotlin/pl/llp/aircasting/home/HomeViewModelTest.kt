@@ -105,11 +105,6 @@ class HomeViewModelTest {
   private companion object { val HERE = GeoLocation(40.78, -73.96) }
 }
 
-
-private class FakeLocationProvider(private val location: GeoLocation?) : LocationProvider {
-  override suspend fun current() = location
-}
-
 private class FakeHomeRepository(var result: Result<HomeUiState>) : HomeRepository {
   var receivedLocation: GeoLocation? = null
   override suspend fun load(userLocation: GeoLocation?): HomeUiState {

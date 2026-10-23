@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.GoogleMap
@@ -39,6 +40,7 @@ import pl.llp.aircasting.ui.theme.LocalAqColors
 actual fun ExploreMap(
   markers: List<ExploreMarker>,
   colourType: MeasurementType?,
+  startCentre: GeoLocation?,
   onCameraIdle: (MapViewport) -> Unit,
   modifier: Modifier,
 ) {
@@ -64,6 +66,9 @@ actual fun ExploreMap(
     }
       .filterNotNull()
       .collect { currentOnCameraIdle(it) }
+  }
+  LaunchedEffect(startCentre) {
+    startCentre?.let { camera.move(CameraUpdateFactory.newLatLngZoom(it.toLatLng(), USER_ZOOM)) }
   }
   GoogleMap(
     modifier = modifier,
@@ -127,3 +132,4 @@ private fun GeoLocation.toLatLng() = LatLng(latitude, longitude)
 private val CENTER = androidx.compose.ui.geometry.Offset(0.5f, 0.5f)
 private val START = GeoLocation(39.8, -98.6) // contiguous US
 private const val START_ZOOM = 3f
+private const val USER_ZOOM = 10f

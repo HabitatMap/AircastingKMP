@@ -16,7 +16,9 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.runningFold
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import pl.llp.aircasting.domain.ExploreFilters
+import pl.llp.aircasting.domain.GeoLocation
 import pl.llp.aircasting.domain.MapCluster
 import pl.llp.aircasting.domain.MapItem
 import pl.llp.aircasting.domain.MapStation
@@ -25,15 +27,23 @@ import pl.llp.aircasting.domain.MeasurementType
 import pl.llp.aircasting.domain.SensorThreshold
 import pl.llp.aircasting.domain.ThresholdsRepository
 import pl.llp.aircasting.domain.levelFor
+import pl.llp.aircasting.home.LocationProvider
 import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 class ExploreViewModel(
   private val repository: ExploreMapRepository,
   thresholds: ThresholdsRepository,
+  location: LocationProvider,
 ) : ViewModel() {
   private val viewport = MutableStateFlow<MapViewport?>(null)
   private val filters = MutableStateFlow(ExploreFilters())
+  private val startCentre = MutableStateFlow<GeoLocation?>(null)
+
+  init {
+    // Once per ViewModel, not per subscription: coming back to the tab must not re-query.
+    viewModelScope.launch { startCentre.value = location.current() }
+  }
 
   private val loaded: Flow<Loaded> = combine(viewport.filterNotNull(), filters, ::Pair)
     .debounce(CAMERA_SETTLE)
@@ -43,12 +53,13 @@ class ExploreViewModel(
     }
 
   val state: StateFlow<ExploreUiState> =
-    combine(loaded, filters, thresholds.observeAll()) { loaded, filters, all ->
+    combine(loaded, filters, thresholds.observeAll(), startCentre) { loaded, filters, all, centre ->
       val byName = all.associateBy { it.sensorName }
       ExploreUiState(
         filters = filters,
         markers = loaded.items.map { it.toMarker(loaded.filters.colourType, byName) },
         error = loaded.failed,
+        startCentre = centre,
       )
     }
       .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ExploreUiState())

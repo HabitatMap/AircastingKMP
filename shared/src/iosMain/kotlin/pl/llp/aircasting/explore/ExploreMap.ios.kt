@@ -15,6 +15,7 @@ import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.ObjCSignatureOverride
 import kotlinx.cinterop.useContents
+import pl.llp.aircasting.domain.GeoLocation
 import platform.CoreLocation.CLLocationCoordinate2DMake
 import platform.MapKit.MKAnnotationProtocol
 import platform.MapKit.MKAnnotationView
@@ -36,6 +37,7 @@ import pl.llp.aircasting.ui.theme.LocalAqColors
 actual fun ExploreMap(
   markers: List<ExploreMarker>,
   colourType: MeasurementType?,
+  startCentre: GeoLocation?,
   onCameraIdle: (MapViewport) -> Unit,
   modifier: Modifier,
 ) {
@@ -65,7 +67,10 @@ actual fun ExploreMap(
       }
     },
     modifier = modifier,
-    update = { map -> delegate.show(map, styled) },
+    update = { map ->
+      delegate.show(map, styled)
+      delegate.centre(map, startCentre)
+    },
     // The map owns its gestures; Compose doesn't wait to see if a touch is a scroll.
     properties = UIKitInteropProperties(interactionMode = UIKitInteropInteractionMode.NonCooperative),
   )
@@ -89,6 +94,7 @@ private class MarkerAnnotation(val styled: StyledMarker) : MKPointAnnotation() {
 private class ExploreMapDelegate(
   private val onCameraIdle: (MapViewport) -> Unit,
 ) : NSObject(), MKMapViewDelegateProtocol {
+  private var centredOn: GeoLocation? = null
 
   private val shown = mutableMapOf<StyledMarker, MarkerAnnotation>()
 
@@ -118,8 +124,20 @@ private class ExploreMapDelegate(
     view.glyphText = styled.label
     return view
   }
+  /** update{} re-runs on every recomposition — move only when the centre actually changes. */
+  fun centre(map: MKMapView, centre: GeoLocation?) {
+    if (centre == null || centre == centredOn) return
+    centredOn = centre
+    map.setRegion(
+      MKCoordinateRegionMake(
+        CLLocationCoordinate2DMake(centre.latitude, centre.longitude),
+        MKCoordinateSpanMake(USER_SPAN_DEGREES, USER_SPAN_DEGREES),
+      ),
+      animated = false,
+    )
+  }
 }
-
+private const val USER_SPAN_DEGREES = 0.5 // ≈ Google zoom 10 on a phone-width map
 // Top level, not in a companion: companions of Obj-C subclasses can't hold fields.
 private const val REUSE_ID = "explore-marker"
 

@@ -2,6 +2,7 @@ package pl.llp.aircasting.explore
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import pl.llp.aircasting.domain.GeoLocation
 import pl.llp.aircasting.domain.MapViewport
 import pl.llp.aircasting.domain.MeasurementType
 
@@ -13,6 +14,8 @@ import pl.llp.aircasting.domain.MeasurementType
 expect fun ExploreMap(
   markers: List<ExploreMarker>,
   colourType: MeasurementType?,
+  /** Moves the camera here when it turns non-null. */
+  startCentre: GeoLocation?,
   onCameraIdle: (MapViewport) -> Unit,
   modifier: Modifier = Modifier,
 )

@@ -20,6 +20,7 @@ fun ExploreScreen(state: ExploreUiState, onCameraIdle: (MapViewport) -> Unit) {
     ExploreMap(
       markers = state.markers,
       colourType = state.filters.colourType,
+      startCentre = state.startCentre,
       onCameraIdle = onCameraIdle,
       modifier = Modifier.fillMaxSize(),
     )

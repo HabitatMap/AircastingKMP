@@ -2,6 +2,7 @@ package pl.llp.aircasting.explore
 
 import pl.llp.aircasting.domain.DataSource
 import pl.llp.aircasting.domain.ExploreFilters
+import pl.llp.aircasting.domain.GeoLocation
 import pl.llp.aircasting.domain.MapCluster
 import pl.llp.aircasting.domain.MapStation
 import pl.llp.aircasting.domain.MeasurementLevel
@@ -12,6 +13,8 @@ data class ExploreUiState(
   val markers: List<ExploreMarker> = emptyList(),
   /** Last fetch failed; [markers] still hold the last successful result. */
   val error: Boolean = false,
+  /** Where the map opens; null = no permission or fix yet, keep the default start. */
+  val startCentre: GeoLocation? = null,
 )
 
 sealed interface ExploreMarker {

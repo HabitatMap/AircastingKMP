@@ -26,7 +26,7 @@ kotlin {
     minSdk = libs.versions.android.minSdk.get().toInt()
 
     compilerOptions {
-      jvmTarget = JvmTarget.JVM_11
+      jvmTarget = JvmTarget.JVM_17
     }
     androidResources {
       enable = true
@@ -49,6 +49,7 @@ kotlin {
       implementation(libs.play.services.location)
       implementation(libs.sqldelight.android.driver)
       implementation(libs.androidx.work.runtime)
+      implementation(libs.maps.compose)
     }
     commonMain.dependencies {
       implementation(libs.ktor.client.core)

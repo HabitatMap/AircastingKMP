@@ -22,6 +22,7 @@ import pl.llp.aircasting.data.auth.StoredAuthSession
 import pl.llp.aircasting.data.network.AccountApi
 import pl.llp.aircasting.data.network.AuthApi
 import pl.llp.aircasting.data.network.DefaultBackendUrl
+import pl.llp.aircasting.data.network.ExploreMapApi
 import pl.llp.aircasting.data.network.ExportApi
 import pl.llp.aircasting.data.network.FixedStationsApi
 import pl.llp.aircasting.data.network.FixedStationsRepository
@@ -31,6 +32,9 @@ import pl.llp.aircasting.data.network.ServerProbe
 import pl.llp.aircasting.data.network.ThresholdAlertsApi
 import pl.llp.aircasting.data.network.createAircastingHttpClient
 import pl.llp.aircasting.data.network.upload.MobileUploadLoop
+import pl.llp.aircasting.explore.ExploreMapRepository
+import pl.llp.aircasting.explore.ExploreViewModel
+import pl.llp.aircasting.explore.NetworkExploreMapRepository
 import pl.llp.aircasting.home.FakeHomeRepository
 import pl.llp.aircasting.home.HomeRepository
 import pl.llp.aircasting.home.HomeViewModel
@@ -119,6 +123,12 @@ val accountModule = module {
   viewModelOf(::ForgotPasswordViewModel)
 }
 
+val exploreModule = module {
+  single { ExploreMapApi(get()) }
+  single<ExploreMapRepository> { NetworkExploreMapRepository(get()) }
+  viewModelOf(::ExploreViewModel)
+}
+
 fun initKoin(extra: KoinAppDeclaration = {}) = startKoin {
   extra()
   modules(
@@ -131,6 +141,7 @@ fun initKoin(extra: KoinAppDeclaration = {}) = startKoin {
     onboardingModule,
     recordModule,
     uploadModule,
+    exploreModule,
   )
 }.also {
   startUploadLoop(it.koin)

@@ -9,6 +9,7 @@ import platform.CoreLocation.CLLocationManager
 import platform.CoreLocation.CLLocationManagerDelegateProtocol
 import platform.CoreLocation.kCLAuthorizationStatusAuthorizedAlways
 import platform.CoreLocation.kCLAuthorizationStatusAuthorizedWhenInUse
+import platform.CoreLocation.kCLLocationAccuracyHundredMeters
 import platform.Foundation.NSError
 import platform.darwin.NSObject
 import kotlin.coroutines.resume
@@ -18,12 +19,20 @@ class IosLocationProvider(
   private val manager: CLLocationManager = CLLocationManager(),
 ) : LocationProvider {
 
+  init {
+    // Same as Android's BALANCED_POWER_ACCURACY. The default (Best) makes requestLocation()
+    // wait for a GPS-grade fix — ~20 s indoors.
+    manager.desiredAccuracy = kCLLocationAccuracyHundredMeters
+  }
+
   // Strong ref: CLLocationManager.delegate is `weak`; without this the delegate
   // deallocates before the callback fires.
   private var activeDelegate: CLLocationManagerDelegateProtocol? = null
 
   override suspend fun current(): GeoLocation? {
     if (!authorized()) return null
+    // Cached fix first, like Android's lastKnown() — instant when any app located recently.
+    manager.location?.let { return it.geo() }
 
     return suspendCancellableCoroutine { cont ->
       val delegate = object : NSObject(), CLLocationManagerDelegateProtocol {

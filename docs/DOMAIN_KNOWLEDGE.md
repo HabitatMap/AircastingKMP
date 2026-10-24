@@ -384,6 +384,30 @@ shared code; map level→color in the UI layer.
 geographic region, download session+streams+measurements, trim to last 24h, apply user
 thresholds, persist locally on follow. Place search = Google Places (**PLATFORM**).
 
+### Explore map — rewrite rules (*decided 2026-10-22*)
+Replaces the legacy per-sensor `/api/fixed/active/sessions.json` search with the server-clustered
+`GET /api/v3/explore/map` (`API_V3.md` → *Explore map*).
+- **Fixed sessions + government stations only** — mobile sessions never appear on Explore.
+- **Colours come from the user's own thresholds** (local `sensor_thresholds`), never from the server —
+  the user will be able to edit them in the app, and the map must follow. The endpoint returns a bare
+  `value` with no thresholds anyway. Same idea as legacy `SearchFollowViewModel.follow()`, which
+  overwrote a followed session's stream thresholds with the user's saved ones
+  (`setSessionThresholdsAccordingToUserSettings`). Lookup key = the station's one sensor for the
+  selected type: `(source, measurement type)` → sensor name per the catalogue in `API_V3.md` →
+  *Explore map*. Clusters are never coloured.
+- **Temperature is Fahrenheit on the wire.** Celsius is a UI-only setting, converted at display time
+  (legacy `Settings.isCelsiusScaleEnabled` + `TemperatureConverter`, which also converts the HLU
+  threshold bounds). Thresholds are stored in °F.
+- Server default thresholds (`GET /api/thresholds/{sensor}?unit_symbol=`, read 2026-10-22), used by
+  legacy to seed `sensor_thresholds` lazily from stream payloads:
+  `AirBeam-PM1`/`AirBeam-PM2.5` 0·9·35·55·150 · `Government-PM2.5` 0·12·35·55·150 ·
+  `AirBeam-PM10` 0·20·50·100·200 · `Government-NO2` 0·53·100·360·649 ·
+  `Government-Ozone` 0·59·75·95·115 · `AirBeam-F` 15·45·75·105·135 · `AirBeam-RH` 0·25·50·75·100.
+- **Starts centred on the user**, zoom 10 (legacy `SearchLocationResultFragment.onMapReady` →
+    `newLatLngZoom(location, 10f)`, used there for the searched place). Location via Home's
+    `LocationProvider`, looked up once per `ExploreViewModel`. No permission / no fix → stays on the
+    contiguous-US default; Explore never asks for permission itself.
+
 ### Session actions
 Per-tab action bottom sheets: edit (rename/relocate), delete (per-stream or all),
 share (link or CSV file), follow/unfollow, threshold alerts. Follow/unfollow is
@@ -512,6 +536,17 @@ sparse V2 data — the reason the v37 column exists). See V2 guide §5D.
 Stored globally per sensor, created lazily from a stream's own threshold fields on first
 sight. Initial values come from backend payloads, or hardcoded in the V2 configurator for
 Mini V2 mobile. Level banding lives in `Measurement.getLevel`.
+
+**Rewrite (*decided 2026-10-22*):** `sensor_thresholds` is **seeded with defaults at DB creation**
+(unlabeled `INSERT` in `SensorThreshold.sq` → runs in `AppDatabase.Schema.create()`), so colour
+coding always has a reference point; the user later edits them (sliders → `insertOrReplaceThreshold`).
+Values = server defaults (*Explore map* above); `Phone Microphone` 20·60·70·80·100 from legacy
+`MicrophoneReader` (server agrees). Seeded keys = every name in `streamsFor(device)` + every Explore
+`sensorNameFor` name; `DefaultThresholdsTest` fails if a new sensor lands without a default.
+Existing installs only get new defaults via a `.sqm` migration.
+**Open decision:** keys are exact sensor names, like legacy — a slider on `AirBeam3-PM2.5` won't
+move `AirBeamMini-PM2.5` or Explore's `AirBeam-PM2.5`. Decide per-sensor vs per-family key when
+building the slider screen.
 
 ---
 

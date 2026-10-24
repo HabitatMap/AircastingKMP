@@ -3,7 +3,6 @@ package pl.llp.aircasting.explore
 import pl.llp.aircasting.domain.DataSource
 import pl.llp.aircasting.domain.ExploreFilters
 import pl.llp.aircasting.domain.GeoLocation
-import pl.llp.aircasting.domain.MapCluster
 import pl.llp.aircasting.domain.MapStation
 import pl.llp.aircasting.domain.MeasurementLevel
 import pl.llp.aircasting.domain.MeasurementType
@@ -18,7 +17,8 @@ data class ExploreUiState(
 )
 
 sealed interface ExploreMarker {
-  data class Cluster(val cluster: MapCluster) : ExploreMarker
+  /** A cluster, or any item of a clustered response */
+  data class Dot(val location: GeoLocation) : ExploreMarker
   /** [level] null = draw uncoloured, with the source badge instead of a value. */
   data class Station(val station: MapStation, val level: MeasurementLevel?) : ExploreMarker
 }

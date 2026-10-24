@@ -108,8 +108,8 @@ class ExploreViewModelTest {
   }
 
   @Test
-  fun with_one_type_selected_each_station_is_coloured_by_its_own_sensor_and_clusters_never() = runTest {
-    val repo = FakeExploreMapRepository { _, _ -> listOf(AIRBEAM_12, GOV_12, CLUSTER) }
+  fun with_one_type_selected_each_station_is_coloured_by_its_own_sensor() = runTest {
+    val repo = FakeExploreMapRepository { _, _ -> listOf(AIRBEAM_12, GOV_12) }
     val vm = ExploreViewModel(repo, thresholds, NO_LOCATION)
     subscribe(vm)
 
@@ -122,8 +122,28 @@ class ExploreViewModelTest {
       listOf(
         ExploreMarker.Station(AIRBEAM_12, MeasurementLevel.MEDIUM),
         ExploreMarker.Station(GOV_12, MeasurementLevel.LOW),
-        ExploreMarker.Cluster(CLUSTER),
       ),
+      vm.state.value.markers,
+    )
+  }
+  @Test
+  fun a_clustered_response_draws_every_item_as_a_plain_dot() = runTest {
+    // Values and a single selected type would normally colour the stations — clustering wins.
+    val repo = FakeExploreMapRepository { _, _ -> listOf(AIRBEAM_12, GOV_12, CLUSTER) }
+    val vm = ExploreViewModel(repo, thresholds, NO_LOCATION)
+    subscribe(vm)
+
+    vm.applyFilters(PM_ONLY)
+    vm.onCameraIdle(NYC)
+    advanceUntilIdle()
+
+    assertEquals(
+      listOf(
+        ExploreMarker.Dot(AIRBEAM_12.location),
+        ExploreMarker.Dot(GOV_12.location),
+        ExploreMarker.Dot(CLUSTER.location),
+      ),
+
       vm.state.value.markers,
     )
   }

@@ -85,33 +85,3 @@ fun MapStation.levelFor(
   val sensorName = source.sensorNameFor(type) ?: return null
   return thresholds[sensorName]?.levelFor(value.toDouble())
 }
-
-/**
- * Viewport from a centre + span region (MapKit's `MKCoordinateRegion`). MapKit has no zoom
- * level, so it's derived web-mercator style: at zoom z the world's 360° are 256·2^z points
- * wide, so z = log2(360 · width / (256 · longitudeDelta)). Clamped to the API's 0–22.
- */
-fun regionViewport(
-  centerLatitude: Double,
-  centerLongitude: Double,
-  latitudeDelta: Double,
-  longitudeDelta: Double,
-  widthPoints: Double,
-): MapViewport {
-  val wholeWorld = longitudeDelta >= 360.0
-  val bounds = GeoSquare(
-    north = (centerLatitude + latitudeDelta / 2).coerceAtMost(90.0),
-    south = (centerLatitude - latitudeDelta / 2).coerceAtLeast(-90.0),
-    east = if (wholeWorld) 180.0 else wrapLongitude(centerLongitude + longitudeDelta / 2),
-    west = if (wholeWorld) -180.0 else wrapLongitude(centerLongitude - longitudeDelta / 2),
-  )
-  val zoom = log2(360.0 * widthPoints / (256.0 * longitudeDelta)).coerceIn(0.0, 22.0)
-  return MapViewport(bounds, zoom)
-}
-
-/** Back into -180..180 — across the antimeridian this makes west > east, as the API expects. */
-private fun wrapLongitude(longitude: Double): Double = when {
-  longitude > 180.0 -> longitude - 360.0
-  longitude < -180.0 -> longitude + 360.0
-  else -> longitude
-}

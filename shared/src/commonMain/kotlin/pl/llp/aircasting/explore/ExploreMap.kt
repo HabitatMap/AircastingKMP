@@ -7,7 +7,7 @@ import pl.llp.aircasting.domain.MapViewport
 import pl.llp.aircasting.domain.MeasurementType
 
 /**
- * The platform map: Google Maps on Android, MapKit on iOS (KMP_ARCHITECTURE.md §6 — maps stay
+ * The platform map: Google Maps on Android, Google Maps iOS SDK on iOS" (KMP_ARCHITECTURE.md §6 — maps stay
  * native). Draws [markers] and reports the visible area each time the camera comes to rest.
  */
 @Composable

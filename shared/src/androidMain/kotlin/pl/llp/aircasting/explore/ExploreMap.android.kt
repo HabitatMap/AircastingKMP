@@ -77,10 +77,10 @@ actual fun ExploreMap(
   ) {
     markers.forEach { marker ->
       when (marker) {
-        is ExploreMarker.Cluster -> key(marker) {
+        is ExploreMarker.Dot -> key(marker) {
           MarkerComposable(
             marker,
-            state = rememberUpdatedMarkerState(marker.cluster.location.toLatLng()),
+            state = rememberUpdatedMarkerState(marker.location.toLatLng()),
             anchor = CENTER,
           ) { ClusterDot() }
         }

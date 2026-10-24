@@ -57,12 +57,20 @@ class ExploreViewModel(
       val byName = all.associateBy { it.sensorName }
       ExploreUiState(
         filters = filters,
-        markers = loaded.items.map { it.toMarker(loaded.filters.colourType, byName) },
+        markers = loaded.items.toMarkers(loaded.filters.colourType, byName),
         error = loaded.failed,
         startCentre = centre,
       )
     }
       .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ExploreUiState())
+  /** Any cluster in the response means we're zoomed out: the whole map turns into plain dots (design frame 4). */
+  private fun List<MapItem>.toMarkers(colourType: MeasurementType?, thresholds: Map<String, SensorThreshold>): List<ExploreMarker> {
+    val clustered = any { it is MapCluster }
+    return map { item ->
+      if (clustered || item !is MapStation) ExploreMarker.Dot(item.location)
+      else ExploreMarker.Station(item, colourType?.let { item.levelFor(it, thresholds) })
+    }
+  }
 
   fun onCameraIdle(viewport: MapViewport) {
     this.viewport.value = viewport
@@ -91,8 +99,11 @@ class ExploreViewModel(
   }
 }
 
-private fun MapItem.toMarker(colourType: MeasurementType?, thresholds: Map<String, SensorThreshold>): ExploreMarker =
-  when (this) {
-    is MapCluster -> ExploreMarker.Cluster(this)
-    is MapStation -> ExploreMarker.Station(this, colourType?.let { levelFor(it, thresholds) })
+/** Any cluster in the response means we're zoomed out: the whole map turns into plain dots (design frame 4). */
+private fun List<MapItem>.toMarkers(colourType: MeasurementType?, thresholds: Map<String, SensorThreshold>): List<ExploreMarker> {
+  val clustered = any { it is MapCluster }
+  return map { item ->
+    if (clustered || item !is MapStation) ExploreMarker.Dot(item.location)
+    else ExploreMarker.Station(item, colourType?.let { item.levelFor(it, thresholds) })
   }
+}

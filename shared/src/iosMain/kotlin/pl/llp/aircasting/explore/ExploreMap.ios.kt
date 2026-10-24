@@ -55,7 +55,7 @@ actual fun ExploreMap(
   val uncoloured = MaterialTheme.colorScheme.primaryContainer
   val styled = markers.map { marker ->
     when (marker) {
-      is ExploreMarker.Cluster -> StyledMarker(marker, label = null, colour = uncoloured)
+      is ExploreMarker.Dot -> StyledMarker(marker, label = null, colour = uncoloured)
       is ExploreMarker.Station -> StyledMarker(
         marker,
         label = marker.label(colourType),
@@ -90,7 +90,7 @@ private data class StyledMarker(val marker: ExploreMarker, val label: String?, v
 private class MarkerAnnotation(val styled: StyledMarker) : MKPointAnnotation() {
   init {
     val location = when (val m = styled.marker) {
-      is ExploreMarker.Cluster -> m.cluster.location
+      is ExploreMarker.Dot -> m.location
       is ExploreMarker.Station -> m.station.location
     }
     setCoordinate(CLLocationCoordinate2DMake(location.latitude, location.longitude))

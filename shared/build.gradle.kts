@@ -20,6 +20,15 @@ kotlin {
     }
   }
 
+  swiftPMDependencies {
+    iosMinimumDeploymentTarget.set("16.0")
+    swiftPackage(
+      url = url("https://github.com/googlemaps/ios-maps-sdk.git"),
+      version = exact("11.2.0"),
+      products = listOf(product("GoogleMaps")),
+    )
+  }
+
   android {
     namespace = "pl.llp.aircasting.shared"
     compileSdk = libs.versions.android.compileSdk.get().toInt()

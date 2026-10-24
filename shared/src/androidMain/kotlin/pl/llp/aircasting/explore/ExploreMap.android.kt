@@ -35,6 +35,8 @@ import pl.llp.aircasting.domain.GeoSquare
 import pl.llp.aircasting.domain.MapViewport
 import pl.llp.aircasting.domain.MeasurementType
 import pl.llp.aircasting.ui.theme.LocalAqColors
+import com.google.android.gms.maps.model.MapStyleOptions
+import com.google.maps.android.compose.MapProperties
 
 @Composable
 actual fun ExploreMap(
@@ -73,6 +75,7 @@ actual fun ExploreMap(
   GoogleMap(
     modifier = modifier,
     cameraPositionState = camera,
+    properties = MapProperties(mapStyleOptions = MapStyleOptions(mapStyle())),
     uiSettings = MapUiSettings(zoomControlsEnabled = false, mapToolbarEnabled = false),
   ) {
     markers.forEach { marker ->

@@ -372,7 +372,8 @@ Mini card chart + full-screen detail graph with pinch-zoom/pan, colored **target
 Mobile path as a colored polyline + last-measurement marker; fixed = single marker; note
 markers; a custom **grid heatmap** (`AircastingHeatmap` — averages measurements per grid
 square, draws colored polygons, recomputed on zoom/pan). Grid/averaging + bounding-box math
-= **KEEP**; GoogleMap rendering = **PLATFORM** (iOS = MapKit / Google Maps iOS SDK).
+= **KEEP**; GoogleMap rendering = **PLATFORM** iOS = Google Maps iOS SDK (same as legacy iOS).
+Style: legacy res/raw/map_style / map_dark_style, picked by dark theme (ContextExtensions.setMapTypeToNormalWithStyle). Shared as explore/MapStyle.kt.
 
 ### Threshold coloring — **KEEP**
 `MeasurementColor` + `Measurement.getLevel(threshold)`: 5 bands from `SensorThreshold`

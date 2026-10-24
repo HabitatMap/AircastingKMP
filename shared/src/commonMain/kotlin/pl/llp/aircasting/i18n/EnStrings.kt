@@ -264,7 +264,31 @@ val EnStrings = Strings(
   tabRecord = "Record",
   tabFavorites = "Favorites",
   tabMyData = "My data",
-)
+
+  exploreSearchHint = "Search by name or location",
+  exploreFilters = "Filters",
+  exploreFilterSource = "SOURCE",
+  exploreFilterParameter = "PARAMETER",
+  exploreShowAll = "Show all",
+  exploreOnlyAirBeam = "Only AirBeam Fixed",
+  exploreOnlyGovernment = "Only Government",
+  exploreSourceAirBeam = "AirBeam Fixed",
+  exploreSourceGovernment = "Government",
+  exploreParticulateMatter = "Particulate matter",
+  exploreNitrogenDioxide = "Nitrogen Dioxide (NO₂)",
+  exploreOzone = "Ozone",
+  exploreTemperature = "Temperature",
+  exploreHumidity = "Humidity",
+  exploreClearAll = "Clear all",
+  exploreShowResults = { n ->
+    when (n) {
+      null -> "Show results"
+      1 -> "Show 1 result"
+      else -> "Show $n results"
+    }
+  },
+  exploreRemoveFilter = { name -> "Remove filter: $name" },
+  )
 
 /** Every available locale, keyed by BCP-47 tag. Lyricist selects one by the system locale at runtime. */
 val AppStrings: Map<LanguageTag, Strings> = mapOf(

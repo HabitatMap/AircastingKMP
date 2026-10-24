@@ -220,6 +220,99 @@ class ExploreViewModelTest {
 
     assertNull(vm.state.value.startCentre)
   }
+
+  @Test
+  fun opening_the_sheet_starts_the_draft_from_the_applied_filters() = runTest {
+    val vm = ExploreViewModel(FakeExploreMapRepository(), thresholds, NO_LOCATION)
+    subscribe(vm)
+    vm.applyFilters(PM_ONLY)
+
+    vm.openFilters()
+    advanceUntilIdle()
+
+    assertEquals(PM_ONLY, vm.state.value.sheet?.draft)
+  }
+
+  @Test
+  fun editing_the_draft_leaves_the_map_untouched() = runTest {
+    val repo = FakeExploreMapRepository { _, filters ->
+      if (filters.source == DataSource.Government) listOf(GOV_12) else listOf(AIRBEAM_12)
+    }
+    val vm = ExploreViewModel(repo, thresholds, NO_LOCATION)
+    subscribe(vm)
+    vm.onCameraIdle(NYC)
+    advanceUntilIdle()
+
+    vm.openFilters()
+    vm.editFilters(ExploreFilters(source = DataSource.Government))
+    advanceUntilIdle()
+
+    assertEquals(ExploreFilters(), vm.state.value.filters)
+    assertEquals(listOf(ExploreMarker.Station(AIRBEAM_12, level = null)), vm.state.value.markers)
+  }
+
+  @Test
+  fun the_sheet_counts_results_for_the_draft_in_the_current_viewport() = runTest {
+    val repo = FakeExploreMapRepository { _, _ -> listOf(AIRBEAM_12, CLUSTER) }
+    val vm = ExploreViewModel(repo, thresholds, NO_LOCATION)
+    subscribe(vm)
+    vm.onCameraIdle(NYC)
+    advanceUntilIdle()
+
+    vm.openFilters()
+    vm.editFilters(PM_ONLY)
+    advanceUntilIdle()
+
+    assertEquals(NYC to PM_ONLY, repo.calls.last())
+    assertEquals(FilterSheet(PM_ONLY, count = 38), vm.state.value.sheet)
+  }
+
+  @Test
+  fun a_failed_count_leaves_it_unknown_and_the_sheet_open() = runTest {
+    val repo = FakeExploreMapRepository { _, filters -> if (filters == PM_ONLY) error("offline") else emptyList() }
+    val vm = ExploreViewModel(repo, thresholds, NO_LOCATION)
+    subscribe(vm)
+    vm.onCameraIdle(NYC)
+    advanceUntilIdle()
+
+    vm.openFilters()
+    vm.editFilters(PM_ONLY)
+    advanceUntilIdle()
+
+    assertEquals(FilterSheet(PM_ONLY, count = null), vm.state.value.sheet)
+  }
+
+  @Test
+  fun confirming_applies_the_draft_and_closes_the_sheet() = runTest {
+    val repo = FakeExploreMapRepository()
+    val vm = ExploreViewModel(repo, thresholds, NO_LOCATION)
+    subscribe(vm)
+    vm.onCameraIdle(NYC)
+    vm.openFilters()
+    vm.editFilters(PM_ONLY)
+
+    vm.confirmFilters()
+    advanceUntilIdle()
+
+    assertEquals(PM_ONLY, vm.state.value.filters)
+    assertNull(vm.state.value.sheet)
+    assertEquals(NYC to PM_ONLY, repo.calls.last())
+  }
+
+  @Test
+  fun dismissing_discards_the_draft() = runTest {
+    val vm = ExploreViewModel(FakeExploreMapRepository(), thresholds, NO_LOCATION)
+    subscribe(vm)
+    vm.openFilters()
+    vm.editFilters(PM_ONLY)
+
+    vm.dismissFilters()
+    advanceUntilIdle()
+
+    assertEquals(ExploreFilters(), vm.state.value.filters)
+    assertNull(vm.state.value.sheet)
+  }
+
   private companion object {
     val HERE = GeoLocation(40.78, -73.96)
     val NO_LOCATION = FakeLocationProvider(null)

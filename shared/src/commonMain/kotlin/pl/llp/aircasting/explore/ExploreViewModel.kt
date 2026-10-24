@@ -30,6 +30,11 @@ import pl.llp.aircasting.domain.levelFor
 import pl.llp.aircasting.home.LocationProvider
 import kotlin.time.Duration.Companion.milliseconds
 
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
+import pl.llp.aircasting.domain.resultCount
+
 @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 class ExploreViewModel(
   private val repository: ExploreMapRepository,
@@ -39,11 +44,25 @@ class ExploreViewModel(
   private val viewport = MutableStateFlow<MapViewport?>(null)
   private val filters = MutableStateFlow(ExploreFilters())
   private val startCentre = MutableStateFlow<GeoLocation?>(null)
+  /** The filter sheet's working copy; null = sheet closed. Only [confirmFilters] moves it into [filters]. */
+  private val draft = MutableStateFlow<ExploreFilters?>(null)
 
   init {
     // Once per ViewModel, not per subscription: coming back to the tab must not re-query.
     viewModelScope.launch { startCentre.value = location.current() }
   }
+
+  private val sheet: Flow<FilterSheet?> = combine(draft, viewport, ::Pair)
+    .flatMapLatest { (draft, viewport) ->
+      when {
+        draft == null -> flowOf(null)
+        viewport == null -> flowOf(FilterSheet(draft))
+        else -> flow {
+          emit(FilterSheet(draft))
+          emit(FilterSheet(draft, fetch(viewport, draft)?.items?.resultCount()))
+        }
+      }
+    }
 
   private val loaded: Flow<Loaded> = combine(viewport.filterNotNull(), filters, ::Pair)
     .debounce(CAMERA_SETTLE)
@@ -53,16 +72,18 @@ class ExploreViewModel(
     }
 
   val state: StateFlow<ExploreUiState> =
-    combine(loaded, filters, thresholds.observeAll(), startCentre) { loaded, filters, all, centre ->
+    combine(loaded, filters, thresholds.observeAll(), startCentre, sheet) { loaded, filters, all, centre, sheet ->
       val byName = all.associateBy { it.sensorName }
       ExploreUiState(
         filters = filters,
         markers = loaded.items.toMarkers(loaded.filters.colourType, byName),
         error = loaded.failed,
         startCentre = centre,
+        sheet = sheet,
       )
     }
       .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ExploreUiState())
+
   /** Any cluster in the response means we're zoomed out: the whole map turns into plain dots (design frame 4). */
   private fun List<MapItem>.toMarkers(colourType: MeasurementType?, thresholds: Map<String, SensorThreshold>): List<ExploreMarker> {
     val clustered = any { it is MapCluster }
@@ -78,6 +99,26 @@ class ExploreViewModel(
 
   fun applyFilters(filters: ExploreFilters) {
     this.filters.value = filters
+  }
+
+  fun openFilters() {
+    draft.value = filters.value
+  }
+
+  /** Ignored once the sheet has closed, so a late tap can't reopen it. */
+  fun editFilters(edited: ExploreFilters) {
+    if (draft.value != null) draft.value = edited
+  }
+
+  /** `Done` and `Show N results`. */
+  fun confirmFilters() {
+    draft.value?.let { filters.value = it }
+    draft.value = null
+  }
+
+  /** `Cancel`, swipe down, scrim tap. */
+  fun dismissFilters() {
+    draft.value = null
   }
 
   /** Null on failure. Cancellation is rethrown so mapLatest can drop a stale request. */

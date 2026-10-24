@@ -43,4 +43,27 @@ class ExploreMapTest {
     assertEquals(MeasurementType.Ozone, ExploreFilters(measurementTypes = setOf(MeasurementType.Ozone)).colourType)
     assertNull(ExploreFilters(measurementTypes = setOf(MeasurementType.Ozone, MeasurementType.Humidity)).colourType)
   }
+
+  @Test
+  fun toggling_a_type_adds_it_then_removes_it() {
+    val pm = ExploreFilters().toggled(MeasurementType.ParticulateMatter)
+    assertEquals(setOf(MeasurementType.ParticulateMatter), pm.measurementTypes)
+
+    val pmOzone = pm.toggled(MeasurementType.Ozone)
+    assertEquals(setOf(MeasurementType.ParticulateMatter, MeasurementType.Ozone), pmOzone.measurementTypes)
+
+    assertEquals(setOf(MeasurementType.Ozone), pmOzone.toggled(MeasurementType.ParticulateMatter).measurementTypes)
+  }
+
+  @Test
+  fun result_count_counts_a_station_once_and_a_cluster_as_its_members() {
+    val station = MapStation(
+      uuid = "u", source = DataSource.AirBeam, title = "t", provider = "p",
+      location = GeoLocation(0.0, 0.0), lastMeasuredAt = Instant.fromEpochMilliseconds(0),
+      measurementTypes = emptyList(), value = null,
+    )
+    val items = listOf(station, MapCluster(GeoLocation(1.0, 1.0), count = 37), station)
+
+    assertEquals(39, items.resultCount())
+  }
 }

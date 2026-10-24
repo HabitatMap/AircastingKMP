@@ -269,4 +269,23 @@ data class Strings(
   val ageMinutesAgo: (minutes: Long) -> String,
   val ageHoursAgo: (hours: Long) -> String,
   val ageDaysAgo: (days: Long) -> String,
+
+// Explore — search & filters
+  val exploreSearchHint: String,
+  val exploreFilters: String,
+  val exploreFilterSource: String,
+  val exploreFilterParameter: String,
+  val exploreShowAll: String,
+  val exploreOnlyAirBeam: String,
+  val exploreOnlyGovernment: String,
+  val exploreSourceAirBeam: String,
+  val exploreSourceGovernment: String,
+  val exploreParticulateMatter: String,
+  val exploreNitrogenDioxide: String,
+  val exploreOzone: String,
+  val exploreTemperature: String,
+  val exploreHumidity: String,
+  val exploreClearAll: String,
+  val exploreShowResults: (Int?) -> String,
+  val exploreRemoveFilter: (String) -> String,
 )

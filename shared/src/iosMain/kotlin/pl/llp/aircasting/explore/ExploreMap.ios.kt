@@ -23,7 +23,13 @@ import platform.MapKit.MKCoordinateRegionMake
 import platform.MapKit.MKCoordinateSpanMake
 import platform.MapKit.MKMapView
 import platform.MapKit.MKMapViewDelegateProtocol
-import platform.MapKit.MKMarkerAnnotationView
+import platform.CoreGraphics.CGPointMake
+import platform.CoreGraphics.CGRectMake
+import platform.CoreGraphics.CGSizeMake
+import platform.UIKit.UIFont
+import platform.UIKit.UIFontWeightMedium
+import platform.UIKit.UILabel
+import platform.UIKit.UIView
 import platform.MapKit.MKPointAnnotation
 import platform.UIKit.UIColor
 import platform.darwin.NSObject
@@ -31,6 +37,7 @@ import pl.llp.aircasting.domain.MapViewport
 import pl.llp.aircasting.domain.MeasurementType
 import pl.llp.aircasting.domain.regionViewport
 import pl.llp.aircasting.ui.theme.LocalAqColors
+import platform.MapKit.MKMarkerAnnotationView
 
 @OptIn(ExperimentalForeignApi::class, ExperimentalComposeUiApi::class)
 @Composable
@@ -117,11 +124,10 @@ private class ExploreMapDelegate(
   }
   override fun mapView(mapView: MKMapView, viewForAnnotation: MKAnnotationProtocol): MKAnnotationView? {
     val styled = (viewForAnnotation as? MarkerAnnotation)?.styled ?: return null
-    val view = (mapView.dequeueReusableAnnotationViewWithIdentifier(REUSE_ID) as? MKMarkerAnnotationView)
-      ?: MKMarkerAnnotationView(viewForAnnotation, REUSE_ID)
+    val view = mapView.dequeueReusableAnnotationViewWithIdentifier(REUSE_ID)
+      ?: MKAnnotationView(viewForAnnotation, REUSE_ID)
     view.annotation = viewForAnnotation
-    view.markerTintColor = styled.colour.toUIColor()
-    view.glyphText = styled.label
+    view.draw(styled)
     return view
   }
   /** update{} re-runs on every recomposition — move only when the centre actually changes. */
@@ -140,5 +146,57 @@ private class ExploreMapDelegate(
 private const val USER_SPAN_DEGREES = 0.5 // ≈ Google zoom 10 on a phone-width map
 // Top level, not in a companion: companions of Obj-C subclasses can't hold fields.
 private const val REUSE_ID = "explore-marker"
+/**
+ * UIKit twin of Android's StationPill / ClusterDot: a translucent halo with, centred on top,
+ * a white pill (dot + label) for a station or a solid dot for a cluster.
+ */
+@OptIn(ExperimentalForeignApi::class)
+private fun MKAnnotationView.draw(styled: StyledMarker) {
+  subviews.forEach { (it as UIView).removeFromSuperview() } // reused views keep the old marker's
+  val colour = styled.colour.toUIColor()
+  val label = styled.label
+  val haloSize = if (label == null) 28.0 else 56.0
+  val content = if (label == null) dot(16.0, colour) else pill(label, colour)
+  val width = maxOf(haloSize, content.frame.useContents { size.width })
+  setFrame(CGRectMake(0.0, 0.0, width, haloSize))
+  val centre = CGPointMake(width / 2, haloSize / 2)
+  addSubview(dot(haloSize, colour.colorWithAlphaComponent(0.4)).apply { setCenter(centre) })
+  addSubview(content.apply { setCenter(centre) })
+}
+@OptIn(ExperimentalForeignApi::class)
+private fun pill(text: String, colour: UIColor): UIView {
+  val label = UILabel().apply {
+    this.text = text
+    font = UIFont.systemFontOfSize(12.0, UIFontWeightMedium)
+    textColor = UIColor.blackColor
+    sizeToFit()
+  }
+  val textWidth = label.frame.useContents { size.width }
+  val width = PAD_X + DOT + GAP + textWidth + PAD_X
+  val height = PAD_Y + LINE + PAD_Y
+  return UIView(CGRectMake(0.0, 0.0, width, height)).apply {
+    backgroundColor = UIColor.whiteColor
+    layer.cornerRadius = height / 2
+    layer.shadowColor = UIColor.blackColor.CGColor
+    layer.shadowOpacity = 0.25f
+    layer.shadowRadius = 2.0
+    layer.shadowOffset = CGSizeMake(0.0, 1.0)
+    addSubview(dot(DOT, colour).apply { setCenter(CGPointMake(PAD_X + DOT / 2, height / 2)) })
+    addSubview(label.apply { setFrame(CGRectMake(PAD_X + DOT + GAP, PAD_Y, textWidth, LINE)) })
+  }
+}
+
+@OptIn(ExperimentalForeignApi::class)
+private fun dot(size: Double, colour: UIColor) = UIView(CGRectMake(0.0, 0.0, size, size)).apply {
+  backgroundColor = colour
+  layer.cornerRadius = size / 2
+}
+
+// Pill metrics in points — same numbers as the dp values in ExploreMap.android.kt.
+private const val PAD_X = 10.0
+private const val PAD_Y = 6.0
+private const val DOT = 12.0
+private const val GAP = 6.0
+private const val LINE = 16.0 // labelMedium line height
 
 private fun Color.toUIColor() = UIColor(red = red.toDouble(), green = green.toDouble(), blue = blue.toDouble(), alpha = alpha.toDouble())

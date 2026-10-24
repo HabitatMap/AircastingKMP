@@ -75,11 +75,13 @@ jobs:
 
       - run: ./gradlew :shared:iosSimulatorArm64Test
 
+      # -scheme, not -target: target builds put SwiftPM module maps in per-project
+      # build dirs, so the GoogleMaps package (KotlinMultiplatformLinkedPackage) fails.
       - name: Build iOS app
         run: |
           xcodebuild -project iosApp/iosApp.xcodeproj \
-            -target iosApp \
-            -sdk iphonesimulator \
+            -scheme iosApp \
+            -destination 'generic/platform=iOS Simulator' \
             -configuration Debug \
             CODE_SIGNING_ALLOWED=NO build
 

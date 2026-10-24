@@ -255,7 +255,12 @@ status transitions) move into `:domain`.
 - `LiveData` → `StateFlow`; EventBus → collected `Flow`s.
 - **Charts & maps stay platform-native** — share the *data* (entries, target zones, heatmap
   grid, bounding box), render per platform (Compose chart lib / Swift Charts;
-  Google Maps SDK on both. iOS imports it with Kotlin's SwiftPM import (swiftPMDependencies, Alpha); classes come in under swiftPMImport.Aircasting.shared"). Return semantic threshold **levels** from shared code; resolve colors
+  Google Maps SDK on both. iOS imports it with Kotlin's SwiftPM import (swiftPMDependencies, Alpha); classes come in under swiftPMImport.Aircasting.shared"). The Xcode project links the
+  generated local package `iosApp/KotlinMultiplatformLinkedPackage/` — it is **committed**
+  (CI checkout needs it); regenerate after changing `swiftPMDependencies` with
+  `XCODEPROJ_PATH=iosApp/iosApp.xcodeproj ./gradlew :shared:integrateLinkagePackage` (output
+  lands relative to `shared/`, move it into `iosApp/`). Build with `xcodebuild -scheme`, not
+  `-target` — `-target` can't find SwiftPM module maps. Return semantic threshold **levels** from shared code; resolve colors
   in the UI.
 - Navigation: **shared** Compose navigation (Navigation Compose Multiplatform) owns the back
   stack on both platforms. The SwiftUI shell keeps only the tab bar and presents the

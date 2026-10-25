@@ -71,6 +71,17 @@ data class ExploreFilters(
 ) {
   /** The one type stations are coloured by; null unless exactly one is selected (only then does the server send a value). */
   val colourType: MeasurementType? get() = measurementTypes.singleOrNull()
+  /** Parameter chips are multi-select: tapping one flips it. */
+  fun toggled(type: MeasurementType): ExploreFilters =
+    copy(measurementTypes = if (type in measurementTypes) measurementTypes - type else measurementTypes + type)
+}
+
+/** "Show N results": a station counts once, a cluster as its members. */
+fun List<MapItem>.resultCount(): Int = sumOf {
+  when (it) {
+    is MapCluster -> it.count
+    is MapStation -> 1
+  }
 }
 
 /**

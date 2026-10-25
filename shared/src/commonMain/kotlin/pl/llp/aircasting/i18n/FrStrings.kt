@@ -262,4 +262,27 @@ val FrStrings = Strings(
   tabRecord = "Enregistrer",
   tabFavorites = "Favoris",
   tabMyData = "Mes données",
-)
+  exploreSearchHint = "Rechercher par nom ou lieu",
+  exploreFilters = "Filtres",
+  exploreFilterSource = "SOURCE",
+  exploreFilterParameter = "PARAMÈTRE",
+  exploreShowAll = "Tout afficher",
+  exploreOnlyAirBeam = "AirBeam fixes uniquement",
+  exploreOnlyGovernment = "Gouvernement uniquement",
+  exploreSourceAirBeam = "AirBeam fixe",
+  exploreSourceGovernment = "Gouvernement",
+  exploreParticulateMatter = "Particules fines",
+  exploreNitrogenDioxide = "Dioxyde d'azote (NO₂)",
+  exploreOzone = "Ozone",
+  exploreTemperature = "Température",
+  exploreHumidity = "Humidité",
+  exploreClearAll = "Tout effacer",
+  exploreShowResults = { n ->
+    when (n) {
+      null -> "Voir les résultats"
+      0, 1 -> "Voir $n résultat"
+      else -> "Voir $n résultats"
+    }
+  },
+  exploreRemoveFilter = { name -> "Retirer le filtre : $name" },
+  )

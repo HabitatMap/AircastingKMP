@@ -42,6 +42,8 @@ class StringsCompletenessTest {
     "customServerUrlLabel",
     "customServerPortLabel",
     "newSessionDeviceAirBeamHeader",
+    "exploreFilterSource",
+    "exploreOzone",
   ) + onboardingPlaceholders
 
   /** Only the plain `String` fields; the parameterised ones are lambdas and can't be compared. */

@@ -2,6 +2,7 @@ package pl.llp.aircasting.navigation
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -22,11 +23,16 @@ fun ShellScreen(
   LaunchedEffect(Unit) { onRequestLocation() }
 
   var selected by rememberSaveable { mutableStateOf(AppTab.Home) }
+  val topSystemBarColor = when(selected) {
+    AppTab.Explore -> MaterialTheme.colorScheme.surfaceContainerLowest
+    else -> MaterialTheme.colorScheme.background
+  }
   Scaffold(
-    containerColor = MaterialTheme.colorScheme.background,
+    containerColor = topSystemBarColor,
     bottomBar = { AircastingNavBar(selected, onSelect = { selected = it }) },
   ) { padding ->
-    Box(Modifier.padding(padding)) {
+    // Consume what we pad, so tabs using statusBarsPadding() etc. don't apply the inset twice.
+    Box(Modifier.padding(padding).consumeWindowInsets(padding)) {
       TabContent(selected, onRequestLocation, onOpenSettings, onStartNewSession)
     }
   }

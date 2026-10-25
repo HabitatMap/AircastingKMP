@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -37,7 +38,11 @@ import pl.llp.aircasting.domain.MeasurementType
 import pl.llp.aircasting.ui.theme.LocalAqColors
 import com.google.android.gms.maps.model.MapStyleOptions
 import com.google.maps.android.compose.MapProperties
+import com.google.maps.android.compose.MapsComposeExperimentalApi
+import com.google.maps.android.compose.Marker
+import com.google.maps.android.compose.rememberComposeBitmapDescriptor
 
+@OptIn(MapsComposeExperimentalApi::class)
 @Composable
 actual fun ExploreMap(
   markers: List<ExploreMarker>,
@@ -72,20 +77,26 @@ actual fun ExploreMap(
   LaunchedEffect(startCentre) {
     startCentre?.let { camera.move(CameraUpdateFactory.newLatLngZoom(it.toLatLng(), USER_ZOOM)) }
   }
+  val style = mapStyle()
+  val properties = remember(style) { MapProperties(mapStyleOptions = MapStyleOptions(style)) }
+  val dotColour = MaterialTheme.colorScheme.primaryContainer
+
   GoogleMap(
     modifier = modifier,
     cameraPositionState = camera,
-    properties = MapProperties(mapStyleOptions = MapStyleOptions(mapStyle())),
+    properties = properties,
     uiSettings = MapUiSettings(zoomControlsEnabled = false, mapToolbarEnabled = false),
   ) {
+    val dotIcon = rememberComposeBitmapDescriptor(dotColour) { ClusterDot() }
+
     markers.forEach { marker ->
       when (marker) {
         is ExploreMarker.Dot -> key(marker) {
-          MarkerComposable(
-            marker,
+          Marker(
             state = rememberUpdatedMarkerState(marker.location.toLatLng()),
+            icon = dotIcon,
             anchor = CENTER,
-          ) { ClusterDot() }
+          )
         }
 
         is ExploreMarker.Station -> key(marker.station.uuid) {

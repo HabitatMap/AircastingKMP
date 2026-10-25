@@ -14,7 +14,12 @@ data class ExploreUiState(
   val error: Boolean = false,
   /** Where the map opens; null = no permission or fix yet, keep the default start. */
   val startCentre: GeoLocation? = null,
+  /** The open filter sheet; null = closed. */
+  val sheet: FilterSheet? = null,
 )
+
+/** The [draft] being edited and how many results it would show; null [count] = still counting, or the count failed. */
+data class FilterSheet(val draft: ExploreFilters, val count: Int? = null)
 
 sealed interface ExploreMarker {
   /** A cluster, or any item of a clustered response */

@@ -56,7 +56,15 @@ private fun HomeRoute(onRequestLocation: () -> Unit, onOpenSettings: () -> Unit)
 private fun ExploreRoute() {
   val vm = koinViewModel<ExploreViewModel>()
   val state by vm.state.collectAsStateWithLifecycle()
-  ExploreScreen(state = state, onCameraIdle = vm::onCameraIdle)
+  ExploreScreen(
+    state = state,
+    onCameraIdle = vm::onCameraIdle,
+    onOpenFilters = vm::openFilters,
+    onEditFilters = vm::editFilters,
+    onConfirmFilters = vm::confirmFilters,
+    onDismissFilters = vm::dismissFilters,
+    onApplyFilters = vm::applyFilters,
+  )
 }
 
 @Composable

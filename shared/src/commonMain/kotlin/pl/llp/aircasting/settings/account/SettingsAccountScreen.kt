@@ -3,7 +3,6 @@ package pl.llp.aircasting.settings.account
 import aircasting.shared.generated.resources.Res
 import aircasting.shared.generated.resources.ic_arrow_forward_ios
 import aircasting.shared.generated.resources.ic_person
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -23,7 +22,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -36,6 +34,7 @@ import pl.llp.aircasting.i18n.LocalStrings
 import pl.llp.aircasting.navigation.SettingsRoute
 import pl.llp.aircasting.navigation.title
 import pl.llp.aircasting.settings.SettingsScaffold
+import pl.llp.aircasting.ui.components.OutlinedActionButton
 
 @Composable
 fun SettingsAccountScreen(
@@ -165,19 +164,12 @@ private fun ActionRow(action: AccountAction, onClick: () -> Unit) {
 
 @Composable
 private fun SignOutButton(onClick: () -> Unit) {
-  OutlinedButton(
-    onClick = onClick,
-    modifier = Modifier.fillMaxWidth(),
-    shape = RoundedCornerShape(16.dp),
-    border = BorderStroke(1.2.dp, MaterialTheme.colorScheme.primaryContainer),
-    colors = ButtonDefaults.outlinedButtonColors(
-      containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
-      contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-    ),
-    contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp),
-  ) {
-    Text(LocalStrings.current.accountSignOut, style = MaterialTheme.typography.titleMedium)
-  }
+  OutlinedActionButton(
+    LocalStrings.current.accountSignOut,
+    onClick,
+    Modifier.fillMaxWidth(),
+    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+  )
 }
 
 @Composable

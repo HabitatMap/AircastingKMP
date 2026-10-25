@@ -3,20 +3,14 @@ package pl.llp.aircasting.record
 import aircasting.shared.generated.resources.Res
 import aircasting.shared.generated.resources.ic_add
 import aircasting.shared.generated.resources.ic_cancel
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.clearText
@@ -26,7 +20,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SuggestionChip
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -36,14 +29,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.painterResource
 import pl.llp.aircasting.i18n.LocalStrings
+import pl.llp.aircasting.ui.components.SectionHeader
+import pl.llp.aircasting.ui.components.SelectableChip
 import pl.llp.aircasting.ui.wizard.WizardButton
 import pl.llp.aircasting.ui.wizard.WizardScaffold
 
@@ -121,10 +113,11 @@ fun SessionDetailsScreen(
       Spacer(Modifier.height(8.dp))
       Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         SamplingInterval.entries.forEach { interval ->
-          IntervalChip(
+          SelectableChip(
             label = strings.label(interval),
             selected = interval == state.form.interval,
             onClick = { onInterval(interval) },
+            modifier = Modifier.weight(1f),
           )
         }
       }
@@ -136,59 +129,6 @@ fun SessionDetailsScreen(
       )
     }
   }
-}
-
-@Composable
-private fun RowScope.IntervalChip(label: String, selected: Boolean, onClick: () -> Unit) {
-  val shape = RoundedCornerShape(10.dp)
-  Surface(
-    modifier = Modifier
-      .weight(1f)
-      .height(44.dp)
-      .clip(shape)
-      .selectable(selected = selected, role = Role.RadioButton, onClick = onClick),
-    shape = shape,
-    color = if (selected) {
-      MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.08f)
-    } else {
-      MaterialTheme.colorScheme.surfaceContainerLowest
-    },
-    border = BorderStroke(
-      1.5.dp,
-      if (selected) {
-        MaterialTheme.colorScheme.primaryContainer
-      } else {
-        MaterialTheme.colorScheme.outlineVariant
-      },
-    ),
-  ) {
-    Row(
-      Modifier.fillMaxHeight().padding(horizontal = 6.dp),
-      horizontalArrangement = Arrangement.Center,
-      verticalAlignment = Alignment.CenterVertically,
-    ) {
-      Text(
-        label,
-        style = MaterialTheme.typography.labelLarge,
-        color = if (selected) {
-          MaterialTheme.colorScheme.onPrimaryContainer
-        } else {
-          MaterialTheme.colorScheme.onSurface
-        },
-        maxLines = 1,
-        softWrap = false,
-      )
-    }
-  }
-}
-
-@Composable
-private fun SectionHeader(text: String) {
-  Text(
-    text,
-    style = MaterialTheme.typography.labelLarge,
-    color = MaterialTheme.colorScheme.outline,
-  )
 }
 
 @Composable

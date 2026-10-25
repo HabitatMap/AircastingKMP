@@ -49,14 +49,14 @@ private fun SheetHeader(title: String, onCancel: () -> Unit, onConfirm: () -> Un
     TextButton(onClick = onCancel, modifier = Modifier.align(Alignment.CenterStart)) {
       Text(
         strings.cancel,
-        style = MaterialTheme.typography.bodyLarge,
+        style = MaterialTheme.typography.bodyLargeEmphasized,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
       )
     }
     Text(
       title,
       modifier = Modifier.align(Alignment.Center),
-      style = MaterialTheme.typography.titleMedium,
+      style = MaterialTheme.typography.titleMediumEmphasized,
       color = MaterialTheme.colorScheme.onBackground,
       maxLines = 1,
     )
@@ -67,7 +67,7 @@ private fun SheetHeader(title: String, onCancel: () -> Unit, onConfirm: () -> Un
     ) {
       Text(
         strings.done,
-        style = MaterialTheme.typography.bodyLarge,
+        style = MaterialTheme.typography.bodyLargeEmphasized,
         color = MaterialTheme.colorScheme.onPrimaryContainer,
       )
     }

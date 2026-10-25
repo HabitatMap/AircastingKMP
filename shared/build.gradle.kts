@@ -27,6 +27,11 @@ kotlin {
       version = exact("11.2.0"),
       products = listOf(product("GoogleMaps")),
     )
+    swiftPackage(
+      url = url("https://github.com/googlemaps/ios-places-sdk.git"),
+      version = exact("11.2.0"),
+      products = listOf(product("GooglePlaces")),
+    )
   }
 
   android {
@@ -51,6 +56,7 @@ kotlin {
       implementation(libs.sqldelight.native.driver)
     }
     androidMain.dependencies {
+      implementation(libs.places)
       implementation(libs.compose.uiToolingPreview)
       implementation(libs.androidx.core.ktx)
       implementation(libs.androidx.activity.compose)

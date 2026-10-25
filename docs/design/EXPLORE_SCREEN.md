@@ -55,7 +55,6 @@ Header: `Cancel` · **Filters** · `Done`. Footer: `Clear all` · `Show N result
 
 - **`Show N results`** needs a count for the *pending* (not yet applied) filters — fetch with them;
   N = stations + Σ cluster `count` in the viewport. Not built yet.
-- **Search by name** — the BE queries take a `title` filter internally (PR #1247), but
-  `/api/v3/explore/map` doesn't expose it yet. Location search = platform geocoding/places.
+- **Search by name** — done — Places SDK on both platforms via PlaceSearch; moves the camera to zoom 10 like legacy SearchLocationResultFragment.
 - **Units** in the value pill: PM `µg/m³`, NO₂/Ozone `ppb`, Temperature °F (°C = display-time
   conversion), Humidity `%`.

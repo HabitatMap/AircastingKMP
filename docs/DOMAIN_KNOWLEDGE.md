@@ -408,6 +408,7 @@ Replaces the legacy per-sensor `/api/fixed/active/sessions.json` search with the
     `newLatLngZoom(location, 10f)`, used there for the searched place). Location via Home's
     `LocationProvider`, looked up once per `ExploreViewModel`. No permission / no fix → stays on the
     contiguous-US default; Explore never asks for permission itself.
+- place search uses a session token per keystroke run + fetch (billing), and no lookup for a blank query
 
 ### Session actions
 Per-tab action bottom sheets: edit (rename/relocate), delete (per-stream or all),

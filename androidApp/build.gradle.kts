@@ -43,6 +43,7 @@ android {
         ?.use { load(it) }
     }
     manifestPlaceholders["MAPS_API_KEY"] = localProperties.getProperty("MAPS_API_KEY", "")
+    manifestPlaceholders["PLACES_API_KEY"] = localProperties.getProperty("PLACES_API_KEY", "")
   }
   packaging {
     resources {

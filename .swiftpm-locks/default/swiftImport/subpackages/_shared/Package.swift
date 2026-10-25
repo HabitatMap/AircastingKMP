@@ -16,6 +16,10 @@ let package = Package(
     .package(
       url: "https://github.com/googlemaps/ios-maps-sdk.git",
       exact: "11.2.0"
+    ),
+    .package(
+      url: "https://github.com/googlemaps/ios-places-sdk.git",
+      exact: "11.2.0"
     )
   ],
   targets: [
@@ -25,6 +29,10 @@ let package = Package(
         .product(
           name: "GoogleMaps",
           package: "ios-maps-sdk"
+        ),
+        .product(
+          name: "GooglePlaces",
+          package: "ios-places-sdk"
         )
       ]
     )

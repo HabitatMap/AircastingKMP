@@ -14,6 +14,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,6 +32,8 @@ fun SettingsSheet(
 ) {
   ModalBottomSheet(
     onDismissRequest = onDismiss,
+    // Open straight to full content height; the half-height stop hid the footer buttons.
+    sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
     containerColor = MaterialTheme.colorScheme.background,
     shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
     dragHandle = { BottomSheetDefaults.DragHandle(color = MaterialTheme.colorScheme.outline) },

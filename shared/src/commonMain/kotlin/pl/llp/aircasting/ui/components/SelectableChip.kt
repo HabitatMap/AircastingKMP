@@ -4,6 +4,7 @@ import aircasting.shared.generated.resources.Res
 import aircasting.shared.generated.resources.ic_check
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
@@ -39,6 +40,13 @@ fun SelectableChip(
   val shape = RoundedCornerShape(10.dp)
   val colors = MaterialTheme.colorScheme
   val showCheck = selected && showCheckWhenSelected
+  // Unselected chips reserve the check's 28dp (24 icon + 4 gap) as symmetric padding, so the
+  // chip keeps its width when toggled and neighbours in a FlowRow don't reflow.
+  val padding = when {
+    !showCheckWhenSelected -> PaddingValues(horizontal = 13.5.dp)
+    selected -> PaddingValues(start = 9.5.dp, end = 13.5.dp)
+    else -> PaddingValues(horizontal = 25.5.dp)
+  }
   Surface(
     modifier = modifier
       .height(44.dp)
@@ -50,7 +58,7 @@ fun SelectableChip(
     border = BorderStroke(1.5.dp, if (selected) colors.primaryContainer else colors.outlineVariant),
   ) {
     Row(
-      Modifier.fillMaxHeight().padding(start = if (showCheck) 9.5.dp else 13.5.dp, end = 13.5.dp),
+      Modifier.fillMaxHeight().padding(padding),
       horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally),
       verticalAlignment = Alignment.CenterVertically,
     ) {

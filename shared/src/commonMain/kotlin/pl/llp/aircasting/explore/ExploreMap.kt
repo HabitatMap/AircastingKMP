@@ -16,6 +16,8 @@ expect fun ExploreMap(
   colourType: MeasurementType?,
   /** Moves the camera here when it turns non-null. */
   startCentre: GeoLocation?,
+  flyTo: GeoLocation?,
+  onFlownTo: () -> Unit,
   onCameraIdle: (MapViewport) -> Unit,
   modifier: Modifier = Modifier,
 )

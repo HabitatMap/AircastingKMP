@@ -45,6 +45,8 @@ actual fun ExploreMap(
   markers: List<ExploreMarker>,
   colourType: MeasurementType?,
   startCentre: GeoLocation?,
+  flyTo: GeoLocation?,
+  onFlownTo: () -> Unit,
   onCameraIdle: (MapViewport) -> Unit,
   modifier: Modifier,
 ) {
@@ -77,6 +79,10 @@ actual fun ExploreMap(
       delegate.style(map, style)
       delegate.show(map, styled)
       delegate.centre(map, startCentre)
+      flyTo?.let {
+        map.setCamera(GMSCameraPosition.cameraWithLatitude(it.latitude, it.longitude, USER_ZOOM))
+        onFlownTo()
+      }
     },
     // The map owns its gestures; Compose doesn't wait to see if a touch is a scroll.
     properties = UIKitInteropProperties(interactionMode = UIKitInteropInteractionMode.NonCooperative),

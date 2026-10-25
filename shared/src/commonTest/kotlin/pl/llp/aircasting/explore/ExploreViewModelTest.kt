@@ -53,7 +53,7 @@ class ExploreViewModelTest {
   @Test
   fun fetches_nothing_until_the_map_reports_a_viewport() = runTest {
     val repo = FakeExploreMapRepository()
-    subscribe(ExploreViewModel(repo, thresholds, NO_LOCATION))
+    subscribe(ExploreViewModel(repo, thresholds, NO_LOCATION, FakePlaceSearch()))
 
     advanceUntilIdle()
 
@@ -63,7 +63,7 @@ class ExploreViewModelTest {
   @Test
   fun fetches_once_for_the_last_viewport_after_the_camera_settles() = runTest {
     val repo = FakeExploreMapRepository()
-    val vm = ExploreViewModel(repo, thresholds, NO_LOCATION)
+    val vm = ExploreViewModel(repo, thresholds, NO_LOCATION, FakePlaceSearch())
     subscribe(vm)
 
     vm.onCameraIdle(NYC)
@@ -80,7 +80,7 @@ class ExploreViewModelTest {
       if (viewport == NYC) delay(5_000) // slow response
       emptyList()
     }
-    val vm = ExploreViewModel(repo, thresholds, NO_LOCATION)
+    val vm = ExploreViewModel(repo, thresholds, NO_LOCATION, FakePlaceSearch())
     subscribe(vm)
 
     vm.onCameraIdle(NYC)
@@ -94,7 +94,7 @@ class ExploreViewModelTest {
   @Test
   fun applying_filters_refetches_with_them() = runTest {
     val repo = FakeExploreMapRepository()
-    val vm = ExploreViewModel(repo, thresholds, NO_LOCATION)
+    val vm = ExploreViewModel(repo, thresholds, NO_LOCATION, FakePlaceSearch())
     subscribe(vm)
     vm.onCameraIdle(NYC)
     advanceUntilIdle()
@@ -110,7 +110,7 @@ class ExploreViewModelTest {
   @Test
   fun with_one_type_selected_each_station_is_coloured_by_its_own_sensor() = runTest {
     val repo = FakeExploreMapRepository { _, _ -> listOf(AIRBEAM_12, GOV_12) }
-    val vm = ExploreViewModel(repo, thresholds, NO_LOCATION)
+    val vm = ExploreViewModel(repo, thresholds, NO_LOCATION, FakePlaceSearch())
     subscribe(vm)
 
     vm.applyFilters(PM_ONLY)
@@ -130,7 +130,7 @@ class ExploreViewModelTest {
   fun a_clustered_response_draws_every_item_as_a_plain_dot() = runTest {
     // Values and a single selected type would normally colour the stations — clustering wins.
     val repo = FakeExploreMapRepository { _, _ -> listOf(AIRBEAM_12, GOV_12, CLUSTER) }
-    val vm = ExploreViewModel(repo, thresholds, NO_LOCATION)
+    val vm = ExploreViewModel(repo, thresholds, NO_LOCATION, FakePlaceSearch())
     subscribe(vm)
 
     vm.applyFilters(PM_ONLY)
@@ -152,7 +152,7 @@ class ExploreViewModelTest {
   fun with_all_or_several_types_selected_stations_are_uncoloured() = runTest {
     // Defensive: even if a value arrived, two selected types give no single threshold to apply.
     val repo = FakeExploreMapRepository { _, _ -> listOf(AIRBEAM_12) }
-    val vm = ExploreViewModel(repo, thresholds, NO_LOCATION)
+    val vm = ExploreViewModel(repo, thresholds, NO_LOCATION, FakePlaceSearch())
     subscribe(vm)
     vm.onCameraIdle(NYC)
     advanceUntilIdle()
@@ -168,7 +168,7 @@ class ExploreViewModelTest {
   @Test
   fun a_threshold_edit_recolours_without_refetching() = runTest {
     val repo = FakeExploreMapRepository { _, _ -> listOf(AIRBEAM_12) }
-    val vm = ExploreViewModel(repo, thresholds, NO_LOCATION)
+    val vm = ExploreViewModel(repo, thresholds, NO_LOCATION, FakePlaceSearch())
     subscribe(vm)
     vm.applyFilters(PM_ONLY)
     vm.onCameraIdle(NYC)
@@ -188,7 +188,7 @@ class ExploreViewModelTest {
       if (offline) error("offline")
       listOf(AIRBEAM_12)
     }
-    val vm = ExploreViewModel(repo, thresholds, NO_LOCATION)
+    val vm = ExploreViewModel(repo, thresholds, NO_LOCATION, FakePlaceSearch())
     subscribe(vm)
     vm.applyFilters(PM_ONLY)
     vm.onCameraIdle(NYC)
@@ -203,7 +203,7 @@ class ExploreViewModelTest {
   }
   @Test
   fun starts_centred_on_the_user() = runTest {
-    val vm = ExploreViewModel(FakeExploreMapRepository(), thresholds, FakeLocationProvider(HERE))
+    val vm = ExploreViewModel(FakeExploreMapRepository(), thresholds, FakeLocationProvider(HERE), FakePlaceSearch())
     subscribe(vm)
 
     advanceUntilIdle()
@@ -213,7 +213,7 @@ class ExploreViewModelTest {
 
   @Test
   fun without_a_location_the_map_keeps_its_default_start() = runTest {
-    val vm = ExploreViewModel(FakeExploreMapRepository(), thresholds, NO_LOCATION)
+    val vm = ExploreViewModel(FakeExploreMapRepository(), thresholds, NO_LOCATION, FakePlaceSearch())
     subscribe(vm)
 
     advanceUntilIdle()
@@ -223,7 +223,7 @@ class ExploreViewModelTest {
 
   @Test
   fun opening_the_sheet_starts_the_draft_from_the_applied_filters() = runTest {
-    val vm = ExploreViewModel(FakeExploreMapRepository(), thresholds, NO_LOCATION)
+    val vm = ExploreViewModel(FakeExploreMapRepository(), thresholds, NO_LOCATION, FakePlaceSearch())
     subscribe(vm)
     vm.applyFilters(PM_ONLY)
 
@@ -238,7 +238,7 @@ class ExploreViewModelTest {
     val repo = FakeExploreMapRepository { _, filters ->
       if (filters.source == DataSource.Government) listOf(GOV_12) else listOf(AIRBEAM_12)
     }
-    val vm = ExploreViewModel(repo, thresholds, NO_LOCATION)
+    val vm = ExploreViewModel(repo, thresholds, NO_LOCATION, FakePlaceSearch())
     subscribe(vm)
     vm.onCameraIdle(NYC)
     advanceUntilIdle()
@@ -254,7 +254,7 @@ class ExploreViewModelTest {
   @Test
   fun the_sheet_counts_results_for_the_draft_in_the_current_viewport() = runTest {
     val repo = FakeExploreMapRepository { _, _ -> listOf(AIRBEAM_12, CLUSTER) }
-    val vm = ExploreViewModel(repo, thresholds, NO_LOCATION)
+    val vm = ExploreViewModel(repo, thresholds, NO_LOCATION, FakePlaceSearch())
     subscribe(vm)
     vm.onCameraIdle(NYC)
     advanceUntilIdle()
@@ -270,7 +270,7 @@ class ExploreViewModelTest {
   @Test
   fun a_failed_count_leaves_it_unknown_and_the_sheet_open() = runTest {
     val repo = FakeExploreMapRepository { _, filters -> if (filters == PM_ONLY) error("offline") else emptyList() }
-    val vm = ExploreViewModel(repo, thresholds, NO_LOCATION)
+    val vm = ExploreViewModel(repo, thresholds, NO_LOCATION, FakePlaceSearch())
     subscribe(vm)
     vm.onCameraIdle(NYC)
     advanceUntilIdle()
@@ -285,7 +285,7 @@ class ExploreViewModelTest {
   @Test
   fun confirming_applies_the_draft_and_closes_the_sheet() = runTest {
     val repo = FakeExploreMapRepository()
-    val vm = ExploreViewModel(repo, thresholds, NO_LOCATION)
+    val vm = ExploreViewModel(repo, thresholds, NO_LOCATION, FakePlaceSearch())
     subscribe(vm)
     vm.onCameraIdle(NYC)
     vm.openFilters()
@@ -301,7 +301,7 @@ class ExploreViewModelTest {
 
   @Test
   fun dismissing_discards_the_draft() = runTest {
-    val vm = ExploreViewModel(FakeExploreMapRepository(), thresholds, NO_LOCATION)
+    val vm = ExploreViewModel(FakeExploreMapRepository(), thresholds, NO_LOCATION, FakePlaceSearch())
     subscribe(vm)
     vm.openFilters()
     vm.editFilters(PM_ONLY)

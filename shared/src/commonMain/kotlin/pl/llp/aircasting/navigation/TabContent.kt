@@ -64,6 +64,9 @@ private fun ExploreRoute() {
     onConfirmFilters = vm::confirmFilters,
     onDismissFilters = vm::dismissFilters,
     onApplyFilters = vm::applyFilters,
+    onSearchPlaces = vm::searchPlaces,
+    onSelectPlace = vm::selectPlace,
+    onFlownTo = vm::onFlownTo,
   )
 }
 

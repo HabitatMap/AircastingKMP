@@ -23,8 +23,12 @@ fun ShellScreen(
   LaunchedEffect(Unit) { onRequestLocation() }
 
   var selected by rememberSaveable { mutableStateOf(AppTab.Home) }
+  val topSystemBarColor = when(selected) {
+    AppTab.Explore -> MaterialTheme.colorScheme.surfaceContainerLowest
+    else -> MaterialTheme.colorScheme.background
+  }
   Scaffold(
-    containerColor = MaterialTheme.colorScheme.background,
+    containerColor = topSystemBarColor,
     bottomBar = { AircastingNavBar(selected, onSelect = { selected = it }) },
   ) { padding ->
     // Consume what we pad, so tabs using statusBarsPadding() etc. don't apply the inset twice.

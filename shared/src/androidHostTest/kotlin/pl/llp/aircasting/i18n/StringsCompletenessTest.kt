@@ -6,7 +6,7 @@ import kotlin.test.assertTrue
 /**
  * Guards every locale in [AppStrings] against blank or forgotten copy.
  *
- * Lives in `androidHostTest` rather than `commonTest` because enumerating a data class's
+ * Lives in `androidHostTest` rather than `commonTest` because enumerating an interface's
  * properties needs full reflection, which `commonMain`'s `kotlin.reflect` does not offer — the
  * JVM test target does. The alternative (hand-listing ~100 accessors) would rot instantly.
  */
@@ -46,13 +46,15 @@ class StringsCompletenessTest {
     "exploreOzone",
   ) + onboardingPlaceholders
 
-  /** Only the plain `String` fields; the parameterised ones are lambdas and can't be compared. */
+  /**
+   * Only the plain `String` properties, read through the interface's `getX()` accessors; the
+   * parameterised ones are functions taking arguments and can't be compared.
+   */
   private fun textOf(strings: Strings): Map<String, String> =
-    Strings::class.java.declaredFields
-      .filter { it.type == String::class.java }
-      .associate { field ->
-        field.isAccessible = true
-        field.name to field.get(strings) as String
+    Strings::class.java.methods
+      .filter { it.parameterCount == 0 && it.returnType == String::class.java && it.name.startsWith("get") }
+      .associate { getter ->
+        getter.name.removePrefix("get").replaceFirstChar { it.lowercase() } to getter.invoke(strings) as String
       }
 
   @Test

@@ -55,6 +55,15 @@ Key facts:
   filters is a gap the rewrite must fill. **CHANGE-LIKELY.**
 - Device-type detection: `DeviceItem.getType(name)` — case-insensitive substring on the
   advertised name (`airbeam2`, `airbeam3`, `airbeammini`, `airbeam`).
+- **Picking a device (legacy, 2026-10-22).** `NewSessionController.onBluetoothDeviceSelected`
+  shows one "Turn on Bluetooth" screen (`TurnOnBluetoothFragment`) whenever Bluetooth is off
+  **or** the Bluetooth permissions are missing; its Continue asks for `BLUETOOTH_CONNECT`
+  first, then fires `ACTION_REQUEST_ENABLE` (`BluetoothRuntimePermissionManager`). No adapter
+  at all → `BluetoothNotSupportedException` error. `SelectDeviceController` lists paired
+  devices immediately, then runs `startDiscovery()` with **no app-side timeout** (classic
+  discovery ends by itself after ~12 s); Refresh = `cancelDiscovery()` + `startDiscovery()`.
+  There is no "nothing found" state. The rewrite's BLE scan has no natural end, so it time-
+  boxes each scan (15 s, `ScanViewModel`) to tell "still scanning" from "nothing found".
 
 ### V1 protocol (AB2/AB3/Mini V1) — `HexMessagesBuilder`, `ResponseParser`
 - Frame: `0xFE <configCode> <payload> 0xFF`. Config codes: BT-stream `0x01`, WiFi `0x02`,

@@ -220,7 +220,7 @@ class RecordingEngine(
 
 ### Networking — Ktor + kotlinx.serialization (`:data:network`)
 - One `HttpClient` (OkHttp engine Android, Darwin iOS) with `ContentNegotiation(json)`,
-  `Logging` (level gated on debug), and an auth plugin injecting the Basic header.
+  `Logging` (level gated on debug), and per-request `Bearer` user-token auth (`aircastingBearerAuth`).
 - Port every DTO to `@Serializable` (`@SerialName`, `@JsonNames` for the `alternate` cases).
 - **Preserve the HTTPS force-upgrade** and base-URL/port construction logic.
 - **gzip+Base64 params:** `expect` the gzip/base64 (okio has both, may not need expect).

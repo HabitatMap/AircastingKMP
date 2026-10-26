@@ -33,7 +33,12 @@ listed below only so we recognise them when scanning the spec.
 | Scheme | Header | Used by |
 |---|---|---|
 | `bearer_auth` | `Authorization: Bearer <user_token>` | **all `/api/v3`** — use this |
-| `basic_auth` | `Authorization: Basic base64("<user_token>:X")` | legacy pre-v3 `/api` only |
+| `basic_auth` | `Authorization: Basic base64("<user_token>:X")` | legacy pre-v3 `/api` only — **not used by this app** |
+
+The pre-v3 endpoints this app still calls (account `/api/user*`, threshold alerts) were migrated
+by the backend to accept **bearer** too, so the app sends `Bearer <user_token>` everywhere
+(`aircastingBearerAuth`). The one exception is sign-in itself: `GET /api/user.json` with
+HTTP Basic `login:password` — that is how the token is obtained in the first place.
 
 `<user_token>` comes from sign-in (`GET /api/user.json`). Note the **session token** returned by session
 creation is a *different* token, handed to the AirBeam over BLE for its own uploads.
@@ -351,7 +356,7 @@ All v3 errors share `{ error_code, message, fields? }` (`fields` only when the r
 
 ## Still **not** on v3
 
-No v3 equivalent yet — these stay on legacy `/api` with **basic auth**:
+No v3 equivalent yet — these stay on legacy `/api` paths (but authenticated with **bearer**, see *Auth*):
 
 - **Account & auth** — `GET/POST /api/user.json`, `POST /api/user/settings`,
   `POST /api/user/delete_account_send_code` · `_confirm`, `POST /users/password.json`

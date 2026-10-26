@@ -30,7 +30,8 @@
 
 ## Base + auth
 - **Base URL:** `https://aircasting.org` (overridable URL+port via settings; force-HTTPS).
-- **Auth:** HTTP **Basic** `Base64("$authToken:X")` for user endpoints. The region-search +
+- **Auth:** legacy app sends HTTP **Basic** `Base64("$authToken:X")` for user endpoints. The rewrite
+  sends `Bearer <authToken>` instead — the backend accepts it on the endpoints we call (see `API_V3.md` *Auth*). The region-search +
   fixed-session-detail endpoints Home uses are **`@NonAuthenticated`** (no token needed).
 - Legacy stack: OkHttp+Retrofit+Gson → **KMP target: Ktor + kotlinx.serialization.**
 

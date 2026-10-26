@@ -3,7 +3,7 @@ package pl.llp.aircasting.data.network
 object ApiEndpoints {
 
   // =========================================================================
-  // Mobile app: Account & auth (HTTP Basic Auth: "<user_token>:X")
+  // Mobile app: Account & auth (HTTP Bearer Auth: Bearer <user_token>; sign-in itself is Basic login:password)
   // =========================================================================
   const val User = "/api/user.json"
   const val UserSettings = "/api/user/settings"
@@ -26,7 +26,7 @@ object ApiEndpoints {
   fun v3FixedSession(uuid: String) = "/api/v3/fixed_sessions/$uuid"
   fun v3FixedSessionMeasurements(uuid: String) = "/api/v3/fixed_sessions/$uuid/measurements"
   // =========================================================================
-  // Mobile app: Threshold alerts (HTTP Basic Auth: "<user_token>:X")
+  // Mobile app: Threshold alerts (HTTP Bearer Auth: Bearer <user_token>)
   // =========================================================================
   const val ThresholdAlerts = "/api/fixed/threshold_alerts"
   fun thresholdAlert(id: Long) = "/api/fixed/threshold_alerts/$id"

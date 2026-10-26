@@ -358,7 +358,30 @@ All v3 errors share `{ error_code, message, fields? }` (`fields` only when the r
 
 No v3 equivalent yet — these stay on legacy `/api` paths (but authenticated with **bearer**, see *Auth*):
 
-- **Account & auth** — `GET/POST /api/user.json`, `POST /api/user/settings`,
+- **Account & auth** — `GET/POST/PATCH /api/user.json`, `POST /api/user/settings`,
   `POST /api/user/delete_account_send_code` · `_confirm`, `POST /users/password.json`
+  (see *Account update* below)
 - **Threshold alerts** — `GET/POST /api/fixed/threshold_alerts`, `DELETE /api/fixed/threshold_alerts/{id}`
 - **CSV export** — `GET /api/sessions/export_by_uuid.json`
+
+### Account update — `PATCH /api/user.json`
+
+New in the spec (2026-10); **not in the legacy app**, which had no way to edit the account.
+Bearer auth. Every field is optional — send only what changes:
+
+```json
+{ "user": { "username": "…", "email": "…",
+            "password": "…", "password_confirmation": "…", "current_password": "…" } }
+```
+
+- `email` is applied immediately (no confirmation step).
+- `password` requires both `password_confirmation` (must match) and `current_password`;
+  `current_password` is needed **only** when changing the password.
+- **200** → the full user, same shape as `GET` (incl. `authentication_token`).
+- **422** → `{ error_code, message, fields }` for a validation error, a wrong `current_password`,
+  **or an empty update** ("nothing to change"). Unlike sign-up's 422, the spec promises no flat
+  per-field keys here — decode `fields`: each key maps to a **list** of `{ code, message, params? }`,
+  e.g. `"current_password": [{ "code": "invalid", "message": "is invalid" }]`,
+  `"password": [{ "code": "too_short", …, "params": { "min": 8 } }]`. Switch on `code`, fall back
+  to `message` for unknown codes. `fields` can be absent (e.g. the empty-update case) — then show
+  the top-level `message`.

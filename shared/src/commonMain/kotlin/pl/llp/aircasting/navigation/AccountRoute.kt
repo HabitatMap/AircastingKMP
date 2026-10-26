@@ -11,6 +11,7 @@ import org.koin.compose.viewmodel.koinViewModel
 import pl.llp.aircasting.settings.account.AccountAction
 import pl.llp.aircasting.settings.account.AccountScreenState
 import pl.llp.aircasting.settings.account.AccountViewModel
+import pl.llp.aircasting.settings.account.ProfileField
 import pl.llp.aircasting.settings.account.SettingsAccountScreen
 
 @Composable
@@ -30,10 +31,9 @@ fun AccountRoute(onBack: () -> Unit) {
     onBack = onBack,
     onAction = { action ->
       when (action) {
-        AccountAction.ResetPassword -> vm.resetPassword()
-        AccountAction.ChangeEmail,
-        AccountAction.ChangeUsername ->
-          Logger.withTag("Account").w { "$action has no backend endpoint" }
+        AccountAction.ChangePassword -> vm.startPasswordChange()
+        AccountAction.ChangeEmail -> vm.startEdit(ProfileField.Email)
+        AccountAction.ChangeUsername -> vm.startEdit(ProfileField.Username)
       }
     },
     onSignOut = vm::signOut,
@@ -41,5 +41,9 @@ fun AccountRoute(onBack: () -> Unit) {
     onDeletionConfirmed = vm::sendDeletionCode,
     onDeletionCodeSubmit = vm::submitDeletionCode,
     onDeletionDismissed = vm::cancelAccountDeletion,
+    onEditSave = vm::saveEdit,
+    onEditDismissed = vm::cancelEdit,
+    onPasswordSave = vm::changePassword,
+    onPasswordDismissed = vm::cancelPasswordChange,
   )
 }

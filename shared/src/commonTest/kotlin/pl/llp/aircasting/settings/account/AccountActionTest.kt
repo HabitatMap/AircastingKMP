@@ -14,7 +14,7 @@ class AccountActionTest {
       listOf(
         AccountAction.ChangeEmail,
         AccountAction.ChangeUsername,
-        AccountAction.ResetPassword,
+        AccountAction.ChangePassword,
       ),
       AccountAction.entries,
     )

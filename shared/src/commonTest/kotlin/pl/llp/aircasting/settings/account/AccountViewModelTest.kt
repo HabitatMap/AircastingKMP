@@ -13,7 +13,6 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
-import kotlin.test.assertNull
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AccountViewModelTest {
@@ -21,27 +20,6 @@ class AccountViewModelTest {
   fun setUp() = Dispatchers.setMain(StandardTestDispatcher())
   @AfterTest
   fun tearDown() = Dispatchers.resetMain()
-
-  @Test
-  fun reset_password_uses_the_signed_in_email() = runTest {
-    val repo = FakeAccountRepository(profile = ADAM)
-    val vm = AccountViewModel(repo)
-    vm.refresh(); testScheduler.advanceUntilIdle()
-
-    vm.resetPassword(); testScheduler.advanceUntilIdle()
-
-    assertEquals(ADAM.email, repo.resetLogin)
-  }
-  @Test
-  fun reset_password_is_a_no_op_when_signed_out() = runTest {
-    val repo = FakeAccountRepository(profile = null)
-    val vm = AccountViewModel(repo)
-    vm.refresh(); testScheduler.advanceUntilIdle()
-
-    vm.resetPassword(); testScheduler.advanceUntilIdle()
-
-    assertNull(repo.resetLogin)
-  }
 
   @Test
   fun a_missing_session_is_an_Error_because_it_cannot_legally_happen() = runTest {
@@ -161,6 +139,192 @@ class AccountViewModelTest {
     }
   }
 
+  @Test
+  fun tapping_change_email_only_opens_the_editor() = runTest {
+    val repo = FakeAccountRepository(profile = ADAM)
+    val vm = signedIn(repo)
+
+    vm.startEdit(ProfileField.Email); testScheduler.advanceUntilIdle()
+
+    assertEquals(AccountScreenState.Content(ADAM, edit = ProfileEdit.Open(ProfileField.Email)), vm.state.value)
+    assertEquals(emptyList(), repo.updates)
+  }
+
+  @Test
+  fun saving_an_email_patches_only_the_email_and_shows_the_saved_profile() = runTest {
+    val repo = FakeAccountRepository(profile = ADAM)
+    val vm = signedIn(repo)
+    vm.startEdit(ProfileField.Email)
+
+    vm.saveEdit("  adam@new-mail.com "); testScheduler.advanceUntilIdle()
+
+    assertEquals(listOf<Pair<String?, String?>>(null to "adam@new-mail.com"), repo.updates)
+    assertEquals(AccountScreenState.Content(ADAM.copy(email = "adam@new-mail.com")), vm.state.value)
+  }
+
+  @Test
+  fun saving_a_username_patches_only_the_username() = runTest {
+    val repo = FakeAccountRepository(profile = ADAM)
+    val vm = signedIn(repo)
+    vm.startEdit(ProfileField.Username)
+
+    vm.saveEdit("adam.s"); testScheduler.advanceUntilIdle()
+
+    assertEquals(listOf<Pair<String?, String?>>("adam.s" to null), repo.updates)
+    assertEquals(AccountScreenState.Content(ADAM.copy(name = "adam.s")), vm.state.value)
+  }
+
+  @Test
+  fun a_rejected_email_shows_the_backends_reason_for_that_field() = runTest {
+    val taken = FieldError("taken", "has already been taken")
+    val repo = FakeAccountRepository(
+      profile = ADAM,
+      updateFailure = AccountUpdateRejected(mapOf("email" to listOf(taken)), "Account could not be updated"),
+    )
+    val vm = signedIn(repo)
+    vm.startEdit(ProfileField.Email)
+
+    vm.saveEdit("taken@mail.com"); testScheduler.advanceUntilIdle()
+
+    assertEquals(
+      AccountScreenState.Content(ADAM, edit = ProfileEdit.Open(ProfileField.Email, EditError.Rejected(taken))),
+      vm.state.value,
+    )
+  }
+
+  @Test
+  fun a_rejection_with_nothing_for_the_field_is_Refused() = runTest {
+    // The top-level message is English-only prose; the UI shows its own translated text instead.
+    val repo = FakeAccountRepository(
+      profile = ADAM,
+      updateFailure = AccountUpdateRejected(emptyMap(), "Nothing to update"),
+    )
+    val vm = signedIn(repo)
+    vm.startEdit(ProfileField.Username)
+
+    vm.saveEdit("adam.s"); testScheduler.advanceUntilIdle()
+
+    assertEquals(
+      ProfileEdit.Open(ProfileField.Username, EditError.Refused),
+      (vm.state.value as AccountScreenState.Content).edit,
+    )
+  }
+
+  @Test
+  fun a_network_failure_is_unexpected_and_keeps_the_editor_open() = runTest {
+    val repo = FakeAccountRepository(profile = ADAM, updateFailure = RuntimeException("offline"))
+    val vm = signedIn(repo)
+    vm.startEdit(ProfileField.Email)
+
+    vm.saveEdit("adam@new-mail.com"); testScheduler.advanceUntilIdle()
+
+    assertEquals(
+      ProfileEdit.Open(ProfileField.Email, EditError.Unexpected),
+      (vm.state.value as AccountScreenState.Content).edit,
+    )
+  }
+
+  @Test
+  fun saving_an_unchanged_value_closes_the_editor_without_a_request() = runTest {
+    // The backend 422s an update with nothing to change.
+    val repo = FakeAccountRepository(profile = ADAM)
+    val vm = signedIn(repo)
+    vm.startEdit(ProfileField.Email)
+
+    vm.saveEdit(ADAM.email); testScheduler.advanceUntilIdle()
+
+    assertEquals(emptyList(), repo.updates)
+    assertEquals(AccountScreenState.Content(ADAM), vm.state.value)
+  }
+
+
+  @Test
+  fun tapping_change_password_only_opens_the_dialog() = runTest {
+    val repo = FakeAccountRepository(profile = ADAM)
+    val vm = signedIn(repo)
+
+    vm.startPasswordChange(); testScheduler.advanceUntilIdle()
+
+    assertEquals(AccountScreenState.Content(ADAM, password = PasswordChange.Open()), vm.state.value)
+    assertEquals(emptyList(), repo.passwordChanges)
+  }
+
+  @Test
+  fun a_mismatched_confirmation_is_flagged_without_a_request() = runTest {
+    val repo = FakeAccountRepository(profile = ADAM)
+    val vm = signedIn(repo)
+    vm.startPasswordChange()
+
+    vm.changePassword(current = "old-pass", new = "new-pass", confirmation = "new-pas"); testScheduler.advanceUntilIdle()
+
+    assertEquals(emptyList(), repo.passwordChanges)
+    assertEquals(
+      PasswordChange.Open(mapOf(PasswordField.Confirmation to EditError.Rejected(PasswordMismatch))),
+      (vm.state.value as AccountScreenState.Content).password,
+    )
+  }
+
+  @Test
+  fun a_confirmed_change_sends_current_and_new_and_closes_the_dialog() = runTest {
+    val repo = FakeAccountRepository(profile = ADAM)
+    val vm = signedIn(repo)
+    vm.startPasswordChange()
+
+    vm.changePassword(current = "old-pass", new = "new-pass", confirmation = "new-pass"); testScheduler.advanceUntilIdle()
+
+    assertEquals(listOf("old-pass" to "new-pass"), repo.passwordChanges)
+    assertEquals(AccountScreenState.Content(ADAM), vm.state.value)
+  }
+
+  @Test
+  fun a_wrong_current_password_is_shown_on_the_current_field() = runTest {
+    val invalid = FieldError("invalid", "is invalid")
+    val repo = FakeAccountRepository(
+      profile = ADAM,
+      updateFailure = AccountUpdateRejected(mapOf("current_password" to listOf(invalid)), "Account could not be updated"),
+    )
+    val vm = signedIn(repo)
+    vm.startPasswordChange()
+
+    vm.changePassword(current = "wrong", new = "new-pass", confirmation = "new-pass"); testScheduler.advanceUntilIdle()
+
+    assertEquals(
+      PasswordChange.Open(mapOf(PasswordField.Current to EditError.Rejected(invalid))),
+      (vm.state.value as AccountScreenState.Content).password,
+    )
+  }
+
+  @Test
+  fun a_password_rejection_naming_no_field_is_Refused_on_the_last_field() = runTest {
+    val repo = FakeAccountRepository(
+      profile = ADAM,
+      updateFailure = AccountUpdateRejected(emptyMap(), "Account could not be updated"),
+    )
+    val vm = signedIn(repo)
+    vm.startPasswordChange()
+
+    vm.changePassword(current = "old-pass", new = "new-pass", confirmation = "new-pass"); testScheduler.advanceUntilIdle()
+
+    assertEquals(
+      PasswordChange.Open(mapOf(PasswordField.Confirmation to EditError.Refused)),
+      (vm.state.value as AccountScreenState.Content).password,
+    )
+  }
+
+  @Test
+  fun a_network_failure_keeps_the_dialog_open_with_an_unexpected_error() = runTest {
+    val repo = FakeAccountRepository(profile = ADAM, updateFailure = RuntimeException("offline"))
+    val vm = signedIn(repo)
+    vm.startPasswordChange()
+
+    vm.changePassword(current = "old-pass", new = "new-pass", confirmation = "new-pass"); testScheduler.advanceUntilIdle()
+
+    assertEquals(
+      PasswordChange.Open(mapOf(PasswordField.Confirmation to EditError.Unexpected)),
+      (vm.state.value as AccountScreenState.Content).password,
+    )
+  }
+
   private fun TestScope.signedIn(repo: FakeAccountRepository) =
     AccountViewModel(repo).also { it.refresh(); testScheduler.advanceUntilIdle() }
 
@@ -177,15 +341,19 @@ private class FakeAccountRepository(
   private val failWith: Throwable? = null,
   private val failDeletionRequest: Boolean = false,
   var failConfirm: Boolean = false,
+  private val updateFailure: Throwable? = null,
 ) : AccountRepository {
   var signOuts = 0
-  var resetLogin: String? = null
   var confirmedCode: String? = null
   var deletionRequests = 0
+  /** Each updateProfile call as (name, email). */
+  val updates = mutableListOf<Pair<String?, String?>>()
+  /** Each changePassword call as (current, new). */
+  val passwordChanges = mutableListOf<Pair<String, String>>()
 
   override suspend fun profile(): AccountProfile = failWith?.let { throw it } ?: checkNotNull(profile)
   override suspend fun signOut() { signOuts++ }
-  override suspend fun requestPasswordReset(login: String) { resetLogin = login }
+  override suspend fun requestPasswordReset(login: String) = Unit
   override suspend fun requestAccountDeletion() {
     if (failDeletionRequest) error("network down")
     deletionRequests++
@@ -193,5 +361,16 @@ private class FakeAccountRepository(
   override suspend fun confirmAccountDeletion(code: String) {
     if (failConfirm) error("401 invalid code")
     confirmedCode = code
+  }
+  override suspend fun updateProfile(name: String?, email: String?): AccountProfile {
+    updateFailure?.let { throw it }
+    updates += name to email
+    // Echo like the backend does: the saved user comes back in the response.
+    val current = checkNotNull(profile)
+    return current.copy(name = name ?: current.name, email = email ?: current.email)
+  }
+  override suspend fun changePassword(current: String, new: String) {
+    updateFailure?.let { throw it }
+    passwordChanges += current to new
   }
 }

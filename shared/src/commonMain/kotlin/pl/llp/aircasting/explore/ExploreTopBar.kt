@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -31,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import org.jetbrains.compose.resources.painterResource
@@ -48,6 +50,8 @@ import pl.llp.aircasting.i18n.Strings
 @Composable
 fun ExploreTopBar(
   filters: ExploreFilters,
+  query: String,
+  onQueryChange: (String) -> Unit,
   onOpenFilters: () -> Unit,
   onApplyFilters: (ExploreFilters) -> Unit,
   modifier: Modifier = Modifier,
@@ -67,7 +71,7 @@ fun ExploreTopBar(
       Modifier.height(64.dp).padding(start = 28.dp, end = 8.dp),
       verticalAlignment = Alignment.CenterVertically,
     ) {
-      SearchPill(Modifier.weight(1f))
+      SearchPill(query, onQueryChange, Modifier.weight(1f))
       Spacer(Modifier.width(4.dp))
       IconButton(onClick = onOpenFilters) {
         Icon(
@@ -81,9 +85,9 @@ fun ExploreTopBar(
   }
 }
 
-/** Visual only until location search lands (needs platform geocoding). */
+/** Place search; the hint doubles as the placeholder. Name search waits on the BE (EXPLORE_SCREEN.md). */
 @Composable
-private fun SearchPill(modifier: Modifier) {
+private fun SearchPill(query: String, onQueryChange: (String) -> Unit, modifier: Modifier) {
   val colors = MaterialTheme.colorScheme
   Row(
     modifier
@@ -94,12 +98,24 @@ private fun SearchPill(modifier: Modifier) {
       .padding(start = 24.dp, end = 4.dp),
     verticalAlignment = Alignment.CenterVertically,
   ) {
-    Text(
-      LocalStrings.current.exploreSearchHint,
+    BasicTextField(
+      value = query,
+      onValueChange = onQueryChange,
       modifier = Modifier.weight(1f),
-      style = MaterialTheme.typography.bodyLarge,
-      color = colors.onSurfaceVariant,
-      maxLines = 1,
+      textStyle = MaterialTheme.typography.bodyLarge.copy(color = colors.onSurface),
+      singleLine = true,
+      cursorBrush = SolidColor(colors.primary),
+      decorationBox = { field ->
+        if (query.isEmpty()) {
+          Text(
+            LocalStrings.current.exploreSearchHint,
+            style = MaterialTheme.typography.bodyLarge,
+            color = colors.onSurfaceVariant,
+            maxLines = 1,
+          )
+        }
+        field()
+      },
     )
     Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
       Icon(painterResource(Res.drawable.ic_search), contentDescription = null, tint = colors.onSurfaceVariant)

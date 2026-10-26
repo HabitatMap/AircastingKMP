@@ -48,6 +48,8 @@ actual fun ExploreMap(
   markers: List<ExploreMarker>,
   colourType: MeasurementType?,
   startCentre: GeoLocation?,
+  flyTo: GeoLocation?,
+  onFlownTo: () -> Unit,
   onCameraIdle: (MapViewport) -> Unit,
   modifier: Modifier,
 ) {
@@ -76,6 +78,13 @@ actual fun ExploreMap(
   }
   LaunchedEffect(startCentre) {
     startCentre?.let { camera.move(CameraUpdateFactory.newLatLngZoom(it.toLatLng(), USER_ZOOM)) }
+  }
+  val currentOnFlownTo by rememberUpdatedState(onFlownTo)
+  LaunchedEffect(flyTo) {
+    flyTo?.let {
+      camera.move(CameraUpdateFactory.newLatLngZoom(it.toLatLng(), USER_ZOOM))
+      currentOnFlownTo()
+    }
   }
   val style = mapStyle()
   val properties = remember(style) { MapProperties(mapStyleOptions = MapStyleOptions(style)) }

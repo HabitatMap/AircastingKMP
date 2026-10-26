@@ -16,6 +16,10 @@ data class ExploreUiState(
   val startCentre: GeoLocation? = null,
   /** The open filter sheet; null = closed. */
   val sheet: FilterSheet? = null,
+  /** Places matching the search field; empty = no list. */
+  val suggestions: List<PlaceSuggestion> = emptyList(),
+  /** One-shot camera jump to a picked place; null once the map has moved. */
+  val flyTo: GeoLocation? = null,
 )
 
 /** The [draft] being edited and how many results it would show; null [count] = still counting, or the count failed. */

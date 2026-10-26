@@ -40,12 +40,16 @@ class ExploreViewModel(
   private val repository: ExploreMapRepository,
   thresholds: ThresholdsRepository,
   location: LocationProvider,
+  private val places: PlaceSearch,
 ) : ViewModel() {
   private val viewport = MutableStateFlow<MapViewport?>(null)
   private val filters = MutableStateFlow(ExploreFilters())
   private val startCentre = MutableStateFlow<GeoLocation?>(null)
   /** The filter sheet's working copy; null = sheet closed. Only [confirmFilters] moves it into [filters]. */
   private val draft = MutableStateFlow<ExploreFilters?>(null)
+  private val placeQuery = MutableStateFlow("")
+  /** Where the map should jump; the map calls [onFlownTo] once it has. */
+  private val flyTo = MutableStateFlow<GeoLocation?>(null)
 
   init {
     // Once per ViewModel, not per subscription: coming back to the tab must not re-query.
@@ -71,9 +75,15 @@ class ExploreViewModel(
       result ?: previous.copy(failed = true)
     }
 
-  val state: StateFlow<ExploreUiState> =
+  /** Blank clears at once; typing waits for a pause, and a newer query drops the lookup in flight. */
+  private val suggestions: Flow<List<PlaceSuggestion>> = placeQuery
+    .debounce { if (it.isBlank()) 0.milliseconds else TYPING_SETTLE }
+    .mapLatest { if (it.isBlank()) emptyList() else places.suggestions(it) }
+
+
+  private val mapState: Flow<ExploreUiState> =
     combine(loaded, filters, thresholds.observeAll(), startCentre, sheet) { loaded, filters, all, centre, sheet ->
-      val byName = all.associateBy { it.sensorName }
+    val byName = all.associateBy { it.sensorName }
       ExploreUiState(
         filters = filters,
         markers = loaded.items.toMarkers(loaded.filters.colourType, byName),
@@ -82,7 +92,25 @@ class ExploreViewModel(
         sheet = sheet,
       )
     }
+
+  val state: StateFlow<ExploreUiState> =
+    combine(mapState, suggestions, flyTo) { state, suggestions, flyTo ->
+      state.copy(suggestions = suggestions, flyTo = flyTo)
+    }
       .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ExploreUiState())
+
+  fun searchPlaces(query: String) {
+    placeQuery.value = query
+  }
+
+  fun selectPlace(suggestion: PlaceSuggestion) {
+    placeQuery.value = ""
+    viewModelScope.launch { places.location(suggestion.id)?.let { flyTo.value = it } }
+  }
+
+  fun onFlownTo() {
+    flyTo.value = null
+  }
 
   /** Any cluster in the response means we're zoomed out: the whole map turns into plain dots (design frame 4). */
   private fun List<MapItem>.toMarkers(colourType: MeasurementType?, thresholds: Map<String, SensorThreshold>): List<ExploreMarker> {
@@ -136,6 +164,7 @@ class ExploreViewModel(
 
   private companion object {
     val CAMERA_SETTLE = 300.milliseconds
+    val TYPING_SETTLE = 300.milliseconds
     val log = Logger.withTag("Explore")
   }
 }

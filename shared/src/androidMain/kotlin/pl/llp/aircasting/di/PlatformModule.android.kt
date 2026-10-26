@@ -21,6 +21,8 @@ import pl.llp.aircasting.data.local.AndroidDatabaseDriverFactory
 import pl.llp.aircasting.data.local.DatabaseDriverFactory
 import pl.llp.aircasting.data.network.upload.UploadBackstop
 import pl.llp.aircasting.data.network.upload.WorkManagerUploadBackstop
+import pl.llp.aircasting.explore.AndroidPlaceSearch
+import pl.llp.aircasting.explore.PlaceSearch
 import pl.llp.aircasting.recording.PhoneLocation
 import pl.llp.aircasting.recording.TrackedPhoneLocation
 import pl.llp.aircasting.recording.androidLocationFixes
@@ -28,6 +30,7 @@ import pl.llp.aircasting.settings.mic.AndroidMicrophoneLevelSource
 import pl.llp.aircasting.settings.mic.MicrophoneLevelSource
 
 actual fun platformModule() = module {
+  single<PlaceSearch> { AndroidPlaceSearch(get()) }
   single<MicrophoneLevelSource> { AndroidMicrophoneLevelSource(get()) }
   single<AirBeamConnector> {
     CompositeAirBeamConnector(listOf(get<BleAirBeamConnector>(), get<ClassicAirBeamConnector>()))

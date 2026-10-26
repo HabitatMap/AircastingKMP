@@ -18,6 +18,8 @@ import pl.llp.aircasting.data.local.DatabaseDriverFactory
 import pl.llp.aircasting.data.local.IosDatabaseDriverFactory
 import pl.llp.aircasting.data.network.upload.IosUploadBackstop
 import pl.llp.aircasting.data.network.upload.UploadBackstop
+import pl.llp.aircasting.explore.IosPlaceSearch
+import pl.llp.aircasting.explore.PlaceSearch
 import pl.llp.aircasting.recording.BackgroundSessionHost
 import pl.llp.aircasting.recording.PhoneLocation
 import pl.llp.aircasting.recording.TrackedPhoneLocation
@@ -28,6 +30,7 @@ import platform.Foundation.NSBundle
 import platform.Foundation.NSUserDefaults
 
 actual fun platformModule() = module {
+  single<PlaceSearch> { IosPlaceSearch() }
   single<Settings> { NSUserDefaultsSettings(NSUserDefaults.standardUserDefaults) }
   single<MicrophoneLevelSource> { IosMicrophoneLevelSource() }
   single<AirBeamConnector> { CompositeAirBeamConnector(listOf(get<BleAirBeamConnector>())) }

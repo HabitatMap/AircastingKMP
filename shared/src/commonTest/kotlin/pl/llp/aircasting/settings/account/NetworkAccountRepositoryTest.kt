@@ -13,7 +13,6 @@ import pl.llp.aircasting.data.auth.AuthState
 import pl.llp.aircasting.data.auth.StoredAuthSession
 import pl.llp.aircasting.data.network.AccountApi
 import pl.llp.aircasting.data.network.createAircastingHttpClient
-import kotlin.io.encoding.Base64
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -31,7 +30,7 @@ class NetworkAccountRepositoryTest {
 
     assertEquals(AccountProfile(name = "adam.smith", email = "adam.smith.1989@mail.com"), profile)
     assertNotNull(auth)
-    assertEquals("tok-123:X", Base64.decode(auth!!.removePrefix("Basic ")).decodeToString())
+    assertEquals("Bearer tok-123", auth)
   }
 
   @Test

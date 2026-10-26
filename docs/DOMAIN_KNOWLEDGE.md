@@ -425,7 +425,8 @@ Base URL default `https://aircasting.org`, overridable (URL + port) via settings
 force-upgraded to HTTPS** (prevents OkHttp POST→GET downgrade on 301). Base URL/port
 **preserved on logout**.
 
-Auth: HTTP **Basic** — `Base64("$authToken:X")`. Token from `GET /api/user.json`, stored in
+Auth: legacy sends HTTP **Basic** — `Base64("$authToken:X")`; the rewrite sends `Bearer $authToken`
+(backend accepts both on the endpoints we use). Token from `GET /api/user.json`, stored in
 `SharedPreferences` (plaintext — **PLATFORM**, should upgrade to Keychain/EncryptedSharedPrefs).
 V2 fixed measurement upload uses a **per-session `Bearer` token** (not the user token).
 

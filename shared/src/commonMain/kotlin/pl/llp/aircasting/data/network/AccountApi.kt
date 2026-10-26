@@ -2,7 +2,6 @@ package pl.llp.aircasting.data.network
 
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
-import io.ktor.client.request.basicAuth
 import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -12,7 +11,7 @@ import io.ktor.http.contentType
 class AccountApi(private val client: HttpClient) {
 
   suspend fun user(token: String): UserDto =
-    client.get(ApiEndpoints.User) { basicAuth(token, PasswordPlaceholder) }.body()
+    client.get(ApiEndpoints.User) { aircastingBearerAuth(token) }.body()
 
   suspend fun requestPasswordReset(login: String) {
     client.post(ApiEndpoints.PasswordReset) {
@@ -21,15 +20,14 @@ class AccountApi(private val client: HttpClient) {
     }
   }
   suspend fun sendAccountDeletionCode(token: String) {
-    client.post(ApiEndpoints.DeleteAccountSendCode) { basicAuth(token, PasswordPlaceholder) }
+    client.post(ApiEndpoints.DeleteAccountSendCode) { aircastingBearerAuth(token) }
   }
 
   suspend fun confirmAccountDeletion(token: String, code: String) {
     client.post("/api/user/delete_account_confirm") {
-      basicAuth(token, PasswordPlaceholder)
+      aircastingBearerAuth(token)
       contentType(ContentType.Application.Json)
       setBody(DeleteAccountCodeBody(code))
     }
   }
-  private companion object { const val PasswordPlaceholder = "X" }
 }

@@ -63,6 +63,7 @@ fun NewSessionDestination(onExit: () -> Unit) {
       onCancel = onExit,
       onStart = { recorder.start(state.form) },
     )
+    NewSessionStep.Location -> Unit // slice 5: "Where's your AirBeam?" (ExploreMap + PlaceSearch)
     NewSessionStep.Device -> {
       val strings = LocalStrings.current
       val permission = rememberBluetoothPermission()

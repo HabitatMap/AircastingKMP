@@ -27,8 +27,13 @@ import pl.llp.aircasting.data.local.testDatabase
 import pl.llp.aircasting.domain.GeoLocation
 
 import pl.llp.aircasting.recording.BackgroundSessionHost
+import pl.llp.aircasting.recording.FixedSessionStarter
+import pl.llp.aircasting.recording.NewFixedSession
 import pl.llp.aircasting.recording.PhoneLocation
+import pl.llp.aircasting.recording.Placement
 import pl.llp.aircasting.recording.RecordingEngine
+import pl.llp.aircasting.recording.RegisteredFixedSession
+import pl.llp.aircasting.recording.WifiCredentials
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -60,7 +65,18 @@ class RecordingViewModelTest {
     TimeZone.UTC,
   )
   // Lazy: built after `setMain`, or `viewModelScope` binds to the real Main and never runs.
-  private val vm by lazy { RecordingViewModel(link, engine, location) }
+  private val registered = mutableListOf<NewFixedSession>()
+  private var registration: RegisteredFixedSession? =
+    RegisteredFixedSession(
+      "0123456789abcdef0123456789abcdef",
+      mapOf("AirBeam-PM1" to 1, "AirBeam-PM2.5" to 2)
+    )
+  private val fixedStarter = FixedSessionStarter(link) { session ->
+    registered += session
+    registration
+  }
+  // Lazy: built after `setMain`, or `viewModelScope` binds to the real Main and never runs.
+  private val vm by lazy { RecordingViewModel(link, engine, location, fixedStarter) }
   private val miniV2 = DiscoveredAirBeam(DeviceId("AA:BB:CC:DD:EE:FF"), "AirBeamMini-1234", AirBeamDevice.Mini.V2)
   private val otherMini = DiscoveredAirBeam(DeviceId("11:22:33:44:55:66"), "AirBeamMini-9999", AirBeamDevice.Mini.V2)
   private val form = NewSessionForm(
@@ -150,17 +166,6 @@ class RecordingViewModelTest {
 
     assertEquals(StartState.Failed(ConfigResult.NotSyncedFailure), vm.startState.value)
   }
-  /** The engine records mobile AirBeam sessions only; fixed and mic must not become one. */
-  @Test
-  fun other_methods_do_not_start_a_mobile_session() = runTest {
-    link.state.value = LinkState.Connected(miniV2)
-
-    vm.start(form.copy(method = RecordingMethod.AirBeamFixed))
-    runCurrent()
-
-    assertEquals(StartState.Failed(ConfigResult.BadConfigFailure), vm.startState.value)
-    assertEquals(emptyList(), link.configured)
-  }
 
   /** The device must not stream before the phone has a fix, or its first readings land in New York. */
   @Test
@@ -221,6 +226,78 @@ class RecordingViewModelTest {
 
     assertNotNull(sessions.find(link.configured.single().uuid.toString())?.endTime)
     assertTrue(!engine.recording.first())
+  }
+  /** The engine records mobile AirBeam sessions only; the mic must not become one. */
+  @Test
+  fun other_methods_do_not_start_a_mobile_session() = runTest {
+    link.state.value = LinkState.Connected(miniV2)
+
+    vm.start(form.copy(method = RecordingMethod.PhoneMicrophone))
+    runCurrent()
+
+    assertEquals(StartState.Failed(ConfigResult.BadConfigFailure), vm.startState.value)
+    assertEquals(emptyList(), link.configured)
+  }
+  private val fixedForm = form.copy(method = RecordingMethod.AirBeamFixed, wifi = WifiCredentials(
+    "HomeNet",
+    "secret"
+  )
+  )
+
+  /** Its place comes from the form, so a missing GPS fix must not hold it up. */
+  @Test
+  fun fixed_start_configures_the_airbeam_without_waiting_for_a_fix() = runTest {
+    location.live.value = null
+
+    vm.start(fixedForm)
+    runCurrent()
+
+    assertEquals(StartState.Started, vm.startState.value)
+    assertEquals(Placement.Indoor, registered.single().placement)
+    assertEquals("HomeNet", (link.configured.single() as SessionConfig.FixedWiFi).ssid)
+    assertEquals(1, link.disconnects)
+  }
+
+  @Test
+  fun fixed_start_never_records_a_local_session() = runTest {
+    vm.start(fixedForm)
+    runCurrent()
+
+    assertEquals(null, sessions.find(link.configured.single().uuid.toString()))
+    assertTrue(!engine.recording.first())
+  }
+
+  @Test
+  fun fixed_start_signed_out_says_so_and_leaves_the_airbeam_alone() = runTest {
+    registration = null
+
+    vm.start(fixedForm)
+    runCurrent()
+
+    assertEquals(StartState.SignedOut, vm.startState.value)
+    assertEquals(emptyList(), link.configured)
+  }
+
+  /** The confirm screen stays put, so the user can fix the password and retry. */
+  @Test
+  fun fixed_start_reports_a_device_failure_as_is() = runTest {
+    link.configureResult = ConfigResult.WifiPassFailure
+
+    vm.start(fixedForm)
+    runCurrent()
+
+    assertEquals(StartState.Failed(ConfigResult.WifiPassFailure), vm.startState.value)
+  }
+
+  /** The wizard can't get here without a pin, but the VM mustn't register an outdoor session nowhere. */
+  @Test
+  fun fixed_outdoor_without_a_pin_fails_without_touching_anything() = runTest {
+    vm.start(fixedForm.copy(indoor = false))
+    runCurrent()
+
+    assertEquals(StartState.Failed(ConfigResult.BadConfigFailure), vm.startState.value)
+    assertEquals(emptyList(), link.connects)
+    assertTrue(registered.isEmpty())
   }
 }
 

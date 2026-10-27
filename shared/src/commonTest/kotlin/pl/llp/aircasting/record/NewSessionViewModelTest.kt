@@ -17,6 +17,7 @@ import pl.llp.aircasting.bluetooth.DeviceId
 import pl.llp.aircasting.bluetooth.DiscoveredAirBeam
 import pl.llp.aircasting.domain.GeoLocation
 import pl.llp.aircasting.recording.PhoneLocation
+import pl.llp.aircasting.recording.Placement
 
 class NewSessionViewModelTest {
   @BeforeTest
@@ -125,7 +126,7 @@ class NewSessionViewModelTest {
 
   @Test
   fun `progress fills as the wizard advances`() {
-    assertEquals(1f / 4, NewSessionStep.Method.progress)
+    assertEquals(1f / 5, NewSessionStep.Method.progress)
     assertEquals(1f, NewSessionStep.Confirm.progress)
     assertTrue(NewSessionStep.entries.all { it.progress in 0f..1f })
   }
@@ -165,6 +166,101 @@ class NewSessionViewModelTest {
 
     vm.back()
     assertEquals(NewSessionStep.Method, vm.state.value.step)
+  }
+  @Test
+  fun `a fixed session starts indoor and skips the location step`() {
+    val vm = fixedAtDetails()
+    assertEquals(Placement.Indoor, vm.state.value.form.placement)
+
+    vm.fillDetails()
+    vm.next()
+
+    assertEquals(NewSessionStep.Confirm, vm.state.value.step)
+  }
+
+  @Test
+  fun `fixed details need the wifi name and password before next`() {
+    val vm = fixedAtDetails()
+    vm.rename("Rooftop")
+    vm.next()
+    assertEquals(NewSessionStep.Details, vm.state.value.step)
+
+    vm.editWifiName("HomeNet")
+    vm.next()
+    assertEquals(NewSessionStep.Details, vm.state.value.step)
+
+    vm.editWifiPassword("secret")
+    vm.next()
+    assertEquals(NewSessionStep.Confirm, vm.state.value.step)
+  }
+
+  @Test
+  fun `an outdoor fixed session needs a pin on the location step`() {
+    val vm = fixedAtDetails()
+    vm.fillDetails()
+    vm.setIndoor(false)
+    vm.next()
+    assertEquals(NewSessionStep.Location, vm.state.value.step)
+    assertNull(vm.state.value.form.placement)
+    assertFalse(vm.state.value.canContinue)
+
+    vm.placePin(rooftop)
+    vm.next()
+
+    assertEquals(NewSessionStep.Confirm, vm.state.value.step)
+    assertEquals(Placement.Outdoor(rooftop), vm.state.value.form.placement)
+  }
+
+  @Test
+  fun `switching back to indoor drops the location step`() {
+    val vm = fixedAtDetails()
+    vm.fillDetails()
+    vm.setIndoor(false)
+    vm.next()
+    vm.back()
+
+    vm.setIndoor(true)
+    vm.next()
+
+    assertEquals(NewSessionStep.Confirm, vm.state.value.step)
+  }
+
+  @Test
+  fun `a mobile session never asks for wifi or a location`() {
+    val vm = NewSessionViewModel(location)
+    vm.select(RecordingMethod.AirBeamMobile)
+    vm.next()
+    vm.selectDevice(ab3)
+    vm.next()
+    vm.setIndoor(false)
+
+    vm.rename("Morning commute")
+    vm.next()
+
+    assertEquals(NewSessionStep.Confirm, vm.state.value.step)
+  }
+
+  @Test
+  fun `the wifi password stays out of the form's toString`() {
+    val vm = fixedAtDetails()
+    vm.editWifiPassword("hunter2")
+
+    assertFalse("hunter2" in vm.state.value.form.toString())
+  }
+
+  private val rooftop = GeoLocation(latitude = 50.06, longitude = 19.94)
+
+  private fun fixedAtDetails() = NewSessionViewModel(location).apply {
+    select(RecordingMethod.AirBeamFixed)
+    next()
+    selectDevice(ab3)
+    next()
+  }
+
+  private fun NewSessionViewModel.fillDetails() {
+    rename("Rooftop")
+    editWifiName("HomeNet")
+    editWifiPassword("secret")
   }
 }
 

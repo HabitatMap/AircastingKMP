@@ -31,4 +31,10 @@ class SessionSummaryTest {
       assertEquals(labels.size, labels.toSet().size, "duplicate interval label in $tag")
     }
   }
+  @Test
+  fun `a fixed session always samples every minute whatever the picker held`() {
+    val form = NewSessionForm(method = RecordingMethod.AirBeamFixed, interval = SamplingInterval.OneSecond)
+
+    assertEquals("1 min", EnStrings.summarize(form).interval)
+  }
 }

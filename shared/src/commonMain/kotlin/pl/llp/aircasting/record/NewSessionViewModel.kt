@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import pl.llp.aircasting.bluetooth.DiscoveredAirBeam
+import pl.llp.aircasting.domain.GeoLocation
 import pl.llp.aircasting.recording.PhoneLocation
 
 data class NewSessionState(
@@ -19,7 +20,8 @@ data class NewSessionState(
     get() = when (step) {
       NewSessionStep.Method -> form.method != null
       NewSessionStep.Device -> form.device != null
-      NewSessionStep.Details -> form.name.isNotBlank()
+      NewSessionStep.Details -> form.name.isNotBlank() && (form.method != RecordingMethod.AirBeamFixed || form.hasWifi)
+      NewSessionStep.Location -> form.placement != null
       NewSessionStep.Confirm -> true
     }
 }
@@ -48,6 +50,14 @@ class NewSessionViewModel(location: PhoneLocation) : ViewModel() {
 
   fun setInterval(interval: SamplingInterval) = edit { it.copy(interval = interval) }
 
+  fun setIndoor(indoor: Boolean) = edit { it.copy(indoor = indoor) }
+
+  fun placePin(location: GeoLocation) = edit { it.copy(outdoorLocation = location) }
+
+  fun editWifiName(ssid: String) = edit { it.copy(wifi = it.wifi.copy(ssid = ssid)) }
+
+  fun editWifiPassword(password: String) = edit { it.copy(wifi = it.wifi.copy(password = password)) }
+
   fun selectDevice(device: DiscoveredAirBeam) = edit { it.copy(device = device) }
 
   fun next() = _state.update { state -> if (!state.canContinue) state else state.moveBy(1) }
@@ -62,3 +72,7 @@ class NewSessionViewModel(location: PhoneLocation) : ViewModel() {
   private fun edit(block: (NewSessionForm) -> NewSessionForm) =
     _state.update { it.copy(form = block(it.form)) }
 }
+
+/** Both are required (legacy); a password of spaces is still a password. */
+private val NewSessionForm.hasWifi: Boolean
+  get() = wifi.ssid.isNotBlank() && wifi.password.isNotEmpty()

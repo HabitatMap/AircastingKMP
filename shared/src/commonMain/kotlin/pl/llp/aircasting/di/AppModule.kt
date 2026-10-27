@@ -27,6 +27,7 @@ import pl.llp.aircasting.data.network.AuthApi
 import pl.llp.aircasting.data.network.DefaultBackendUrl
 import pl.llp.aircasting.data.network.ExploreMapApi
 import pl.llp.aircasting.data.network.ExportApi
+import pl.llp.aircasting.data.network.FixedSessionsApi
 import pl.llp.aircasting.data.network.FixedStationsApi
 import pl.llp.aircasting.data.network.FixedStationsRepository
 import pl.llp.aircasting.data.network.HttpServerProbe
@@ -54,6 +55,8 @@ import pl.llp.aircasting.onboarding.OnboardingRepository
 import pl.llp.aircasting.onboarding.StoredOnboardingRepository
 import pl.llp.aircasting.record.NewSessionViewModel
 import pl.llp.aircasting.record.RecordingViewModel
+import pl.llp.aircasting.recording.FixedSessionRegistrar
+import pl.llp.aircasting.recording.FixedSessionStarter
 import pl.llp.aircasting.recording.RecordingEngine
 import pl.llp.aircasting.scan.ScanViewModel
 import pl.llp.aircasting.settings.account.AccountRepository
@@ -81,6 +84,8 @@ val recordModule = module {
       TimeZone.currentSystemDefault()
     )
   }
+  single { FixedSessionRegistrar(get(), get(), TimeZone.currentSystemDefault()) }
+  single { FixedSessionStarter(get(), get<FixedSessionRegistrar>()::register) }
   viewModelOf(::NewSessionViewModel)
   viewModelOf(::RecordingViewModel)
 }
@@ -113,6 +118,7 @@ val networkModule = module {
   single<ServerProbe> { HttpServerProbe(platformHttpEngine()) }
   // Modern v3 APIs
   single { MobileSessionsApi(get()) }
+  single { FixedSessionsApi(get()) }
   // Search & Regional Exploration (Home screen)
   single { FixedStationsApi(get()) }
   single { FixedStationsRepository(get(), get()) }

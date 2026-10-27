@@ -24,6 +24,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import pl.llp.aircasting.bluetooth.AirBeamDevice
 import pl.llp.aircasting.bluetooth.DeviceId
 import pl.llp.aircasting.bluetooth.DiscoveredAirBeam
+import pl.llp.aircasting.data.auth.AccountProfile
 import pl.llp.aircasting.data.auth.StoredAuthSession
 import pl.llp.aircasting.data.network.FixedSessionsApi
 import pl.llp.aircasting.data.network.createAircastingHttpClient
@@ -139,7 +140,7 @@ class FixedSessionRegistrarTest {
           else respondError(patchStatus)
       }
     }
-    val auth = StoredAuthSession(MapSettings()).apply { token?.let(::start) }
+    val auth = StoredAuthSession(MapSettings()).apply { token?.let { start(it, AccountProfile("ada", "ada@example.com")) } }
     return FixedSessionRegistrar(FixedSessionsApi(createAircastingHttpClient(engine)), auth, TimeZone.of("Europe/Warsaw"))
   }
 

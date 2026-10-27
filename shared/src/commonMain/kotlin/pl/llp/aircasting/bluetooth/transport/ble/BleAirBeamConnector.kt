@@ -263,19 +263,23 @@ private class BleConnection(
     return when (config) {
       is SessionConfig.Mobile ->
         sendV2AndAwait(AirBeamProtocol.MiniV2.mobileSessionConfigCommand(config.uuid), 10.seconds)
-
-      // Device attempts to connect to WiFi: WiFi OK -> session starts; WiFi Failed -> Nack(0x05 InvalidWifiCredentials)
+      // Legacy AirBeamMiniV2Configurator.configure(): clear the saved session (the device answers
+      // Ready) before a fixed 0x13. Wipes unsynced data — accepted, we skip the "sync first" dialog.
       // WiFi fails -> Nack(0x05); first measurement POSTed -> Ready; see awaitFixedStart.
-      is SessionConfig.FixedWiFi -> sendV2AndAwaitFixedStart(
-        AirBeamProtocol.MiniV2.fixedWifiSessionConfigCommand(
-          uuid = config.uuid,
-          authToken = config.authToken,
-          ssid = config.ssid,
-          password = config.password,
-          pm1Index = config.pm1Index,
-          pm25Index = config.pm25Index,
-        ),
-      )
+      is SessionConfig.FixedWiFi -> {
+        val discarded = sendV2AndAwait(AirBeamProtocol.MiniV2.discardSessionCommand(), 5.seconds)
+        if (discarded != ConfigResult.Success) return discarded
+        sendV2AndAwaitFixedStart(
+          AirBeamProtocol.MiniV2.fixedWifiSessionConfigCommand(
+            uuid = config.uuid,
+            authToken = config.authToken,
+            ssid = config.ssid,
+            password = config.password,
+            pm1Index = config.pm1Index,
+            pm25Index = config.pm25Index,
+          ),
+        )
+      }
 
       is SessionConfig.FixedCellular -> {
         log.e { "Mini V2 does not support FixedCellular configuration" }

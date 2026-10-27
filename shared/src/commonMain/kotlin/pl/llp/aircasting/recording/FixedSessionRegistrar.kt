@@ -66,8 +66,12 @@ class FixedSessionRegistrar(
 /** The backend's placeholder for indoor sessions (legacy `Session.FAKE_LOCATION`). */
 private val IndoorPlaceholder = GeoLocation(200.0, 200.0)
 
+/** The coordinates a fixed session is registered and configured with. */
+internal val Placement.coordinates: GeoLocation
+  get() = (this as? Placement.Outdoor)?.location ?: IndoorPlaceholder
+
 private fun NewFixedSession.toCreateRequest(timeZone: String): CreateFixedSessionRequestDto {
-  val location = (placement as? Placement.Outdoor)?.location ?: IndoorPlaceholder
+  val location = placement.coordinates
   return CreateFixedSessionRequestDto(
     uuid = uuid.toString(),
     title = name,

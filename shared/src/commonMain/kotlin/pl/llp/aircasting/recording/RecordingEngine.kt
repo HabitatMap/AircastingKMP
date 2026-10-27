@@ -158,11 +158,3 @@ class RecordingEngine(
 
 /** Legacy `Session.Location.DEFAULT_LOCATION`: before the phone's first fix of the session. */
 private val DEFAULT_LOCATION = GeoLocation(40.7128, -74.0060)
-
-/** v3 `device.model`. Legacy sends none for mobile; these follow its CSV `deviceName`s. */
-private val AirBeamDevice.model: String
-  get() = when (this) {
-    AirBeamDevice.Mini.V1, AirBeamDevice.Mini.V2 -> "AirBeamMini"
-    AirBeamDevice.AirBeam3 -> "AirBeam3"
-    AirBeamDevice.AirBeam2 -> "AirBeam2"
-  }

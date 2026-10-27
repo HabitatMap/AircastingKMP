@@ -37,3 +37,11 @@ fun streamsFor(device: AirBeamDevice): List<StreamSpec> = when (device) {
     StreamSpec("AirBeamMini-PM2.5", "µg/m³"),
   )
 }
+
+/** v3 `device.model`. Legacy sends none for mobile; these follow its CSV `deviceName`s. */
+val AirBeamDevice.model: String
+  get() = when (this) {
+    AirBeamDevice.Mini.V1, AirBeamDevice.Mini.V2 -> "AirBeamMini"
+    AirBeamDevice.AirBeam3 -> "AirBeam3"
+    AirBeamDevice.AirBeam2 -> "AirBeam2"
+  }

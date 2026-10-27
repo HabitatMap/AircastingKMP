@@ -46,6 +46,10 @@ fun SettingsAccountScreen(
   onDeletionConfirmed: () -> Unit,
   onDeletionCodeSubmit: (String) -> Unit,
   onDeletionDismissed: () -> Unit,
+  onEditSave: (String) -> Unit,
+  onEditDismissed: () -> Unit,
+  onPasswordSave: (current: String, new: String, confirmation: String) -> Unit,
+  onPasswordDismissed: () -> Unit,
 ) {
   val strings = LocalStrings.current
   val content = state as? AccountScreenState.Content
@@ -92,6 +96,22 @@ fun SettingsAccountScreen(
       onDismiss = onDeletionDismissed,
     )
     Deletion.None, null -> Unit
+  }
+
+  val edit = content?.edit
+  if (edit is ProfileEdit.Open) {
+    EditProfileDialog(
+      field = edit.field,
+      current = content.profile.valueOf(edit.field),
+      error = edit.error,
+      onSave = onEditSave,
+      onDismiss = onEditDismissed,
+    )
+  }
+
+  val password = content?.password
+  if (password is PasswordChange.Open) {
+    ChangePasswordDialog(errors = password.errors, onSave = onPasswordSave, onDismiss = onPasswordDismissed)
   }
 }
 

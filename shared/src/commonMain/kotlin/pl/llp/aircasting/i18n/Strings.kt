@@ -212,9 +212,22 @@ interface Strings {
 
   val accountChangeEmail: String
   val accountChangeUsername: String
-  val accountResetPassword: String
+  val accountChangePassword: String
+  val accountCurrentPasswordLabel: String
+  val accountNewPasswordLabel: String
+  val accountConfirmPasswordLabel: String
   val accountSignOut: String
   val accountDeleteAccount: String
+  val accountSave: String
+  val accountUpdateFailed: String
+  val accountUpdateRefused: String
+  val fieldErrorTaken: String
+  val fieldErrorBlank: String
+  val fieldErrorTooShort: (min: String) -> String
+  val fieldErrorTooLong: (max: String) -> String
+  val fieldErrorPasswordMismatch: String
+  val fieldErrorWrongPassword: String
+  val fieldErrorInvalid: String
   val cancel: String
   val done: String
   val deleteAccountConfirmTitle: String

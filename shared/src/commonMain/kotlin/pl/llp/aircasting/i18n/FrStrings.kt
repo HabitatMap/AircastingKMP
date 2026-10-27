@@ -15,9 +15,11 @@ object FrStrings : Strings {
   override val preparingLocating = "Recherche de votre position…"
   override val preparingConfiguring = "Configuration de l'AirBeam…"
   override val newSessionDetailsTitle = "Nommez votre session"
-  override val newSessionDetailsBody = "Ajoutez des détails pour la retrouver et la partager plus tard."
+  override val newSessionDetailsBody =
+    "Ajoutez des détails pour la retrouver et la partager plus tard."
   override val newSessionDeviceTitle = "Choisissez l'appareil avec lequel vous souhaitez mesurer."
-  override val newSessionDeviceBody = "Choisissez la méthode adaptée à votre matériel et à votre objectif."
+  override val newSessionDeviceBody =
+    "Choisissez la méthode adaptée à votre matériel et à votre objectif."
   override val newSessionDeviceAirBeamHeader = "AIRBEAM"
   override val sessionNameLabel = "Nom de la session"
   override val sessionNamePlaceholder = "ex. « Bruit de l'école »"
@@ -28,25 +30,33 @@ object FrStrings : Strings {
   override val samplingIntervalHeader = "INTERVALLE DE MESURE"
   override val samplingIntervalHint =
     "Un intervalle plus long permet d'économiser la batterie de votre appareil."
+
   override fun samplingSeconds(count: Int): String = "$count s"
   override fun samplingMinutes(count: Int): String = "$count min"
   override val methodMobileName = "AirBeam mobile"
   override val methodFixedName = "AirBeam fixe"
   override val methodMicName = "Microphone du téléphone"
-  override val methodMobileConfirm = "Vérifiez les détails de la session avant de commencer. Gardez votre AirBeam " +
-    "avec vous, puis touchez « Démarrer l'enregistrement »."
-  override val methodFixedConfirm = "Vérifiez les détails de la session avant de commencer. Installez votre AirBeam " +
-    "dans un endroit sûr, puis touchez « Démarrer l'enregistrement »."
-  override val methodMicConfirm = "Vérifiez les détails de la session avant de commencer. Placez votre téléphone " +
-    "là où il capte ce que vous voulez mesurer, puis touchez « Démarrer l'enregistrement »."
+  override val methodMobileConfirm =
+    "Vérifiez les détails de la session avant de commencer. Gardez votre AirBeam " +
+      "avec vous, puis touchez « Démarrer l'enregistrement »."
+  override val methodFixedConfirm =
+    "Vérifiez les détails de la session avant de commencer. Installez votre AirBeam " +
+      "dans un endroit sûr, puis touchez « Démarrer l'enregistrement »."
+  override val methodMicConfirm =
+    "Vérifiez les détails de la session avant de commencer. Placez votre téléphone " +
+      "là où il capte ce que vous voulez mesurer, puis touchez « Démarrer l'enregistrement »."
   override val recordStartTitle = "Démarrer un nouvel enregistrement"
-  override val recordStartBody = "Mesurez la qualité de l'air et le niveau sonore avec l'AirBeam ou votre téléphone."
+  override val recordStartBody =
+    "Mesurez la qualité de l'air et le niveau sonore avec l'AirBeam ou votre téléphone."
   override val recordNewSessionTitle = "Nouvelle session"
-  override val recordNewSessionBody = "Mesurez la qualité de l'air et le niveau sonore avec l'AirBeam ou votre téléphone."
+  override val recordNewSessionBody =
+    "Mesurez la qualité de l'air et le niveau sonore avec l'AirBeam ou votre téléphone."
   override val recordRecoverTitle = "Récupérer et synchroniser"
-  override val recordRecoverBody = "Importez les sessions stockées sur votre AirBeam 3 ou AirBeam Mini."
+  override val recordRecoverBody =
+    "Importez les sessions stockées sur votre AirBeam 3 ou AirBeam Mini."
   override val newSessionMethodTitle = "Comment souhaitez-vous mesurer ?"
-  override val newSessionMethodBody = "Choisissez la méthode adaptée à votre matériel et à votre objectif."
+  override val newSessionMethodBody =
+    "Choisissez la méthode adaptée à votre matériel et à votre objectif."
   override val methodMobileTag = "AIRBEAM MOBILE"
   override val methodMobileTitle = "Mesure de l'air en déplacement"
   override val methodMobileBody =
@@ -57,21 +67,27 @@ object FrStrings : Strings {
     "Surveillez un lieu en continu : maison, école ou travail. Connexion en Wi-Fi."
   override val methodMicTag = "MICROPHONE DU TÉLÉPHONE"
   override val methodMicTitle = "Mesure du bruit avec votre téléphone"
-  override val methodMicBody = "Mesurez le niveau sonore partout avec le microphone intégré de votre téléphone."
+  override val methodMicBody =
+    "Mesurez le niveau sonore partout avec le microphone intégré de votre téléphone."
   override val next = "Suivant"
-  override val bluetoothPermissionNeeded = "Autorisez l'accès Bluetooth pour trouver les AirBeam à proximité."
+  override val bluetoothPermissionNeeded =
+    "Autorisez l'accès Bluetooth pour trouver les AirBeam à proximité."
   override val bluetoothPermissionTitle = "Autoriser les appareils à proximité"
-  override val bluetoothPermissionBody = "AirCasting a besoin de cette autorisation pour trouver votre AirBeam et s'y connecter."
+  override val bluetoothPermissionBody =
+    "AirCasting a besoin de cette autorisation pour trouver votre AirBeam et s'y connecter."
   override val bluetoothPermissionAllow = "Autoriser"
   override val bluetoothOffTitle = "Activez le Bluetooth"
-  override val bluetoothOffBody = "Activez le Bluetooth sur votre téléphone pour vous connecter à l'AirBeam."
+  override val bluetoothOffBody =
+    "Activez le Bluetooth sur votre téléphone pour vous connecter à l'AirBeam."
   override val noDevicesTitle = "Aucun AirBeam trouvé"
-  override val noDevicesBody = "Nous n'avons détecté aucun AirBeam à proximité. Essayez ces étapes pour vous connecter."
+  override val noDevicesBody =
+    "Nous n'avons détecté aucun AirBeam à proximité. Essayez ces étapes pour vous connecter."
   override val noDevicesStepPowerOn = "Vérifiez que votre AirBeam est allumé"
   override val noDevicesStepMoveCloser = "Rapprochez-vous de votre AirBeam"
   override val noDevicesStepBluetoothOn = "Vérifiez que le Bluetooth est activé"
   override val tryAgain = "Réessayer"
   override val refresh = "Actualiser"
+
   // TODO(design): placeholder copy, verbatim from Figma. Only the two buttons are real UI, so
   // only they are translated.
   override val onboardingMeasureTitle = "Placeholder heading"
@@ -85,8 +101,10 @@ object FrStrings : Strings {
   override val authWelcomeTitle = "Bienvenue sur AirCasting !"
   override val authWelcomeSubtitle =
     "Connectez-vous ou créez un compte ci-dessous pour surveiller la qualité de l'air."
-  override val authSignInSheetSubtitle = "Connectez-vous pour continuer à surveiller la qualité de l'air."
-  override val authSignUpSheetSubtitle = "Surveillez et enregistrez la qualité de l'air autour de vous"
+  override val authSignInSheetSubtitle =
+    "Connectez-vous pour continuer à surveiller la qualité de l'air."
+  override val authSignUpSheetSubtitle =
+    "Surveillez et enregistrez la qualité de l'air autour de vous"
   override val authTabSignIn = "Se connecter"
   override val authTabSignUp = "Créer un compte"
   override val authSignInAction = "Se connecter"
@@ -114,14 +132,17 @@ object FrStrings : Strings {
   override val forgotPasswordSent = "Lien envoyé. Consultez votre boîte de réception."
   override val forgotPasswordFailed = "Impossible d'envoyer le lien. Veuillez réessayer."
   override val customServerTitle = "Utiliser un serveur de données personnalisé"
-  override val customServerIntroBody = "Si vous hébergez votre propre serveur AirCasting (auto-hébergé ou " +
-    "d'organisation), indiquez-le ici. Vos mesures existantes restent sur le serveur actuel — " +
-    "seules les nouvelles données seront synchronisées vers le nouveau."
+  override val customServerIntroBody =
+    "Si vous hébergez votre propre serveur AirCasting (auto-hébergé ou " +
+      "d'organisation), indiquez-le ici. Vos mesures existantes restent sur le serveur actuel — " +
+      "seules les nouvelles données seront synchronisées vers le nouveau."
   override val customServerStep1 = "Saisissez l'URL et le port de votre serveur"
   override val customServerStep2 = "Vous serez déconnecté pour appliquer le changement"
-  override val customServerStep3 = "Reconnectez-vous. Les nouvelles mesures se synchronisent automatiquement"
-  override val customServerFormBody = "Saisissez l'adresse de votre serveur personnalisé ou auto-hébergé. " +
-    "Nous testerons la connexion avant d'enregistrer quoi que ce soit."
+  override val customServerStep3 =
+    "Reconnectez-vous. Les nouvelles mesures se synchronisent automatiquement"
+  override val customServerFormBody =
+    "Saisissez l'adresse de votre serveur personnalisé ou auto-hébergé. " +
+      "Nous testerons la connexion avant d'enregistrer quoi que ce soit."
   override val customServerUrlLabel = "URL"
   override val customServerUrlHint = "Saisissez une URL valide, p. ex. https://aircasting.org"
   override val customServerPortLabel = "Port"
@@ -129,14 +150,18 @@ object FrStrings : Strings {
   override val customServerUseOfficial = "Utiliser le serveur officiel AirCasting"
   override val customServerNext = "Suivant"
   override val customServerTestingTitle = "Test de la connexion..."
-  override val customServerTestingBody = "Nous vérifions que votre serveur répond correctement. Cela peut prendre un moment."
+  override val customServerTestingBody =
+    "Nous vérifions que votre serveur répond correctement. Cela peut prendre un moment."
   override val customServerTooLong = "Cela prend trop de temps ? Annuler !"
   override val customServerVerifiedTitle = "Connexion vérifiée"
   override fun customServerVerifiedBody(server: String): String =
     "$server a répondu correctement. Vos mesures y seront synchronisées désormais. " +
       "Les données existantes resteront sur le serveur actuel."
+
   override val customServerFailedTitle = "Échec de la connexion"
-  override fun customServerFailedBody(server: String): String = "Impossible de joindre $server. Vérifiez l'URL et le port, puis réessayez."
+  override fun customServerFailedBody(server: String): String =
+    "Impossible de joindre $server. Vérifiez l'URL et le port, puis réessayez."
+
   override val customServerSave = "Enregistrer et se déconnecter"
   override val customServerEdit = "Revenir et modifier"
   override val customServerClearField = "Effacer"
@@ -155,9 +180,23 @@ object FrStrings : Strings {
   override val settingsAccountSectionHeader = "COMPTE"
   override val accountChangeEmail = "Modifier l'adresse e-mail"
   override val accountChangeUsername = "Modifier le nom d'utilisateur"
-  override val accountResetPassword = "Réinitialiser le mot de passe"
+  override val accountChangePassword = "Modifier le mot de passe"
+  override val accountCurrentPasswordLabel = "Mot de passe actuel"
+  override val accountNewPasswordLabel = "Nouveau mot de passe"
+  override val accountConfirmPasswordLabel = "Confirmez le nouveau mot de passe"
   override val accountSignOut = "Se déconnecter"
   override val accountDeleteAccount = "Supprimer le compte"
+  override val accountSave = "Enregistrer"
+  override val accountUpdateFailed =
+    "Impossible d'enregistrer. La valeur est peut-être déjà utilisée ou invalide."
+  override val fieldErrorTaken = "Déjà utilisé."
+  override val fieldErrorBlank = "Ne peut pas être vide."
+  override val fieldErrorTooShort: (min: String) -> String = { min -> "Doit contenir au moins $min caractères." }
+  override val fieldErrorTooLong: (max: String) -> String = { max -> "Ne doit pas dépasser $max caractères." }
+  override val fieldErrorPasswordMismatch = "Les mots de passe ne correspondent pas."
+  override val fieldErrorWrongPassword = "Mot de passe incorrect."
+  override val fieldErrorInvalid = "Valeur non valide."
+  override val accountUpdateRefused = "Impossible d'enregistrer ces modifications."
   override val cancel = "Annuler"
   override val deleteAccountConfirmTitle = "Supprimer le compte ?"
   override val deleteAccountConfirmBody =
@@ -191,7 +230,8 @@ object FrStrings : Strings {
   override val appSettingPushNotifications = "Notifications push"
   override val appSettingPushNotificationsSubtitle = "Alertes de qualité de l'air et rappels"
   override val appSettingWifiOnlySync = "Synchroniser uniquement en WiFi"
-  override val appSettingWifiOnlySyncSubtitle = "Évite d'utiliser les données mobiles pendant la synchronisation"
+  override val appSettingWifiOnlySyncSubtitle =
+    "Évite d'utiliser les données mobiles pendant la synchronisation"
   override val appSettingCustomDataServer = "Serveur de données personnalisé"
   override val appSettingCustomDataServerSubtitle = "Choisir où les données sont stockées"
 
@@ -222,7 +262,8 @@ object FrStrings : Strings {
   override fun micResetOffset(offset: Int): String = "Rétablir le décalage par défaut ($offset)"
   override val micDecreaseOffset = "Diminuer le décalage"
   override val micIncreaseOffset = "Augmenter le décalage"
-  override val micPermissionNeeded = "Autorisez l'accès au microphone pour voir une lecture en direct."
+  override val micPermissionNeeded =
+    "Autorisez l'accès au microphone pour voir une lecture en direct."
 
   override val openSettings = "Ouvrir les réglages"
   override val back = "Retour"
@@ -232,7 +273,8 @@ object FrStrings : Strings {
 
   override val airQualityLabel = "QUALITÉ DE L'AIR"
   override val noReadingsTitle = "Aucune donnée de qualité de l'air disponible"
-  override val noReadingsBody = "Nous n'avons pas trouvé de mesures récentes pour ce lieu.\nRéessayez plus tard."
+  override val noReadingsBody =
+    "Nous n'avons pas trouvé de mesures récentes pour ce lieu.\nRéessayez plus tard."
   override val noLocationTitle = "Aucune station à proximité"
   override val noLocationBody =
     "Nous n'avons pas pu associer votre position à une station de mesure.\n" +
@@ -240,9 +282,11 @@ object FrStrings : Strings {
   override val turnOnLocation = "Activer les services de localisation"
 
   override val aqGoodLabel = "Bonne"
-  override val aqGoodDescription = "L'air extérieur est sain. Le moment idéal pour des activités en plein air."
+  override val aqGoodDescription =
+    "L'air extérieur est sain. Le moment idéal pour des activités en plein air."
   override val aqModerateLabel = "Modérée"
-  override val aqModerateDescription = "La qualité de l'air est acceptable pour la plupart des personnes."
+  override val aqModerateDescription =
+    "La qualité de l'air est acceptable pour la plupart des personnes."
   override val aqUnhealthySensitiveLabel = "Mauvaise pour les groupes sensibles"
   override val aqUnhealthySensitiveDescription =
     "Les groupes sensibles devraient limiter les efforts en plein air."
@@ -291,5 +335,6 @@ object FrStrings : Strings {
       0, 1 -> "Voir $n résultat"
       else -> "Voir $n résultats"
     }
+
   override fun exploreRemoveFilter(name: String): String = "Retirer le filtre : $name"
 }

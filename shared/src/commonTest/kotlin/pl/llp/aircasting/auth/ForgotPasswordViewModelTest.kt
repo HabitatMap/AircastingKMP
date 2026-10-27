@@ -98,4 +98,6 @@ private class FakeAccountRepository : AccountRepository {
   override suspend fun signOut() = Unit
   override suspend fun requestAccountDeletion() = Unit
   override suspend fun confirmAccountDeletion(code: String) = Unit
+  override suspend fun updateProfile(name: String?, email: String?): AccountProfile = TODO()
+  override suspend fun changePassword(current: String, new: String) = TODO()
 }

@@ -503,6 +503,9 @@ Bearer auth. Every field is optional — send only what changes:
 - `password` requires both `password_confirmation` (must match) and `current_password`;
   `current_password` is needed **only** when changing the password.
 - **200** → the full user, same shape as `GET` (incl. `authentication_token`).
+- **The token survives a password change** (live-verified on experimental, 2026-10-27): the 200
+  carries the same `authentication_token`, and the old token still authenticates afterwards. So
+  the client can ignore the token in the response and keep the stored one.
 - **422** → `{ error_code, message, fields }` for a validation error, a wrong `current_password`,
   **or an empty update** ("nothing to change"). Unlike sign-up's 422, the spec promises no flat
   per-field keys here — decode `fields`: each key maps to a **list** of `{ code, message, params? }`,

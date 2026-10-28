@@ -7,7 +7,7 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import pl.llp.aircasting.settings.account.AccountProfile
+import pl.llp.aircasting.data.auth.AccountProfile
 import pl.llp.aircasting.settings.account.AccountRepository
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -87,6 +87,8 @@ private class FakeAccountRepository : AccountRepository {
   var gate: CompletableDeferred<Unit>? = null
   var resetFor: String? = null
   var resetCalls = 0
+
+  override val storedProfile: AccountProfile? = null
 
   override suspend fun requestPasswordReset(login: String) {
     resetCalls++

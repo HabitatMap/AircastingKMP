@@ -592,6 +592,40 @@ building the slider screen.
   onboarding flag, backend URL/port, + user toggles (dark theme, keep-screen-on, 24h format,
   Celsius, crowd-map, dormant-stream alert [also synced to backend], maps-disabled,
   satellite, mic calibration). Clean wrapper seam → multiplatform-settings. **CHANGE-LIKELY.**
+- **Signed-in user** — legacy `Settings.login()` stores `profile_name`, `email` and
+  `auth_token` together, from the sign-in/sign-up response; screens read them locally (Settings
+  header, "is this my session" in `SearchFollowViewModel` compares `session.username` with
+  `profile_name`, crash reporting registers the email). Legacy `Settings.logout()` wipes **every**
+  key except `backend_url`/`backend_port`, so it also resets all user toggles.
+  **Rewrite** (`data/auth/AuthSession.kt`, *decided 2026-10-28*): `StoredAuthSession` keeps
+  the token and the `AccountProfile` under the same three legacy key names, as one
+  `AuthState.SignedIn(token, profile)`. Sign-out removes only those three keys, so app
+  preferences survive it (a deliberate change from legacy). `profile` is null only for a token
+  written by an earlier rewrite build; Account fetches it then. Account shows the stored
+  profile at once and revalidates with `GET /api/user.json` on every resume; a failed refresh
+  keeps the stored profile. A profile response is stored only if the session still holds the
+  token the request was sent with, so a late response can't land after sign-out or in another
+  account's session.
+  ⚠️ **Upgrade from legacy:** same `applicationId` (`pl.llp.aircasting`), but legacy prefs live
+  in the `"preferences"` file and the rewrite's in `"aircasting_settings"`, so an update from
+  the legacy app signs the user out unless a migration copies the keys over (same key names,
+  so it's a straight copy). No migration exists yet.
+- **Auth token lifetime** (backend `HabitatMap/AirCasting`, checked 2026-10-28): the token is
+  **permanent**. `User#ensure_authentication_token` generates it once, when blank; Devise's
+  `:timeoutable` is off; no endpoint or web form can write it (`Api::UpdateUserAccount::PERMITTED`,
+  `configure_permitted_parameters`, pinned by `spec/requests/web_account_token_spec.rb`).
+  The reason is load-bearing: AirBeams keep the token in EEPROM and can't refresh it, so a
+  changed token would stop every device uploading. A password change does not rotate it, and
+  signing out in the app is local only — the backend is never told. So the app never refreshes
+  a token and a 401 is never "the token aged out". It means the account no longer exists
+  (deleted on the web or another device) or the token belongs to a different server.
+- **401 handling.** Legacy shows an "Unauthorized" message (`ResponseHandler`) and stays signed
+  in on a dead token. **Rewrite** follows `API_V3.md` ("re-authenticate"): a 401 on
+  `GET /api/user.json` ends the session (`NetworkAccountRepository.profile()` throws
+  `SessionExpired`; Account navigates back). Only that endpoint — a 401 is also how sign-in
+  rejects a wrong password and how `delete_account_confirm` rejects a wrong code, so a global
+  "401 ⇒ sign out" handler would sign users out for a typo. As with profile updates, the session
+  ends only if it still holds the token the request was sent with.
 - **Navigation/auth/onboarding:** imperative Activity/Fragment + Wizard navigators (no
   Jetpack nav graph). Launcher routes onboarding/login/dashboard. **CHANGE-LIKELY** → KMP nav.
 - **CSV export:** `CSVHelper` (OpenCSV) builds a zipped CSV, shared via `ACTION_SEND`; plus a

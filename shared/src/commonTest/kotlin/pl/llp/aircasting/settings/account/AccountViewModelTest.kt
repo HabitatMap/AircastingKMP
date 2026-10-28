@@ -8,6 +8,7 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import pl.llp.aircasting.data.auth.AccountProfile
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -325,6 +326,60 @@ class AccountViewModelTest {
     )
   }
 
+  @Test
+  fun a_stored_profile_shows_before_any_request() = runTest {
+    val vm = AccountViewModel(FakeAccountRepository(storedProfile = ADAM))
+
+    assertEquals(AccountScreenState.Content(ADAM), vm.state.value)
+  }
+
+  @Test
+  fun without_a_stored_profile_it_starts_Loading() = runTest {
+    val vm = AccountViewModel(FakeAccountRepository(profile = ADAM))
+
+    assertEquals(AccountScreenState.Loading, vm.state.value)
+  }
+
+  @Test
+  fun a_refresh_replaces_the_stored_profile_with_the_fetched_one() = runTest {
+    val vm = AccountViewModel(FakeAccountRepository(profile = ADAM, storedProfile = STALE))
+
+    vm.refresh(); testScheduler.advanceUntilIdle()
+
+    assertEquals(AccountScreenState.Content(ADAM), vm.state.value)
+  }
+
+  @Test
+  fun a_failed_refresh_keeps_showing_the_stored_profile() = runTest {
+    val repo = FakeAccountRepository(failWith = RuntimeException("offline"), storedProfile = ADAM)
+    val vm = AccountViewModel(repo)
+
+    vm.refresh(); testScheduler.advanceUntilIdle()
+
+    assertEquals(AccountScreenState.Content(ADAM), vm.state.value)
+  }
+
+  @Test
+  fun a_refresh_on_resume_keeps_the_deletion_code_prompt_open() = runTest {
+    // The user leaves for their mail app to read the code; coming back fires ON_RESUME → refresh.
+    val vm = signedIn(FakeAccountRepository(profile = ADAM))
+    vm.startAccountDeletion(); vm.sendDeletionCode(); testScheduler.advanceUntilIdle()
+
+    vm.refresh(); testScheduler.advanceUntilIdle()
+
+    assertEquals(content(Deletion.AwaitingCode()), vm.state.value)
+  }
+
+  @Test
+  fun an_expired_session_on_refresh_ends_the_session() = runTest {
+    val vm = AccountViewModel(FakeAccountRepository(failWith = SessionExpired(), storedProfile = ADAM))
+
+    vm.sessionEnded.test {
+      vm.refresh(); testScheduler.advanceUntilIdle()
+      awaitItem()
+    }
+  }
+
   private fun TestScope.signedIn(repo: FakeAccountRepository) =
     AccountViewModel(repo).also { it.refresh(); testScheduler.advanceUntilIdle() }
 
@@ -333,6 +388,7 @@ class AccountViewModelTest {
 
   private companion object {
     val ADAM = AccountProfile("adam.smith", "adam.smith.1989@mail.com")
+    val STALE = AccountProfile("adam", "adam@old-mail.com")
   }
 }
 
@@ -342,6 +398,7 @@ private class FakeAccountRepository(
   private val failDeletionRequest: Boolean = false,
   var failConfirm: Boolean = false,
   private val updateFailure: Throwable? = null,
+  override val storedProfile: AccountProfile? = null,
 ) : AccountRepository {
   var signOuts = 0
   var confirmedCode: String? = null

@@ -1,5 +1,7 @@
 package pl.llp.aircasting.settings.account
 
+import pl.llp.aircasting.data.auth.AccountProfile
+
 sealed interface AccountScreenState {
   data object Loading : AccountScreenState
   data class Content(

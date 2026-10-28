@@ -1,6 +1,7 @@
 package pl.llp.aircasting.settings.server
 
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.russhwolf.settings.MapSettings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -9,7 +10,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import com.russhwolf.settings.MapSettings
+import pl.llp.aircasting.data.auth.AccountProfile
 import pl.llp.aircasting.data.auth.AuthState
 import pl.llp.aircasting.data.auth.StoredAuthSession
 import pl.llp.aircasting.data.network.ServerProbe
@@ -113,7 +114,7 @@ class CustomDataServerViewModelTest {
     // "You'll be logged out to apply the change": the token belongs to the *old* server and is
     // meaningless — worse, replayable — against the new one, so it must go with the switch.
     val repo = FakeAppSettingsRepository()
-    val session = StoredAuthSession(MapSettings()).apply { start("old-server-token") }
+    val session = StoredAuthSession(MapSettings()).apply { start("old-server-token", AccountProfile("u", "u@example.com")) }
     val vm = viewModel(repo, session = session, probe = { true })
     vm.next()
     vm.edit(CustomServerForm(host = "https://my.server"))
@@ -156,7 +157,7 @@ class CustomDataServerViewModelTest {
   @Test
   fun `choosing the official server clears the custom one and logs out`() = runTest {
     val repo = FakeAppSettingsRepository(AppPreferences(dataServerUrl = "https://my.server"))
-    val session = StoredAuthSession(MapSettings()).apply { start("token") }
+    val session = StoredAuthSession(MapSettings()).apply { start("token", AccountProfile("u", "u@example.com")) }
     val vm = viewModel(repo, session = session)
 
     vm.useOfficialServer(); advanceUntilIdle()

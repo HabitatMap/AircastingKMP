@@ -1,5 +1,6 @@
 package pl.llp.aircasting.settings.account
 
+import com.russhwolf.settings.MapSettings
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.plugins.ClientRequestException
@@ -7,7 +8,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
-import com.russhwolf.settings.MapSettings
+import pl.llp.aircasting.data.auth.AccountProfile
 import pl.llp.aircasting.data.auth.AuthSession
 import pl.llp.aircasting.data.auth.AuthState
 import pl.llp.aircasting.data.auth.StoredAuthSession
@@ -15,9 +16,11 @@ import pl.llp.aircasting.data.network.AccountApi
 import pl.llp.aircasting.data.network.createAircastingHttpClient
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFails
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.fail
 
 class NetworkAccountRepositoryTest {
 
@@ -68,7 +71,7 @@ class NetworkAccountRepositoryTest {
     )
 
     assertFailsWith<ClientRequestException> { repo.confirmAccountDeletion("0000") }
-    assertEquals(AuthState.SignedIn("tok-123"), session.state.value)
+    assertEquals(AuthState.SignedIn("tok-123", Stored), session.state.value)
   }
 
   @Test
@@ -82,14 +85,29 @@ class NetworkAccountRepositoryTest {
   }
 
   @Test
-  fun an_unauthorised_profile_request_fails_loudly() = runTest {
-    val repo = repository(
-      """{"error":"You need to sign in or sign up before continuing."}""",
-      status = HttpStatusCode.Unauthorized,
-      token = "stale",
-    )
-    assertFailsWith<ClientRequestException> { repo.profile() }
+  fun an_unauthorised_profile_request_ends_the_session() = runTest {
+    val session = signedIn()
+    val repo = repository(UNAUTHORIZED_JSON, status = HttpStatusCode.Unauthorized, session = session)
+
+    assertFailsWith<SessionExpired> { repo.profile() }
+
+    assertEquals(AuthState.SignedOut, session.state.value)
   }
+
+  @Test
+  fun a_401_for_a_previous_account_does_not_end_the_current_session() = runTest {
+    val session = signedIn()
+    val bob = AccountProfile(name = "bob", email = "bob@example.com")
+    // The request left with tok-123; by the time its 401 arrives, bob is signed in.
+    val repo = repository(UNAUTHORIZED_JSON, status = HttpStatusCode.Unauthorized, session = session) {
+      session.end(); session.start("tok-456", bob)
+    }
+
+    assertFails { repo.profile() }
+
+    assertEquals(AuthState.SignedIn("tok-456", bob), session.state.value)
+  }
+
   private fun repository(
     responseJson: String = EMPTY_JSON,
     status: HttpStatusCode = HttpStatusCode.OK,
@@ -104,11 +122,6 @@ class NetworkAccountRepositoryTest {
     return NetworkAccountRepository(AccountApi(createAircastingHttpClient(engine)), session)
   }
 
-  /** A fresh session, signed in with [token] unless it is null. */
-  private fun signedIn(token: String? = "tok-123") =
-    StoredAuthSession(MapSettings()).apply { token?.let(::start) }
-  private fun io.ktor.http.content.OutgoingContent.toByteReadPacketString(): String =
-    (this as io.ktor.http.content.OutgoingContent.ByteArrayContent).bytes().decodeToString()
 
   @Test
   fun update_profile_patches_only_the_changed_fields_with_bearer_auth() = runTest {
@@ -144,7 +157,7 @@ class NetworkAccountRepositoryTest {
     val repo = repository(SPEC_422_JSON, status = HttpStatusCode.UnprocessableEntity, session = session)
 
     assertFailsWith<AccountUpdateRejected> { repo.changePassword(current = "wrong", new = "short") }
-    assertEquals(AuthState.SignedIn("tok-123"), session.state.value)
+    assertEquals(AuthState.SignedIn("tok-123", Stored), session.state.value)
   }
 
   @Test
@@ -168,7 +181,88 @@ class NetworkAccountRepositoryTest {
     assertFailsWith<IllegalStateException> { repo.updateProfile(email = "adam@new-mail.com") }
   }
 
+  @Test
+  fun the_stored_profile_is_read_without_a_request() = runTest {
+    val repo = repository(USER_JSON) { fail("expected no request, got ${it.url}") }
+
+    assertEquals(Stored, repo.storedProfile)
+  }
+
+  @Test
+  fun a_fetched_profile_replaces_the_stored_one() = runTest {
+    val session = signedIn()
+    val repo = repository(USER_JSON, session = session)
+
+    repo.profile()
+
+    assertEquals(AuthState.SignedIn("tok-123", Adam), session.state.value)
+  }
+
+  @Test
+  fun a_failed_fetch_keeps_the_stored_profile() = runTest {
+    val session = signedIn()
+    val repo = repository("<html>oops</html>", status = HttpStatusCode.InternalServerError, session = session)
+
+    assertFails { repo.profile() }
+
+    assertEquals(AuthState.SignedIn("tok-123", Stored), session.state.value)
+  }
+
+  @Test
+  fun an_updated_profile_replaces_the_stored_one() = runTest {
+    val session = signedIn()
+    val repo = repository(USER_JSON, session = session)
+
+    repo.updateProfile(email = "adam.smith.1989@mail.com")
+
+    assertEquals(AuthState.SignedIn("tok-123", Adam), session.state.value)
+  }
+
+  @Test
+  fun a_rejected_update_keeps_the_stored_profile() = runTest {
+    val session = signedIn()
+    val repo = repository(SPEC_422_JSON, status = HttpStatusCode.UnprocessableEntity, session = session)
+
+    assertFailsWith<AccountUpdateRejected> { repo.updateProfile(email = "taken@mail.com") }
+
+    assertEquals(AuthState.SignedIn("tok-123", Stored), session.state.value)
+  }
+
+  @Test
+  fun a_profile_fetched_before_an_account_switch_is_not_stored() = runTest {
+    val session = signedIn()
+    val bob = AccountProfile(name = "bob", email = "bob@example.com")
+    // Runs while the request is in flight: it already left with tok-123.
+    val repo = repository(USER_JSON, session = session) { session.end(); session.start("tok-456", bob) }
+
+    repo.profile()
+
+    assertEquals(AuthState.SignedIn("tok-456", bob), session.state.value)
+  }
+
+  @Test
+  fun an_update_answered_after_an_account_switch_is_not_stored() = runTest {
+    val session = signedIn()
+    val bob = AccountProfile(name = "bob", email = "bob@example.com")
+    val repo = repository(USER_JSON, session = session) { session.end(); session.start("tok-456", bob) }
+
+    repo.updateProfile(email = "adam.smith.1989@mail.com")
+
+    assertEquals(AuthState.SignedIn("tok-456", bob), session.state.value)
+  }
+
+  private fun io.ktor.http.content.OutgoingContent.toByteReadPacketString(): String =
+    (this as io.ktor.http.content.OutgoingContent.ByteArrayContent).bytes().decodeToString()
+
+  /** A fresh session, signed in with [token] and [Stored] unless the token is null. */
+  private fun signedIn(token: String? = "tok-123") =
+    StoredAuthSession(MapSettings()).apply { token?.let { start(it, Stored) } }
+
+
   private companion object {
+    /** What the session holds before any request: deliberately different from [USER_JSON]. */
+    val Stored = AccountProfile(name = "u", email = "u@example.com")
+    val Adam = AccountProfile(name = "adam.smith", email = "adam.smith.1989@mail.com")
     const val EMPTY_JSON = "{}"
     val SPEC_422_JSON = """
       {
@@ -188,5 +282,7 @@ class NetworkAccountRepositoryTest {
         "session_stopped_alert": true
       }
     """.trimIndent()
+    val UNAUTHORIZED_JSON = """{"error_code":"unauthorized","message":"Missing or invalid token"}"""
+
   }
 }

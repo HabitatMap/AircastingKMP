@@ -3,6 +3,7 @@ package pl.llp.aircasting.data.network
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
+import pl.llp.aircasting.data.auth.AccountProfile
 
 @Serializable
 data class UserDto(
@@ -10,6 +11,8 @@ data class UserDto(
   val username: String,
   @SerialName("authentication_token") val authenticationToken: String,
 )
+
+internal fun UserDto.toProfile() = AccountProfile(name = username, email = email)
 
 @Serializable
 data class PasswordResetBody(val user: Login) {

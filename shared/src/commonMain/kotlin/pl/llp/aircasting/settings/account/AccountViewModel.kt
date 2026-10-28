@@ -16,21 +16,31 @@ class AccountViewModel(private val repository: AccountRepository) : ViewModel() 
 
   private val log = Logger.withTag("Account")
 
-  private val _state = MutableStateFlow<AccountScreenState>(AccountScreenState.Loading)
+  private val _state = MutableStateFlow(
+    repository.storedProfile?.let(AccountScreenState::Content) ?: AccountScreenState.Loading,
+  )
   val state: StateFlow<AccountScreenState> = _state.asStateFlow()
   private val _sessionEnded = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
   val sessionEnded: SharedFlow<Unit> = _sessionEnded.asSharedFlow()
 
   fun refresh() = viewModelScope.launch {
-    _state.value = runCatching { repository.profile() }.fold(
-      onSuccess = { AccountScreenState.Content(it) },
-      onFailure = {
-        // Covers both a 401 (token expired) and the missing-token invariant violation. Once a
-        // login screen exists, a 401 should end the session instead of showing Error.
+    runCatching { repository.profile() }
+      // Swap only the profile: refresh runs on every ON_RESUME, and replacing the whole
+      // Content would close whatever dialog the user left the app with open.
+      .onSuccess { profile ->
+        _state.update { s -> (s as? AccountScreenState.Content)?.copy(profile = profile) ?: AccountScreenState.Content(profile) }
+      }
+      .onFailure {
+        if (it is SessionExpired) {
+          log.i { "token rejected, session ended" }
+          _sessionEnded.emit(Unit)
+          return@launch
+        }
+        // Network, 5xx, or the missing-token invariant violation.
         log.e(it) { "profile load failed" }
-        AccountScreenState.Error
-      },
-    )
+        // A shown profile beats an error screen; only an empty screen becomes Error.
+        _state.update { s -> s as? AccountScreenState.Content ?: AccountScreenState.Error }
+      }
   }
 
   fun signOut() = viewModelScope.launch {

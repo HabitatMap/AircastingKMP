@@ -1,3 +1,3 @@
-package pl.llp.aircasting.settings.account
+package pl.llp.aircasting.data.auth
 
 data class AccountProfile(val name: String, val email: String)

@@ -19,6 +19,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
+import pl.llp.aircasting.data.auth.AccountProfile
 import pl.llp.aircasting.data.auth.StoredAuthSession
 import pl.llp.aircasting.data.network.MobileSessionsApi
 import pl.llp.aircasting.data.network.createAircastingHttpClient
@@ -169,7 +170,7 @@ class MobileSessionUploadTest {
       }
     }
     val api = MobileSessionsApi(createAircastingHttpClient(engine))
-    val auth = StoredAuthSession(MapSettings()).apply { token?.let(::start) }
+    val auth = StoredAuthSession(MapSettings()).apply { token?.let { start(it, AccountProfile("u", "u@example.com")) } }
     return MobileSessionUpload(
       api = api,
       sessions = sessions,

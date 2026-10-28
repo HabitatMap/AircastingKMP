@@ -57,7 +57,7 @@ class AuthViewModelTest {
     vm.submit()
     testScheduler.advanceUntilIdle()
 
-    assertEquals(AuthState.SignedIn("tok"), vm.session.value)
+    assertEquals(AuthState.SignedIn("tok", null), vm.session.value)
     assertFalse(vm.form.value.isSubmitting)
     assertNull(vm.form.value.failure)
   }
@@ -181,7 +181,7 @@ private class FakeAuthRepository : AuthRepository {
   private suspend fun record(): Result<Unit> {
     calls++
     gate?.await()
-    if (result.isSuccess) _state.value = AuthState.SignedIn("tok")
+    if (result.isSuccess) _state.value = AuthState.SignedIn("tok", null)
     return result
   }
 }

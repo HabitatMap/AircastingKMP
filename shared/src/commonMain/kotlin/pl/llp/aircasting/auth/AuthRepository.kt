@@ -5,6 +5,7 @@ import pl.llp.aircasting.data.auth.AuthSession
 import pl.llp.aircasting.data.auth.AuthState
 import pl.llp.aircasting.data.network.AuthApi
 import pl.llp.aircasting.data.network.AuthResponse
+import pl.llp.aircasting.data.network.toProfile
 import kotlin.coroutines.cancellation.CancellationException
 
 interface AuthRepository {
@@ -34,7 +35,7 @@ class NetworkAuthRepository(
       is AuthResponse.Authenticated -> {
         // Starting the session is the *only* success signal. Everything watching `state`
         // — the gate, the sheet, Account — reacts off this one write.
-        session.start(response.user.authenticationToken)
+        session.start(response.user.authenticationToken, response.user.toProfile())
         Result.success(Unit)
       }
       AuthResponse.Rejected -> Result.failure(AuthFailure.InvalidCredentials)

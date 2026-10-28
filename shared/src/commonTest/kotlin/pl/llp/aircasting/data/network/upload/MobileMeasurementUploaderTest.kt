@@ -10,6 +10,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.OutgoingContent
 import kotlinx.coroutines.test.runTest
+import pl.llp.aircasting.data.auth.AccountProfile
 import pl.llp.aircasting.data.auth.StoredAuthSession
 import pl.llp.aircasting.data.network.MobileSessionsApi
 import pl.llp.aircasting.data.network.createAircastingHttpClient
@@ -114,7 +115,7 @@ class MobileMeasurementUploaderTest {
       api = MobileSessionsApi(createAircastingHttpClient(engine)),
       outbox = outbox,
       streams = FakeStreamRepository(streams),
-      auth = StoredAuthSession(MapSettings()).apply { token?.let(::start) },
+      auth = StoredAuthSession(MapSettings()).apply { token?.let { start(it, AccountProfile("u", "u@example.com")) } },
     )
   }
 

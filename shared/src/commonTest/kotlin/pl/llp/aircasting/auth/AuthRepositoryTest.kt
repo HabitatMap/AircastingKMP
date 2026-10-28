@@ -11,6 +11,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.TextContent
 import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
+import pl.llp.aircasting.data.auth.AccountProfile
 import pl.llp.aircasting.data.auth.AuthState
 import pl.llp.aircasting.data.auth.StoredAuthSession
 import pl.llp.aircasting.data.network.AuthApi
@@ -40,7 +41,7 @@ class NetworkAuthRepositoryTest {
     val result = repo.signIn("ada", "s3cret")
 
     assertTrue(result.isSuccess)
-    assertEquals(AuthState.SignedIn("tok-123"), repo.state.value)
+    assertEquals(AuthState.SignedIn("tok-123", AccountProfile("ada", "ada@example.com")), repo.state.value)
     assertEquals("/api/user.json", request!!.url.encodedPath)
     // Base64("ada:s3cret") — credentials, NOT Base64("token:X") like the other endpoints.
     assertEquals("Basic YWRhOnMzY3JldA==", request!!.headers[HttpHeaders.Authorization])
@@ -76,7 +77,7 @@ class NetworkAuthRepositoryTest {
         """"send_emails":true,"session_stopped_alert":true}}""",
       (request!!.body as TextContent).text,
     )
-    assertEquals(AuthState.SignedIn("tok-123"), repo.state.value)
+    assertEquals(AuthState.SignedIn("tok-123", AccountProfile("ada", "ada@example.com")), repo.state.value)
   }
 
   @Test

@@ -193,6 +193,11 @@ Paths below are under legacy `app/src/main/java/pl/llp/aircasting/`.
 **Tags.**
 - Legacy: a plain text field split on spaces, with no suggestions.
 - *Rewrite:* tags are chips (Figma 321-14808).
+- A tag can't contain a space. `tag_list` is space-separated (legacy `TAGS_SEPARATOR = " "`
+  in `Session.kt`), so a "multi word" tag would come back from the backend as several tags.
+  In the chip field, typing a space or a comma ends the current tag and turns it into a chip
+  (`NewSessionViewModel.editTagDraft`). The word still being typed counts as a tag, so Next
+  never drops it.
 - `POST /api/v3/fixed_sessions` has **no `tag_list`**, so tags must be set with a
   `PATCH /api/v3/fixed_sessions/{uuid}` after the create.
 

@@ -86,35 +86,6 @@ class NewSessionViewModelTest {
   }
 
   @Test
-  fun `tags are parsed from the comma-separated text trimmed and de-duplicated`() {
-    val vm = NewSessionViewModel(location)
-
-    vm.editTags(" school , traffic,, school ,  ")
-
-    assertEquals(listOf("school", "traffic"), vm.state.value.form.tags)
-  }
-
-  @Test
-  fun `a half-typed tag still counts so Next never silently drops it`() {
-    val vm = NewSessionViewModel(location)
-
-    vm.editTags("school, traffic")
-
-    assertEquals(listOf("school", "traffic"), vm.state.value.form.tags)
-  }
-
-  @Test
-  fun `a suggestion appends to what is already typed`() {
-    val vm = NewSessionViewModel(location)
-    vm.editTags("school,")
-
-    vm.addTag("traffic")
-
-    assertEquals(listOf("school", "traffic"), vm.state.value.form.tags)
-    assertEquals("school, traffic", vm.state.value.form.tagsInput)
-  }
-
-  @Test
   fun `the sampling interval defaults to one second and is replaceable`() {
     val vm = NewSessionViewModel(location)
     assertEquals(SamplingInterval.OneSecond, vm.state.value.form.interval)
@@ -246,6 +217,90 @@ class NewSessionViewModelTest {
     vm.editWifiPassword("hunter2")
 
     assertFalse("hunter2" in vm.state.value.form.toString())
+  }
+
+  @Test
+  fun `a space or comma turns the typed word into a chip`() {
+    val vm = NewSessionViewModel(location)
+
+    vm.editTagDraft("school ")
+    vm.editTagDraft("traffic,")
+
+    assertEquals(listOf("school", "traffic"), vm.state.value.form.committedTags)
+    assertEquals("", vm.state.value.form.tagDraft)
+  }
+
+  /** tag_list is space-separated: a tag holding a space would come back from the backend as two. */
+  @Test
+  fun `a pasted list becomes chips except the word still being typed`() {
+    val vm = NewSessionViewModel(location)
+
+    vm.editTagDraft(" school , traffic,, bus")
+
+    assertEquals(listOf("school", "traffic"), vm.state.value.form.committedTags)
+    assertEquals("bus", vm.state.value.form.tagDraft)
+  }
+
+  @Test
+  fun `a half-typed tag still counts so Next never silently drops it`() {
+    val vm = NewSessionViewModel(location)
+    vm.editTagDraft("school ")
+
+    vm.editTagDraft("traf")
+
+    assertEquals(listOf("school", "traf"), vm.state.value.form.tags)
+  }
+
+  @Test
+  fun `the add chip turns the typed word into a chip`() {
+    val vm = NewSessionViewModel(location)
+    vm.editTagDraft("rooftop")
+
+    vm.commitTagDraft()
+
+    assertEquals(listOf("rooftop"), vm.state.value.form.committedTags)
+    assertEquals("", vm.state.value.form.tagDraft)
+  }
+
+  @Test
+  fun `a tag is never added twice`() {
+    val vm = NewSessionViewModel(location)
+
+    vm.editTagDraft("school school ")
+    vm.addTag("school")
+
+    assertEquals(listOf("school"), vm.state.value.form.tags)
+  }
+
+  @Test
+  fun `picking a matching tag replaces the half-typed word`() {
+    val vm = NewSessionViewModel(location)
+    vm.editTagDraft("traf")
+
+    vm.addTag("traffic")
+
+    assertEquals(listOf("traffic"), vm.state.value.form.tags)
+    assertEquals("", vm.state.value.form.tagDraft)
+  }
+
+  @Test
+  fun `removing a chip drops that tag`() {
+    val vm = NewSessionViewModel(location)
+    vm.editTagDraft("school traffic ")
+
+    vm.removeTag("school")
+
+    assertEquals(listOf("traffic"), vm.state.value.form.tags)
+  }
+
+  @Test
+  fun `matching tags start with the typed word ignore case and skip ones already in`() {
+    val state = NewSessionState(
+      form = NewSessionForm(committedTags = listOf("school"), tagDraft = "sc"),
+      recentTags = listOf("school", "Scooter", "traffic", "sc"),
+    )
+
+    assertEquals(listOf("Scooter"), state.matchingTags)
   }
 
   private val rooftop = GeoLocation(latitude = 50.06, longitude = 19.94)

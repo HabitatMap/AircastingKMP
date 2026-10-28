@@ -82,7 +82,7 @@ class RecordingViewModelTest {
   private val form = NewSessionForm(
     method = RecordingMethod.AirBeamMobile,
     name = "Morning walk",
-    tagsInput = "bike, commute",
+    committedTags = listOf("bike", "commute"),
     device = miniV2,
   )
   @Test

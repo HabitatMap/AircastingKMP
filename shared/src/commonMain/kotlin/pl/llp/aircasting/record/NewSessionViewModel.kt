@@ -24,7 +24,16 @@ data class NewSessionState(
       NewSessionStep.Location -> form.placement != null
       NewSessionStep.Confirm -> true
     }
+  /** Recent tags that complete the word being typed. */
+  val matchingTags: List<String>
+    get() = if (form.tagDraft.isEmpty()) emptyList()
+    else recentTags.filter { it.startsWith(form.tagDraft, ignoreCase = true) && it !in form.tags }
 }
+
+private val TagSeparators = Regex("[\\s,]+")
+
+private fun List<String>.plusTags(words: List<String>) =
+  (this + words.map { it.trim() }.filter { it.isNotEmpty() }).distinct()
 
 class NewSessionViewModel(location: PhoneLocation) : ViewModel() {
   private val _state = MutableStateFlow(NewSessionState())
@@ -40,13 +49,21 @@ class NewSessionViewModel(location: PhoneLocation) : ViewModel() {
 
   fun rename(name: String) = edit { it.copy(name = name) }
 
-  fun editTags(input: String) = edit { it.copy(tagsInput = input) }
-
-  fun addTag(tag: String) = edit { form ->
-    val clean = tag.trim()
-    if (clean.isEmpty() || clean in form.tags) form
-    else form.copy(tagsInput = (form.tags + clean).joinToString(", "))
+  /**
+   * A space or comma ends a tag: tag_list is space-separated, so a tag can't hold one
+   * (DOMAIN_KNOWLEDGE.md "Tags"). Everything before the last separator becomes chips.
+   */
+  fun editTagDraft(text: String) = edit { form ->
+    val words = text.split(TagSeparators)
+    form.copy(committedTags = form.committedTags.plusTags(words.dropLast(1)), tagDraft = words.last())
   }
+
+  fun commitTagDraft() = edit { it.copy(committedTags = it.committedTags.plusTags(listOf(it.tagDraft)), tagDraft = "") }
+
+  /** A suggestion replaces the half-typed word it completes. */
+  fun addTag(tag: String) = edit { it.copy(committedTags = it.committedTags.plusTags(listOf(tag)), tagDraft = "") }
+
+  fun removeTag(tag: String) = edit { it.copy(committedTags = it.committedTags - tag) }
 
   fun setInterval(interval: SamplingInterval) = edit { it.copy(interval = interval) }
 

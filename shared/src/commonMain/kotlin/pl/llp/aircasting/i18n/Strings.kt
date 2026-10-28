@@ -57,6 +57,20 @@ interface Strings {
   val sessionTagsPlaceholder: String
   val latestTagsHeader: String
   fun addTagLabel(tag: String): String
+  fun removeTagLabel(tag: String): String
+  val matchingTagsHeader: String
+  fun addNewTag(tag: String): String
+  val placementHeader: String
+  val placementIndoor: String
+  val placementOutdoor: String
+  val placementHint: String
+  val wifiHeader: String
+  val wifiNameLabel: String
+  val wifiNamePlaceholder: String
+  val wifiNameHint: String
+  val wifiPasswordLabel: String
+  val wifiPasswordPlaceholder: String
+  val wifiPasswordHint: String
   val samplingIntervalHeader: String
   val samplingIntervalHint: String
   fun samplingSeconds(count: Int): String

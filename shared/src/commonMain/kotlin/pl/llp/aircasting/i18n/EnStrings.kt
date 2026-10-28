@@ -327,6 +327,20 @@ object EnStrings : Strings {
   override val thresholdMedium = "Medium"
   override val thresholdHigh = "High"
   override val thresholdMax = "Max"
+  override fun removeTagLabel(tag: String): String = "Remove tag $tag"
+  override val matchingTagsHeader = "MATCHING TAGS"
+  override fun addNewTag(tag: String): String = "Add \u201C$tag\u201D"
+  override val placementHeader = "WHERE WILL YOU PLACE YOUR AIRBEAM?"
+  override val placementIndoor = "Indoor"
+  override val placementOutdoor = "Outdoor"
+  override val placementHint = "Indoor sessions don\u2019t show their location on the public map."
+  override val wifiHeader = "2.4 GHz WiFi NETWORK SETTINGS"
+  override val wifiNameLabel = "Network name"
+  override val wifiNamePlaceholder = "e.g. \u201CSchool_WiFi\u201D"
+  override val wifiNameHint = "Enter the Wi-Fi name (SSID) your AirBeam should use."
+  override val wifiPasswordLabel = "Network password"
+  override val wifiPasswordPlaceholder = "Enter Wi-Fi password"
+  override val wifiPasswordHint = "Enter the password for this Wi-Fi network."
 }
 
 /** Every available locale, keyed by BCP-47 tag. Lyricist selects one by the system locale at runtime. */

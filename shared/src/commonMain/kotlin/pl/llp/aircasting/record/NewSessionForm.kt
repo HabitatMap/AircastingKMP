@@ -28,8 +28,9 @@ fun Strings.label(interval: SamplingInterval): String = when (interval) {
 data class NewSessionForm(
   val method: RecordingMethod? = null,
   val device: DiscoveredAirBeam? = null,
+  val committedTags: List<String> = emptyList(),
   val name: String = "",
-  val tagsInput: String = "",
+  val tagDraft: String = "",
   val interval: SamplingInterval = SamplingInterval.OneSecond,
   /** Fixed only. Indoor by default, as in legacy: no pin to place. */
   val indoor: Boolean = true,
@@ -37,8 +38,9 @@ data class NewSessionForm(
   /** Fixed only. Its toString() hides the password, so this form's does too. */
   val wifi: WifiCredentials = WifiCredentials("", ""),
 ) {
+  /** Chips plus the half-typed word, so Next never drops it. */
   val tags: List<String>
-    get() = tagsInput.split(',').map { it.trim() }.filter { it.isNotEmpty() }.distinct()
+    get() = (committedTags + tagDraft).filter { it.isNotEmpty() }.distinct()
 
   /** Null while an outdoor session has no pin yet. */
   val placement: Placement?

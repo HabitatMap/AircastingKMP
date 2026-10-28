@@ -13,7 +13,7 @@ class SessionSummaryTest {
     val form = NewSessionForm(
       method = RecordingMethod.PhoneMicrophone,
       name = "Morning commute",
-      tagsInput = "school, traffic",
+      committedTags = listOf("school", "traffic"),
       interval = SamplingInterval.OneSecond,
     )
     val summary = EnStrings.summarize(form)

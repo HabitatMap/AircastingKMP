@@ -159,7 +159,8 @@ object EnStrings : Strings {
   override val settingsAppSubtitle = "Language, notifications, privacy"
   override val settingsHelpTitle = "Help"
   override val settingsHelpSubtitle = "FAQ, resources, app version"
-
+  override val helpSectionActions = "AirCasting Actions"
+  override val contentLocale = "en-US"
   override val settingsAccountSectionHeader = "ACCOUNT"
   override val accountChangeEmail = "Change email"
   override val accountChangeUsername = "Change username"

@@ -172,7 +172,7 @@ Path constants from `ApiConstants.kt`. **Bold** = Home-relevant.
 | Weekly bars + avg/peak/good-days | B (`measurements`) | bucket per day, aggregate client-side |
 | Weekly AQI banding / bar colors | B (`threshold_*`) | level → color in theme |
 | **Location services on/off** | — none (PLATFORM) | `LocationProvider` seam (arch §5), drives `NoLocationServices` |
-| **"Learn more" content cards** | — **none** | NEW endpoint or static/CMS; hardcode for now |
+| **"Learn more" content cards** | `GET /api/v3/app_config` → `learn_more[]` | see `API_V3.md` → *App configuration*; not integrated yet |
 
 ### Gaps / decisions for the redesign
 1. **No single "nearest-station snapshot" endpoint.** Home's AQ card is assembled from **3+
@@ -182,6 +182,6 @@ Path constants from `ApiConstants.kt`. **Bold** = Home-relevant.
    request object.
 3. **Bounding box, not radius.** "Nearby" = a lat/lng square around the device; there's no
    distance/radius param. Home must build the box (and the "0.4 mile away" label is client-side).
-4. **No "Learn more" API.** Confirm whether this is CMS-driven or static content.
+4. ~~**No "Learn more" API.**~~ Resolved: served by `/api/v3/app_config` (`API_V3.md` → *App configuration*).
 5. **Weekly granularity unconfirmed** — verify `/streams.json` returns hourly averages over 7
    days (vs raw); may need a dedicated summary endpoint for avg/peak/good-days.

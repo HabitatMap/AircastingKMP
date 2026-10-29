@@ -162,6 +162,9 @@ interface Strings {
   val settingsAppSubtitle: String
   val settingsHelpTitle: String
   val settingsHelpSubtitle: String
+  val helpSectionActions: String
+  /** Locale sent to the backend for server-translated copy; must match this object's language. */
+  val contentLocale: String
   val settingsAccountSectionHeader: String
   // App settings — section headers
   val appSettingsCommunityHeader: String

@@ -196,6 +196,46 @@ is auth'd and own-sessions-only).
 
 ---
 
+## App configuration — tag `Mobile app: App configuration`
+
+*Added 2026-10-29.* Public (`security: []`), no auth.
+
+| Method | Path | Query | |
+|---|---|---|---|
+| GET | `/api/v3/app_config` | `locale` (opt: `en-US`,`en-GB`,`es`,`fr`,`de`,`pt`,`it`) | translated link lists for Settings › Help and Home "Learn more" |
+
+- **Any `locale` is accepted** (verified: `en`, `pl` → `200`, served as `en-US`). Response `locale` = what was actually served.
+- `help[]`, `aircasting_actions[]`: `{title, url}`, in display order. Used by Settings › Help (`HelpRepository`).
+- `learn_more[]`: `{post_slug, title, category?, url, thumbnail_url?}`. Thumbnail is 192×192 WebP, render as-is.
+  Send `post_slug` as GA4 event param on show/tap and as `ac_post` on the outbound link — never recompute it. **Not integrated yet.**
+- Client sends `Strings.contentLocale` (the active UI language), not the system locale — keeps server copy in the UI's language.
+  Also in docs/BACKEND_ENDPOINTS.md, change the "Learn more" gap (row at line 175, gap #4) to say it's now served by /api/v3/app_config.
+
+---
+
+## App configuration — tag `Mobile app: App configuration`
+
+*Added to this doc 2026-10-29.* One public endpoint (`security: []`, no auth): translated link lists the
+app renders instead of hardcoding them.
+
+| Method | Path | Query | |
+|---|---|---|---|
+| GET | `/api/v3/app_config` | `locale` (opt: `en-US`, `en-GB`, `es`, `fr`, `de`, `pt`, `it`) | link lists for Settings › Help and Home "Learn more" |
+
+- **Any `locale` is accepted.** Verified 2026-10-29 on experimental: `en`, `pl` → `200`, served as `en-US`.
+  Response `locale` = what was actually served; `default_locale` = what untranslated strings fall back to.
+- **Client sends `Strings.contentLocale`** — the language the UI is actually rendered in, not the system
+  locale. Lyricist falls back to English for languages we don't ship, so sending the system locale would
+  mix e.g. German link titles into an English screen.
+- `help[]`, `aircasting_actions[]`: `{ title, url }`, **in display order**. Rendered by Settings › Help
+  (`AppConfigApi` → `NetworkHelpRepository` → `HelpViewModel`). Not cached — fetched on each visit.
+- `learn_more[]`: `{ post_slug, title, category?, url, thumbnail_url? }`, in display order. `thumbnail_url`
+  is already 192×192 WebP — render as-is. Send `post_slug` as the GA4 `post_slug` event param on show/tap
+  and as `ac_post` on the outbound link, so mobile taps join the web banner's series; **never recompute it**
+  from `url`. **Not integrated yet** (needs an image loader and analytics).
+
+---
+
 ## Binary measurement upload
 
 Both `POST .../measurements` endpoints take a raw binary body. Same envelope, **different frame size**.

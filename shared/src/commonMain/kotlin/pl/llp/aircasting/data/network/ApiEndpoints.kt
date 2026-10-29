@@ -1,6 +1,10 @@
 package pl.llp.aircasting.data.network
 
 object ApiEndpoints {
+  // =========================================================================
+  // Mobile app: App configuration v3 (public, no auth)
+  // =========================================================================
+  const val V3AppConfig = "/api/v3/app_config"
 
   // =========================================================================
   // Mobile app: Account & auth (HTTP Bearer Auth: Bearer <user_token>; sign-in itself is Basic login:password)

@@ -163,12 +163,22 @@ already existed is `session_uuid_taken` (409) — stop retrying, continue with t
 
 | `type` | Fields |
 |---|---|
-| `station` | `uuid` (session uuid for AirBeam, station uuid for gov), `source` (`airbeam`/`government`), `title`, `provider` (AirBeam: owner's username; gov: agency name, e.g. `US EPA AirNow`), `latitude`, `longitude`, `last_measured_at` (epoch **ms**, UTC — newest of its selected streams), `measurement_types[]` (selected types it measures, catalogue order), `value?` |
+| `station` | `uuid` (session uuid for AirBeam, station uuid for gov), `source` (`airbeam`/`government`), `title`, `provider` (AirBeam: owner's username; gov: agency name, e.g. `US EPA AirNow`), `latitude`, `longitude`, `streams[]` (≥ 1, see below) |
 | `cluster` | `latitude`, `longitude` (mean of members), `count` (≥ 2), `value?` (mean of members' values) |
 
-**`value`** is present **only when exactly one measurement type is selected**, rounded to an integer.
-AirBeam: last hourly average (newest reading while there's none yet); gov: newest reading. Temperature
-is **Fahrenheit** (server default).
+*Changed on experimental 2026-10-29:* a station's `last_measured_at`, `measurement_types[]` and
+`value?` were replaced by **`streams[]`** — one entry per **selected** type the item reports, catalogue
+order: `stream_id`, `sensor_name`, `measurement_type`, `unit_symbol`,
+`last_measurement { value, time }`.
+
+- `stream_id` = `streams.id` (AirBeam) or `station_streams.id` (gov) — two tables, so unique only
+  within a `source`. It is the key to the public stream-detail endpoints (see *Explore session
+  details* below).
+- `last_measurement` is never null (a stream without a reading is left out). `value` is an **integer**
+  (rounded, as the map draws it); AirBeam: last hourly average (newest reading while there's none
+  yet); gov: newest reading. `time` = epoch **ms, true UTC**. Temperature is **Fahrenheit**.
+- Every stream always carries its value, so the client — not the server — decides when to show one
+  (exactly one type selected). A cluster still carries `value` only for exactly one selected type.
 
 **Each filter = exactly one sensor per source** (BE `Explore::Parameters::CATALOGUE`,
 HabitatMap/AirCasting PR #1247, read 2026-10-22):
@@ -190,9 +200,35 @@ of the type: their mean" only covers a government station with a duplicated stre
 **No unit, thresholds or level in the response** — colouring is the client's job, from the user's
 local thresholds (`DOMAIN_KNOWLEDGE.md` → *Explore map*).
 
-**Not covered yet (later BE work):** tapping an item → details / follow. There is no `Mobile app:`
-endpoint that reads a public fixed session or gov station by `uuid` (`/api/v3/fixed_sessions/{uuid}`
-is auth'd and own-sessions-only).
+### Explore session details — public stream endpoints
+
+There is still no `Mobile app:` endpoint that reads a public fixed session or gov station by `uuid`
+(`/api/v3/fixed_sessions/{uuid}` is auth'd and own-sessions-only). Details go **per stream**, via the
+map's `stream_id`, to two public (`security: []`) endpoints tagged `Web app:`:
+
+| Method | Path | For `source` |
+|---|---|---|
+| GET | `/api/v3/fixed_streams/{stream_id}` | `airbeam` |
+| GET | `/api/v3/station_streams/{stream_id}` | `government` |
+
+Same `200` shape for both (read 2026-10-29):
+- `stream` — `active`, `title`, `latitude`, `longitude`, `profile` (owner / agency), `sensor_name`,
+  `unit_symbol`, `update_frequency` (`"1 minute"`, `"1 hour"`), `last_update` (ISO, nullable),
+  `session_id`, `start_time`, `end_time` (ISO), and the **server's** thresholds `min`·`low`·`middle`·
+  `high`·`max`.
+- `measurements[]` — `{ time, value }` for the **last 2 days**, `value` a float. **Ordering:** spec
+  says newest first; live gov data comes **oldest first** — sort client-side, don't trust either.
+- `stream_daily_averages[]` — `{ date: "YYYY-MM-DD", value: int }`, last 3 full calendar months.
+- **Times here are local-as-UTC** (the station's wall clock encoded as a UTC epoch / ISO string) —
+  unlike the map's `last_measurement.time`, which is true UTC. Use the map's time for "N min ago".
+- `404 not_found` — unknown id, or (gov) a stream with no measurements.
+
+Longer ranges: `GET /api/v3/fixed_measurements?stream_id&start_time&end_time` (AirBeam, epoch ms) and
+`GET /api/v3/{fixed,station}_stream_daily_averages?stream_id&start_date&end_date`.
+
+**Gaps vs the session-details design:** no device model (`AirBeam Mini`), no indoor/outdoor, no
+address ("Location name"), and only the streams of the **selected** filter types come with the map
+item — a station's other streams (e.g. PM1 next to PM2.5) have no public lookup.
 
 ---
 

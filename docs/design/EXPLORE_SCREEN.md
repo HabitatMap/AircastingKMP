@@ -15,6 +15,30 @@
 |------|---------|-----|
 | **Map section** (4 states) | `1717:1733` | https://www.figma.com/design/8AQfUtkIu9qgd4CAVNPbXB/Air-Casting-app-re-design?node-id=1717-1733 |
 | **Filters bottom sheet** | `780:1663` | https://www.figma.com/design/8AQfUtkIu9qgd4CAVNPbXB/Air-Casting-app-re-design?node-id=780-1663 |
+| **Session details** (tap a station) | `1839:1551` | https://www.figma.com/design/8AQfUtkIu9qgd4CAVNPbXB/Air-Casting-app-re-design?node-id=1839-1551 |
+
+---
+
+## Session details (captured 2026-10-29)
+
+Full screen, **no bottom nav**. Frames: chart (`693:1565`), map (`693:1735`, `693:1925`), map with a
+point tooltip, map full-screen; app-bar variants "already in favourites" (`872:7751`, filled heart) and
+"notification active" (`859:7445`, ringing bell).
+
+Top → bottom:
+- **App bar:** back · export · share · favourite (heart) · threshold alert (bell+).
+- **Badges:** source (`AIRBEAM FIXED` / gov) + level of the selected stream's NOW value (`Moderate`).
+- **Title**, "Location name", meta row `Outdoor · AirBeam Mini · 1 min ago`.
+- **Stream chips** (`PM 1`, `PM 2.5`) — pick the stream everything below shows.
+- **Stats:** `NOW` · `MIN. 24H` · `MAX. 24H`, each value with a level dot + unit. (Frame 1 and 3 label
+  the third one `MIN. 24H` — a design typo; frame 2 says `MAX. 24H`.)
+- **Graph | Map** segmented toggle.
+  - *Graph:* line over threshold-coloured bands, hours on the x-axis, tap → tooltip (`01:00 · 13 µg/m³`).
+  - *Map:* track of coloured points + expand-to-full-screen button. (A fixed session doesn't move —
+    open question whether this applies to Explore at all.)
+- **Threshold slider** (5 handles, e.g. 0·12·32·55·150) + `Reset to default`.
+
+Data: see `API_V3.md` → *Explore session details* — incl. the design fields the API can't fill yet.
 
 ---
 

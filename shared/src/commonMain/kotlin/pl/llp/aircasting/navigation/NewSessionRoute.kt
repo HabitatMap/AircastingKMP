@@ -17,11 +17,13 @@ import pl.llp.aircasting.record.DeviceStepUi
 import pl.llp.aircasting.record.NewSessionStep
 import pl.llp.aircasting.record.NewSessionViewModel
 import pl.llp.aircasting.record.RecordMethodScreen
+import pl.llp.aircasting.record.RecordingMethod
 import pl.llp.aircasting.record.RecordingViewModel
 import pl.llp.aircasting.record.SessionConfirmScreen
 import pl.llp.aircasting.record.SessionDetailsScreen
 import pl.llp.aircasting.record.StartState
 import pl.llp.aircasting.record.deviceStepUi
+import pl.llp.aircasting.record.rememberWifiNetworks
 import pl.llp.aircasting.scan.ScanUiState
 import pl.llp.aircasting.scan.ScanViewModel
 import pl.llp.aircasting.scan.rememberBluetoothPermission
@@ -56,6 +58,7 @@ fun NewSessionDestination(onExit: () -> Unit) {
       onIndoor = vm::setIndoor,
       onWifiName = vm::editWifiName,
       onWifiPassword = vm::editWifiPassword,
+      wifiNetworks = if (state.form.method == RecordingMethod.AirBeamFixed) rememberWifiNetworks() else null,
       onInterval = vm::setInterval,
       onBack = back,
       onCancel = onExit,

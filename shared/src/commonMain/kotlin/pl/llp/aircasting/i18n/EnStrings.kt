@@ -341,6 +341,7 @@ object EnStrings : Strings {
   override val wifiPasswordLabel = "Network password"
   override val wifiPasswordPlaceholder = "Enter Wi-Fi password"
   override val wifiPasswordHint = "Enter the password for this Wi-Fi network."
+  override val wifiShowNearby = "Show nearby networks"
 }
 
 /** Every available locale, keyed by BCP-47 tag. Lyricist selects one by the system locale at runtime. */

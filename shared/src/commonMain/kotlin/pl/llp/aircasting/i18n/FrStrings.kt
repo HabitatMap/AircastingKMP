@@ -369,4 +369,5 @@ object FrStrings : Strings {
   override val wifiPasswordLabel = "Mot de passe du réseau"
   override val wifiPasswordPlaceholder = "Saisissez le mot de passe Wi-Fi"
   override val wifiPasswordHint = "Saisissez le mot de passe de ce réseau Wi-Fi."
+  override val wifiShowNearby = "Afficher les réseaux à proximité"
 }

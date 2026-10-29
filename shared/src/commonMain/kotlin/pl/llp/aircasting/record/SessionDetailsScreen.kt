@@ -70,6 +70,7 @@ fun SessionDetailsScreen(
   onIndoor: (Boolean) -> Unit,
   onWifiName: (String) -> Unit,
   onWifiPassword: (String) -> Unit,
+  wifiNetworks: WifiNetworks?,
   onInterval: (SamplingInterval) -> Unit,
   onBack: () -> Unit,
   onCancel: () -> Unit,
@@ -152,6 +153,17 @@ fun SessionDetailsScreen(
           imeAction = ImeAction.Next,
           hint = strings.wifiNameHint,
         )
+        if (wifiNetworks != null) {
+          Spacer(Modifier.height(8.dp))
+          FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (!wifiNetworks.granted) {
+              TagSuggestion(strings.wifiShowNearby, description = null, onClick = wifiNetworks::request)
+            }
+            wifiNetworks.names.filterNot { it == form.wifi.ssid }.forEach { name ->
+              SuggestionChip(onClick = { onWifiName(name) }, label = { Text(name, style = MaterialTheme.typography.labelSmall) })
+            }
+          }
+        }
         Spacer(Modifier.height(16.dp))
         PasswordField(
           value = form.wifi.password,
@@ -312,13 +324,16 @@ private fun PasswordField(
   )
 }
 
-/** Seeded once from [value]; every edit after that is reported to [onValueChange]. */
+/** Seeded from [value], reports every edit to [onValueChange], and follows [value] when it changes from outside. */
 @Composable
 private fun rememberReportingFieldState(value: String, onValueChange: (String) -> Unit): TextFieldState {
   val fieldState = rememberTextFieldState(value)
   val onEdit by rememberUpdatedState(onValueChange)
   LaunchedEffect(fieldState) {
     snapshotFlow { fieldState.text.toString() }.collect { onEdit(it) }
+  }
+  LaunchedEffect(value) {
+    if (fieldState.text.toString() != value) fieldState.setTextAndPlaceCursorAtEnd(value)
   }
   return fieldState
 }

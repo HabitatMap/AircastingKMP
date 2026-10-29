@@ -353,4 +353,5 @@ interface Strings {
   val thresholdMedium: String
   val thresholdHigh: String
   val thresholdMax: String
+  val wifiShowNearby: String
 }

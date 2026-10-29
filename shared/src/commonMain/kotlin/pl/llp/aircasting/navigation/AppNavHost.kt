@@ -102,7 +102,7 @@ private fun NavGraphBuilder.settingsGraph(nav: NavHostController) {
   }
 
   composable<SettingsRoute.AirBeams> { SettingsPlaceholderScreen(SettingsRoute.AirBeams, pop) }
-  composable<SettingsRoute.Help> { SettingsPlaceholderScreen(SettingsRoute.Help, pop) }
+  composable<SettingsRoute.Help> { HelpRoute(onBack = pop) }
   composable<SettingsRoute.AppSettings> {
     AppSettingsRoute(
       onBack = pop,

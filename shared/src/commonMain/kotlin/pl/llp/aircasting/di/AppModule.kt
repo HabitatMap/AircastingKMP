@@ -20,6 +20,7 @@ import pl.llp.aircasting.bluetooth.transport.ble.BleAirBeamConnector
 import pl.llp.aircasting.data.auth.AuthSession
 import pl.llp.aircasting.data.auth.StoredAuthSession
 import pl.llp.aircasting.data.network.AccountApi
+import pl.llp.aircasting.data.network.AppConfigApi
 import pl.llp.aircasting.data.network.AuthApi
 import pl.llp.aircasting.data.network.DefaultBackendUrl
 import pl.llp.aircasting.data.network.ExploreMapApi
@@ -50,6 +51,9 @@ import pl.llp.aircasting.settings.account.NetworkAccountRepository
 import pl.llp.aircasting.settings.app.AppSettingsRepository
 import pl.llp.aircasting.settings.app.AppSettingsViewModel
 import pl.llp.aircasting.settings.app.StoredAppSettingsRepository
+import pl.llp.aircasting.settings.help.HelpRepository
+import pl.llp.aircasting.settings.help.HelpViewModel
+import pl.llp.aircasting.settings.help.NetworkHelpRepository
 import pl.llp.aircasting.settings.server.CustomDataServerViewModel
 import kotlin.time.Clock
 
@@ -129,6 +133,12 @@ val exploreModule = module {
   viewModelOf(::ExploreViewModel)
 }
 
+val helpModule = module {
+  single { AppConfigApi(get()) }
+  single<HelpRepository> { NetworkHelpRepository(get()) }
+  viewModelOf(::HelpViewModel)
+}
+
 fun initKoin(extra: KoinAppDeclaration = {}) = startKoin {
   extra()
   modules(
@@ -142,6 +152,7 @@ fun initKoin(extra: KoinAppDeclaration = {}) = startKoin {
     recordModule,
     uploadModule,
     exploreModule,
+    helpModule,
   )
 }.also {
   startUploadLoop(it.koin)

@@ -176,6 +176,8 @@ object FrStrings : Strings {
   override val settingsAppSubtitle = "Langue, notifications, confidentialité"
   override val settingsHelpTitle = "Aide"
   override val settingsHelpSubtitle = "FAQ, ressources, version de l'application"
+  override val helpSectionActions = "Actions AirCasting"
+  override val contentLocale = "fr"
 
   override val settingsAccountSectionHeader = "COMPTE"
   override val accountChangeEmail = "Modifier l'adresse e-mail"

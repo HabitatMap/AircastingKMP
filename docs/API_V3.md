@@ -200,6 +200,34 @@ of the type: their mean" only covers a government station with a duplicated stre
 **No unit, thresholds or level in the response** — colouring is the client's job, from the user's
 local thresholds (`DOMAIN_KNOWLEDGE.md` → *Explore map*).
 
+### Explore station details — `GET /api/v3/explore/stations/{uuid}` (announced, not live yet)
+
+*Contract from the BE team, 2026-10-30. Not on experimental yet (no swagger entry; the path falls
+through to the web app's HTML). Re-check the swagger before relying on optional/nullable fields.*
+
+Public (`security: []`), like `/explore/map`. Keyed by the map station's `uuid`; one call returns the
+whole details header, so the details route only needs the `uuid`.
+
+```json
+{ "uuid": "0b7e…", "source": "airbeam", "title": "Home AirBeam Garden", "provider": "jane",
+  "latitude": 40.1, "longitude": -73.2, "active": true,
+  "device_model": "AirBeamMini", "share_url": "https://aircasting.org/s/ab12c",
+  "streams": [ { "stream_id": 35404, "sensor_name": "AirBeam-PM1",
+                 "measurement_type": "Particulate Matter", "unit_symbol": "µg/m³",
+                 "update_frequency": "1 minute",
+                 "last_measurement": { "value": 8, "time": 1793282400000 },
+                 "last_24h": { "min": 3, "max": 10 } } ] }
+```
+
+- Covers BE gaps listed in `design/EXPLORE_SCREEN.md`: all streams by `uuid` (PM1 included — note two
+  streams can share one `measurement_type`, so streams are keyed by `stream_id`/`sensor_name`, not type),
+  `device_model`, a public `share_url`, and MIN/MAX 24 h computed server-side.
+- `stream_id` still keys the per-stream endpoints below (graph data).
+- **Open with BE:** is `device_model` null for gov? `share_url` ever null? Can `last_24h` be null?
+  Is `sensor_name` canonical (`AirBeam-PM1`) or raw (`AirBeamMini-PM1`)? 404 body for an unknown uuid?
+  Is `last_measurement.time` true UTC like the map's (client assumes yes for "N min ago")?
+  Client treats `device_model`/`share_url` as nullable until answered.
+
 ### Explore session details — public stream endpoints
 
 There is still no `Mobile app:` endpoint that reads a public fixed session or gov station by `uuid`

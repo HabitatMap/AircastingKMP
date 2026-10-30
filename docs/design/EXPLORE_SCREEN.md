@@ -47,9 +47,10 @@ Endpoints: `API_V3.md` → *Explore session details*.
   fixed zoom (level to be picked against legacy). There is no track, because a fixed session doesn't move.
 - **Thresholds:** colour with the user's **local** thresholds, the same as the Explore map. Defaults
   and server-side thresholds (`threshold_sets`) come in a later slice, together with the graph.
-- **Navigation:** the type-safe route carries the tapped station's data (`source`, `uuid`, `title`,
-  `provider`, location, streams with ids/values/times). The screen renders immediately and survives
-  process death. There is no shared in-memory cache of the last map response.
+- **Navigation:** ~~the route carries the tapped station's data~~ — superseded 2026-10-30 by the BE's
+  `GET /api/v3/explore/stations/{uuid}` (`API_V3.md` → *Explore station details*). The type-safe route
+  carries **only the `uuid`**; the details ViewModel fetches the rest. Still no shared in-memory cache
+  of the last map response.
 - **Indoor/outdoor:** always "Outdoor". Explore only returns outdoor sessions.
 
 ### Design ↔ data
@@ -88,7 +89,7 @@ Endpoints: `API_V3.md` → *Explore session details*.
 - *Share link:* build the web map URL and shorten it with `POST /api/short_url`. This needs the
   web app's URL format from the web team.
 
-**Not provided: BE gap**
+**Not provided: BE gap** *(first two: answered by `/explore/stations/{uuid}`, announced 2026-10-30)*
 - A public "session/station by `uuid`" lookup returning all streams with ids, device model and
   address. Today this takes the chains above, one of them through a deprecated endpoint, and gov
   has no full-stream lookup at all.

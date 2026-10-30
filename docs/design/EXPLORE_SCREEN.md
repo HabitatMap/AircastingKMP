@@ -34,11 +34,69 @@ Top → bottom:
   the third one `MIN. 24H` — a design typo; frame 2 says `MAX. 24H`.)
 - **Graph | Map** segmented toggle.
   - *Graph:* line over threshold-coloured bands, hours on the x-axis, tap → tooltip (`01:00 · 13 µg/m³`).
-  - *Map:* track of coloured points + expand-to-full-screen button. (A fixed session doesn't move —
-    open question whether this applies to Explore at all.)
+  - *Map:* track of coloured points + expand-to-full-screen button.
 - **Threshold slider** (5 handles, e.g. 0·12·32·55·150) + `Reset to default`.
 
-Data: see `API_V3.md` → *Explore session details* — incl. the design fields the API can't fill yet.
+Endpoints: `API_V3.md` → *Explore session details*.
+
+### Decisions (2026-10-30)
+
+- **Missing fields:** build with what the API gives, and hide what it doesn't. Raise the gaps below
+  with the BE in parallel.
+- **Map tab:** keep it as a **stationary** map showing one marker at the station's location, at a
+  fixed zoom (level to be picked against legacy). There is no track, because a fixed session doesn't move.
+- **Thresholds:** colour with the user's **local** thresholds, the same as the Explore map. Defaults
+  and server-side thresholds (`threshold_sets`) come in a later slice, together with the graph.
+- **Navigation:** the type-safe route carries the tapped station's data (`source`, `uuid`, `title`,
+  `provider`, location, streams with ids/values/times). The screen renders immediately and survives
+  process death. There is no shared in-memory cache of the last map response.
+- **Indoor/outdoor:** always "Outdoor". Explore only returns outdoor sessions.
+
+### Design ↔ data
+
+**Provided as-is**
+- Source badge ← map `source`. Title ← map `title`. Owner/agency ← map `provider`.
+- "N min ago" ← map `last_measurement.time` (true UTC).
+- NOW value + unit ← map stream `last_measurement.value`, `unit_symbol`.
+- Stream chips (only the types the map sent) ← map `streams[]`.
+- Stationary map ← map `latitude`/`longitude`.
+- 48 h of measurements and 3 months of daily averages ← `fixed_streams/{id}` / `station_streams/{id}`.
+- Export ← `export_by_uuid.json` (AirBeam) / `station_streams/export` (gov). Both email a CSV.
+- Threshold alert CRUD ← `/api/fixed/threshold_alerts` (AirBeam; basic auth).
+- Default thresholds for "Reset to default" ← `threshold_sets`.
+
+**Derivable: needs work on our side**
+- *Level badge + level dots:* value → band, via thresholds. The band lookup must go through
+  `threshold_sets` `aliases`, because stream endpoints send raw names like `AirBeamMini-PM1`.
+- *MIN / MAX 24 h:* compute from `measurements[]`. Sort it first (live order contradicts the spec),
+  then cut a 24 h window ending at the newest point. **Open:** raw points or hourly averages?
+  AirBeam NOW is an hourly average, but its raw points come every minute.
+- *Graph:* sort the points, then probably bucket them hourly (AirBeam is 1-minute data, ~2 880
+  points over 48 h). Axis labels come from local-as-UTC times, so format them as UTC and don't
+  convert again.
+- *Every stream of an AirBeam (PM1, PM10, and all types regardless of the active filter):* chain
+  `fixed_streams/{id}` → `session_id` → deprecated `/api/fixed/sessions/{id}/streams.json`. This is
+  what legacy does.
+- *Every catalogue stream of a station regardless of filter (gov included):* re-query
+  `/explore/map` with a tight bbox around the station, no `measurement_types`, zoom ≥ 16, and
+  match it by `uuid`.
+- *Device model (`AirBeam Mini`):* parse the model prefix of a raw `sensor_name` (`AirBeamMini-…`,
+  `AirBeam3-…`) from the stream endpoint. Gov stations have no device, so show `provider` there.
+- *"Location name":* reverse-geocode lat/lon on the device (Android `Geocoder` / iOS
+  `CLGeocoder`, expect/actual).
+- *Favourite:* local only, as in legacy follow. It needs a local table.
+- *Share link:* build the web map URL and shorten it with `POST /api/short_url`. This needs the
+  web app's URL format from the web team.
+
+**Not provided: BE gap**
+- A public "session/station by `uuid`" lookup returning all streams with ids, device model and
+  address. Today this takes the chains above, one of them through a deprecated endpoint, and gov
+  has no full-stream lookup at all.
+- A public share URL for someone else's session (`share_url` exists only on own sessions).
+- Threshold alerts for **government stations**: undocumented whether `session_uuid` accepts a
+  station uuid.
+- Threshold alerts on **bearer** auth. They are basic-auth only, while the rest of v3 uses bearer.
+- Server-side storage of the user's edited thresholds. `threshold_sets` is defaults only.
 
 ---
 

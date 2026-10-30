@@ -226,9 +226,30 @@ Same `200` shape for both (read 2026-10-29):
 Longer ranges: `GET /api/v3/fixed_measurements?stream_id&start_time&end_time` (AirBeam, epoch ms) and
 `GET /api/v3/{fixed,station}_stream_daily_averages?stream_id&start_date&end_date`.
 
-**Gaps vs the session-details design:** no device model (`AirBeam Mini`), no indoor/outdoor, no
-address ("Location name"), and only the streams of the **selected** filter types come with the map
-item — a station's other streams (e.g. PM1 next to PM2.5) have no public lookup.
+- `stream.sensor_name` is the **raw model spelling** (`AirBeamMini-PM1`, verified live 2026-10-30), not
+  the canonical `AirBeam-PM1` — resolve it via `threshold_sets` `aliases` before any threshold lookup.
+- `stream.session_id` (AirBeam) = legacy `sessions.id` — the key to the deprecated session endpoint below.
+
+**All of a session's streams (AirBeam only):** `GET /api/fixed/sessions/{session_id}/streams.json?measurements_limit=N`
+(public, tag `Mobile app: Fixed sessions [DEPRECATED]`). Returns `title`, `username`, `is_indoor`,
+`latitude`/`longitude`, `notes[]` and **every** stream — incl. PM1/PM10, which Explore's catalogue never
+sends — each with `stream_id`, raw `sensor_name`, `measurement_short_type`, `sensor_unit`, server
+thresholds and `measurements[]`. Verified live 2026-10-30 (session 30277: `AirBeamMini-PM1` +
+`AirBeamMini-PM2.5`). This is what legacy `SearchFollowViewModel` loads
+(`ActiveFixedSessionsRepository.getSessionWithStreamsAndMeasurements`). Chain from the map:
+`stream_id` → `fixed_streams/{id}` → `stream.session_id` → this endpoint. No gov equivalent; there is no
+endpoint that lists a gov station's streams by station `uuid`.
+
+**Other endpoints the details screen touches (read 2026-10-30):**
+
+| Action | Endpoint | Notes |
+|---|---|---|
+| Default thresholds / "Reset to default" | `GET /api/v3/threshold_sets` (public, `Mobile app: Thresholds`) | One entry per **parameter** (canonical `sensor_name`, e.g. `AirBeam-PM2.5`) with `aliases[]` (every model spelling) and `thresholds {very_low, low, medium, high, very_high}`. **Defaults only** — per-user edits are not stored by the server; the spec says a client keeps its own overrides. `Government-PM2.5` is an alias of `AirBeam-PM2.5` (0·9·35·55·150). |
+| Threshold alert (bell) | `GET/POST /api/fixed/threshold_alerts`, `DELETE …/{id}` | **Basic auth** (not bearer). Body: `session_uuid`, `sensor_name` (raw, e.g. `AirBeam2-PM2.5`), `threshold_value`, `frequency` (min between emails), `timezone_offset` (s). Whether a gov station `uuid` is accepted is not documented. |
+| Export, AirBeam | `GET /api/sessions/export_by_uuid.json?uuid&email` | Public; emails a CSV. |
+| Export, gov | `GET /api/v3/station_streams/export?station_stream_ids[]&email` | Public; emails a CSV; ≤ 100 stream ids. |
+| Share | `POST /api/short_url` | Shortens a same-host web URL (e.g. `…/fixed_map?…`). There is no endpoint that returns a public session's share link. `share_url` exists only on own sessions (`fixed_sessions/{uuid}`). |
+| Favourite | — | No endpoint. Legacy "follow" was **local only** (`SessionFollower` sets `followedAt` in the local DB). |
 
 ---
 

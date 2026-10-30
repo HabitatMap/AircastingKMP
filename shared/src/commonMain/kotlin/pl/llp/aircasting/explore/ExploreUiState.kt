@@ -32,10 +32,10 @@ sealed interface ExploreMarker {
   data class Station(val station: MapStation, val level: MeasurementLevel?) : ExploreMarker
 }
 
-/** Pill text: the value with its unit when one type is selected (design frames 2–3), else the source badge (frame 1). */
+/** Pill text: the selected type's value with its unit (design frames 2–3), else the source badge (frame 1). */
 fun ExploreMarker.Station.label(colourType: MeasurementType?): String {
-  val value = station.value
-  return if (value != null && colourType != null) "$value ${colourType.unitSymbol}"
+  val value = colourType?.let(station::valueFor)
+  return if (colourType != null && value != null) "$value ${colourType.unitSymbol}"
   else when (station.source) {
     DataSource.AirBeam -> "AIRBEAM"
     DataSource.Government -> "GOV"

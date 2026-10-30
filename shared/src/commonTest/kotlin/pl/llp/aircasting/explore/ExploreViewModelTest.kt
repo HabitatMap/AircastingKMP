@@ -18,6 +18,7 @@ import pl.llp.aircasting.domain.GeoLocation
 import pl.llp.aircasting.domain.GeoSquare
 import pl.llp.aircasting.domain.MapCluster
 import pl.llp.aircasting.domain.MapStation
+import pl.llp.aircasting.domain.MapStream
 import pl.llp.aircasting.domain.MapViewport
 import pl.llp.aircasting.domain.MeasurementLevel
 import pl.llp.aircasting.domain.MeasurementType
@@ -322,8 +323,15 @@ class ExploreViewModelTest {
 
     fun station(source: DataSource, value: Int?) = MapStation(
       uuid = "u-$source", source = source, title = "Station", provider = "provider",
-      location = GeoLocation(40.7, -74.0), lastMeasuredAt = Instant.fromEpochMilliseconds(0),
-      measurementTypes = listOf(MeasurementType.ParticulateMatter), value = value,
+      location = GeoLocation(40.7, -74.0),
+      streams = listOfNotNull(value?.let {
+        MapStream(
+          1,
+          MeasurementType.ParticulateMatter,
+          it,
+          Instant.fromEpochMilliseconds(0)
+        )
+      }),
     )
 
     val AIRBEAM_12 = station(DataSource.AirBeam, 12)

@@ -1,5 +1,6 @@
 package pl.llp.aircasting.domain
 
+import io.ktor.openapi.ReferenceOr.Companion.value
 import kotlin.math.log2
 import kotlin.time.Instant
 
@@ -31,17 +32,21 @@ sealed interface MapItem {
 /** Several items sharing a server grid cell. Never colour-coded; zooming in splits it. */
 data class MapCluster(override val location: GeoLocation, val count: Int) : MapItem
 
-/** One AirBeam fixed session or government station. [value] only when exactly one type is selected. */
+/** A station's reading for one selected [type]. [id] keys the stream-detail endpoints, unique only within the station's source. */
+data class MapStream(val id: Long, val type: MeasurementType, val value: Int, val measuredAt: Instant)
+/** One AirBeam fixed session or government station, with a stream per selected type it reports. */
 data class MapStation(
   val uuid: String,
   val source: DataSource,
   val title: String,
   val provider: String,
   override val location: GeoLocation,
-  val lastMeasuredAt: Instant,
-  val measurementTypes: List<MeasurementType>,
-  val value: Int?,
-) : MapItem
+  val streams: List<MapStream>,
+) : MapItem {
+  /** This station's reading for [type]; null when it doesn't report it. */
+  fun valueFor(type: MeasurementType): Int? = streams.find { it.type == type }?.value
+}
+
 
 /**
  * The one sensor whose thresholds colour this source's [type] value; null if the source
@@ -84,15 +89,11 @@ fun List<MapItem>.resultCount(): Int = sumOf {
   }
 }
 
-/**
- * Colour of this station's [value] for [type], from the user's [thresholds] keyed by
- * sensor name. Null = nothing to colour (no value, or no threshold row).
- */
 fun MapStation.levelFor(
   type: MeasurementType,
   thresholds: Map<String, SensorThreshold>
 ): MeasurementLevel? {
-  val value = value ?: return null
+  val value = valueFor(type) ?: return null
   val sensorName = source.sensorNameFor(type) ?: return null
   return thresholds[sensorName]?.levelFor(value.toDouble())
 }

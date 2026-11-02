@@ -423,6 +423,37 @@ Replaces the legacy per-sensor `/api/fixed/active/sessions.json` search with the
     contiguous-US default; Explore never asks for permission itself.
 - place search uses a session token per keystroke run + fetch (billing), and no lookup for a blank query
 
+### Explore session details — times shown in the station's wall clock (*checked 2026-11-02*)
+Someone else's station (Explore, legacy "external"/followed session) shows its times in the
+**station's local time**, not the viewer's: a New York station reads 08:00 to a user in Warsaw.
+Intentional, and the same in all three places:
+- **Legacy app:** external sessions parse and format every BE time as UTC — `Chart.setTimesAndUnit`,
+  `SessionViewMvcImpl.bindSessionDetails`, `ExternalSessionChartDataCalculator.UTCTimeStampsSetter`,
+  `DownloadMeasurementsService.beTimeZone(isExternal)` (`if (isExternal) UTC else default`).
+- **BE** (`HabitatMap/AirCasting` @ `fc74251`): the `Web app:` stream endpoints send **local-as-UTC**
+  epochs — the station's wall clock packed as a UTC epoch (`Utils.to_local_as_utc`,
+  `StationMeasurementsSerializer`). AirBeam stores the device's wall clock in
+  `fixed_measurements.time` (no zone) next to the real instant in `time_with_time_zone`.
+- **Web app:** Highcharts with `useUTC: true` (per the `Utils` comment), so it shows the station's clock.
+
+Rewrite rules:
+- **Graph axis/tooltip times: format as UTC, never convert to the device zone.** That gives the
+  station's wall clock, as legacy does.
+- **"N min ago" needs a real instant**, so it comes from the map's / `/explore/stations`'
+  `last_measurement.time` (true UTC), never from the stream endpoints.
+- **48 h graph from `fixed_streams/{id}` / `station_streams/{id}`, not `*_measurements`.** Their
+  `last_2_days` is anchored server-side on the stream's newest real instant, so the client sends no
+  window. `fixed_measurements` / `station_measurements` take local-as-UTC bounds
+  (`StationMeasurements::IndexInteractor` converts them back with `from_local_as_utc`), so a true-UTC
+  `end_time = now` cuts the newest hours off stations east of UTC. Use those only for longer ranges.
+- **The graph shows 24 h, anchored on the newest measurement, not on "now".** Legacy
+  `SearchFollowViewModel.getStreamsWithMeasurementsFromResponse` keeps points `>= newest − 24 h`
+  (`lastMeasurementTimeMinus24Hours`) from a count-limited fetch (`measurements_limit` =
+  `MEASUREMENTS_IN_HOUR * 24`). Same here: take the 48 h response and trim it client-side. A station
+  that went quiet still shows its last 24 h instead of an empty graph.
+- Local-as-UTC is ambiguous at DST changes (an hour repeats in autumn, one is skipped in spring);
+  the BE accepts this (`Utils.from_local_as_utc` comment). Expect a duplicate/missing hour on the axis.
+
 ### Session actions
 Per-tab action bottom sheets: edit (rename/relocate), delete (per-stream or all),
 share (link or CSV file), follow/unfollow, threshold alerts. Follow/unfollow is

@@ -319,6 +319,9 @@ interface Strings {
   val exploreTemperature: String
   val exploreHumidity: String
   val exploreClearAll: String
+  val stationNow: String
+  val stationMin24h: String
+  val stationMax24h: String
   fun exploreShowResults(n: Int?): String
   fun exploreRemoveFilter(name: String): String
 }

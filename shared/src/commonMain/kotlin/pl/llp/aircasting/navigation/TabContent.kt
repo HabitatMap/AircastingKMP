@@ -27,6 +27,7 @@ fun TabContent(
   onRequestLocation: () -> Unit = {},
   onOpenSettings: () -> Unit = {},
   onStartNewSession: () -> Unit = {},
+  onOpenStation: (uuid: String) -> Unit = {},
 ) {
   when (tab) {
     AppTab.Home -> HomeRoute(onRequestLocation, onOpenSettings)
@@ -34,7 +35,7 @@ fun TabContent(
       onStartNewSession = onStartNewSession,
       onRecoverData = { /* TODO: recover & sync flow */ },
     )
-    AppTab.Explore -> ExploreRoute()
+    AppTab.Explore -> ExploreRoute(onOpenStation)
     else -> Placeholder(LocalStrings.current.label(tab))
   }
 }
@@ -53,7 +54,7 @@ private fun HomeRoute(onRequestLocation: () -> Unit, onOpenSettings: () -> Unit)
 }
 
 @Composable
-private fun ExploreRoute() {
+private fun ExploreRoute(onOpenStation: (String) -> Unit) {
   val vm = koinViewModel<ExploreViewModel>()
   val state by vm.state.collectAsStateWithLifecycle()
   ExploreScreen(
@@ -67,6 +68,7 @@ private fun ExploreRoute() {
     onSearchPlaces = vm::searchPlaces,
     onSelectPlace = vm::selectPlace,
     onFlownTo = vm::onFlownTo,
+    onOpenStation = onOpenStation,
   )
 }
 

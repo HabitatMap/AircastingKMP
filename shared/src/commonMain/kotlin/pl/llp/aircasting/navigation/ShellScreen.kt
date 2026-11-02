@@ -19,6 +19,7 @@ fun ShellScreen(
   onRequestLocation: () -> Unit,
   onOpenSettings: () -> Unit,
   onStartNewSession: () -> Unit,
+  onOpenStation: (uuid: String) -> Unit,
 ) {
   LaunchedEffect(Unit) { onRequestLocation() }
 
@@ -33,7 +34,7 @@ fun ShellScreen(
   ) { padding ->
     // Consume what we pad, so tabs using statusBarsPadding() etc. don't apply the inset twice.
     Box(Modifier.padding(padding).consumeWindowInsets(padding)) {
-      TabContent(selected, onRequestLocation, onOpenSettings, onStartNewSession)
+      TabContent(selected, onRequestLocation, onOpenSettings, onStartNewSession, onOpenStation)
     }
   }
 }

@@ -24,6 +24,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import co.touchlab.kermit.Logger
 import kotlinx.serialization.Serializable
 import org.koin.compose.koinInject
@@ -67,7 +68,11 @@ fun AppNavHost(onRequestLocation: () -> Unit = {}) {
         onRequestLocation = onRequestLocation,
         onOpenSettings = { nav.navigateOnce(SettingsRoute.Root) },
         onStartNewSession = { nav.navigateOnce(NewSessionRoute) },
+        onOpenStation = { uuid -> nav.navigateOnce(StationDetailsRoute(uuid)) },
       )
+    }
+    composable<StationDetailsRoute> { entry ->
+      StationDetailsDestination(entry.toRoute<StationDetailsRoute>().uuid, onBack = { nav.popBackStack() })
     }
     composable<NewSessionRoute> { NewSessionDestination(onExit = { nav.popBackStack() }) }
     composable<OnboardingRoute> { OnboardingDestination() }

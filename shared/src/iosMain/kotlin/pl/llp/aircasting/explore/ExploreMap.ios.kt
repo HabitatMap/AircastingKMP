@@ -48,10 +48,17 @@ actual fun ExploreMap(
   flyTo: GeoLocation?,
   onFlownTo: () -> Unit,
   onCameraIdle: (MapViewport) -> Unit,
+  onStationClick: (uuid: String) -> Unit,
   modifier: Modifier,
 ) {
   val currentOnCameraIdle by rememberUpdatedState(onCameraIdle)
-  val delegate = remember { ExploreMapDelegate { currentOnCameraIdle(it) } }
+  val currentOnStationClick by rememberUpdatedState(onStationClick)
+  val delegate = remember {
+    ExploreMapDelegate(
+      onCameraIdle = { currentOnCameraIdle(it) },
+      onStationTap = { currentOnStationClick(it) },
+    )
+  }
   val style = mapStyle()
   // Colours resolve here, in Compose, then cross into UIKit as plain values.
   val aqColors = LocalAqColors.current
@@ -101,22 +108,17 @@ private data class StyledMarker(val marker: ExploreMarker, val label: String?, v
 @OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
 private class ExploreMapDelegate(
   private val onCameraIdle: (MapViewport) -> Unit,
+  private val onStationTap: (uuid: String) -> Unit,
 ) : NSObject(), GMSMapViewDelegateProtocol {
   private var centredOn: GeoLocation? = null
   private var styledWith: String? = null
   private val shown = mutableMapOf<StyledMarker, GMSMarker>()
 
-  /** Fires once the camera settles — after gestures, animations and the first layout. */
-  override fun mapView(mapView: GMSMapView, idleAtCameraPosition: GMSCameraPosition) {
-    val bounds = GMSCoordinateBounds.create(region = mapView.projection.visibleRegion())
-    val ne = bounds.northEast.useContents { this.latitude to this.longitude }
-    val sw = bounds.southWest.useContents { this.latitude to this.longitude }
-    onCameraIdle(
-      MapViewport(
-        GeoSquare(north = ne.first, south = sw.first, east = ne.second, west = sw.second),
-        zoom = idleAtCameraPosition.zoom.toDouble(),
-      ),
-    )
+  /** Station pills carry their uuid in userData; dots don't, so they keep the SDK's default tap. */
+  override fun mapView(mapView: GMSMapView, didTapMarker: GMSMarker): Boolean {
+    val uuid = didTapMarker.userData as? String ?: return false
+    onStationTap(uuid)
+    return true
   }
 
   /** update{} re-runs on every recomposition — restyle only when light/dark actually flips. */
@@ -132,6 +134,7 @@ private class ExploreMapDelegate(
     (shown.keys - next).forEach { shown.remove(it)!!.map = null }
     (next - shown.keys).forEach { styled ->
       shown[styled] = GMSMarker.markerWithPosition(styled.location()).apply {
+        userData = (styled.marker as? ExploreMarker.Station)?.station?.uuid
         iconView = markerView(styled)
         groundAnchor = CGPointMake(0.5, 0.5)
         tracksViewChanges = false // static icon — don't re-snapshot the view every frame

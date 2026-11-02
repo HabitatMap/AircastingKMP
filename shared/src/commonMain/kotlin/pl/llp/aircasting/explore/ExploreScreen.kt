@@ -34,6 +34,7 @@ fun ExploreScreen(
   onSearchPlaces: (String) -> Unit,
   onSelectPlace: (PlaceSuggestion) -> Unit,
   onFlownTo: () -> Unit,
+  onOpenStation: (uuid: String) -> Unit,
 ) {
   var query by rememberSaveable { mutableStateOf("") }
   val focus = LocalFocusManager.current
@@ -54,6 +55,7 @@ fun ExploreScreen(
         onFlownTo = onFlownTo,
         onCameraIdle = onCameraIdle,
         modifier = Modifier.fillMaxSize(),
+        onStationClick = onOpenStation,
       )
       if (state.error) {
         Surface(

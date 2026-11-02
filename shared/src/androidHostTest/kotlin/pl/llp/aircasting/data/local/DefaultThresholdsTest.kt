@@ -40,4 +40,12 @@ class DefaultThresholdsTest {
       }
     }
   }
+
+  /** /explore/stations may send canonical names (BE example: `AirBeam-PM1`); each needs a row to be coloured. */
+  @Test
+  fun everyCanonicalAirBeamSensorHasADefault() = runTest {
+    listOf("AirBeam-PM1", "AirBeam-PM2.5", "AirBeam-PM10", "AirBeam-F", "AirBeam-RH").forEach { name ->
+      assertNotNull(thresholds.findBySensorName(name), "no default for $name")
+    }
+  }
 }

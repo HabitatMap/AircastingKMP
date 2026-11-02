@@ -5,18 +5,24 @@ import androidx.lifecycle.viewModelScope
 import co.touchlab.kermit.Logger
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import pl.llp.aircasting.domain.MeasurementLevel
 import pl.llp.aircasting.domain.SensorThreshold
 import pl.llp.aircasting.domain.StationDetails
 import pl.llp.aircasting.domain.StationStream
+import pl.llp.aircasting.domain.ThresholdsRepository
 
 sealed interface StationDetailsState {
   data object Loading : StationDetailsState
-  /** [selectedStreamId] null only if the station came with no streams. */
+  /**
+   * [selectedStreamId] null only if the station came with no streams.
+   * [threshold]: the user's local one for [selected]'s sensor; null = none stored → uncoloured.
+   */
   data class Content(
     val details: StationDetails,
     val selectedStreamId: Long?,
@@ -32,17 +38,26 @@ sealed interface StationDetailsState {
 class StationDetailsViewModel(
   private val uuid: String,
   private val repository: StationDetailsRepository,
+  thresholds: ThresholdsRepository,
 ) : ViewModel() {
-  private val _state = MutableStateFlow<StationDetailsState>(StationDetailsState.Loading)
-  val state: StateFlow<StationDetailsState> = _state.asStateFlow()
+  /** What the network gave us + the chip; [state] adds the threshold on top. */
+  private val loaded = MutableStateFlow<StationDetailsState>(StationDetailsState.Loading)
 
+  // Thresholds are a live DB flow: an edit elsewhere recolours this screen without refetching.
+  val state: StateFlow<StationDetailsState> = combine(loaded, thresholds.observeAll()) { state, all ->
+    if (state !is StationDetailsState.Content) state
+    else state.copy(threshold = all.find { it.sensorName == state.selected?.sensorName })
+  }
+    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), StationDetailsState.Loading)
+
+  // After `loaded` on purpose: property initialisers and init blocks run top to bottom.
   // The uuid is fixed for this ViewModel's life, so load once here; rotation doesn't refetch.
   init { load() }
 
   fun load() {
-    _state.value = StationDetailsState.Loading
+    loaded.value = StationDetailsState.Loading
     viewModelScope.launch {
-      _state.value = try {
+      loaded.value = try {
         val details = repository.station(uuid)
         StationDetailsState.Content(details, details.streams.firstOrNull()?.id)
       } catch (e: CancellationException) {
@@ -53,8 +68,9 @@ class StationDetailsViewModel(
       }
     }
   }
+
   fun selectStream(id: Long) {
-    _state.update { if (it is StationDetailsState.Content) it.copy(selectedStreamId = id) else it }
+    loaded.update { if (it is StationDetailsState.Content) it.copy(selectedStreamId = id) else it }
   }
 
   private companion object {

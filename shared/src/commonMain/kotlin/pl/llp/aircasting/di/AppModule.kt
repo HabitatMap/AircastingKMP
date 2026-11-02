@@ -136,7 +136,7 @@ val exploreModule = module {
   single<ExploreMapRepository> { NetworkExploreMapRepository(get()) }
   viewModelOf(::ExploreViewModel)
   single<StationDetailsRepository> { NetworkStationDetailsRepository(get()) }
-  viewModel { (uuid: String) -> StationDetailsViewModel(uuid, get()) }
+  viewModel { (uuid: String) -> StationDetailsViewModel(uuid, get(), get()) }
 }
 
 val helpModule = module {

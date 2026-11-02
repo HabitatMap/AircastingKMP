@@ -334,6 +334,7 @@ object FrStrings : Strings {
   override val stationNow: String = "MAINTENANT"
   override val stationMin24h: String = "MIN. 24 H"
   override val stationMax24h: String = "MAX. 24 H"
+  override val stationOutdoor: String = "Extérieur"
   override fun exploreShowResults(n: Int?): String =
     when (n) {
       null -> "Voir les résultats"

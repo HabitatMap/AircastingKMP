@@ -322,6 +322,7 @@ interface Strings {
   val stationNow: String
   val stationMin24h: String
   val stationMax24h: String
+  val stationOutdoor: String
   fun exploreShowResults(n: Int?): String
   fun exploreRemoveFilter(name: String): String
 }

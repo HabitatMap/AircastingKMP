@@ -5,7 +5,6 @@ import aircasting.shared.generated.resources.ic_arrow_forward_ios
 import aircasting.shared.generated.resources.ic_more_vert
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,7 +13,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -37,9 +35,11 @@ import pl.llp.aircasting.domain.StationWithDistance
 import pl.llp.aircasting.domain.worstLevel
 import pl.llp.aircasting.i18n.LocalStrings
 import pl.llp.aircasting.ui.ageLabel
-import pl.llp.aircasting.ui.aqStatus
+import pl.llp.aircasting.ui.components.DotSeparatedRow
+import pl.llp.aircasting.ui.components.LevelBadge
+import pl.llp.aircasting.ui.components.LevelDot
+import pl.llp.aircasting.ui.components.TintedTag
 import pl.llp.aircasting.ui.theme.AircastingTheme
-import pl.llp.aircasting.ui.theme.LocalAqColors
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
 import kotlin.time.Clock
@@ -96,8 +96,8 @@ private fun StationCard(
           verticalAlignment = Alignment.CenterVertically,
         ) {
           Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            GovMonitorTag()
-            StatusBadge(level)
+            TintedTag(LocalStrings.current.govMonitor)
+            LevelBadge(level)
           }
           Icon(
             painterResource(Res.drawable.ic_more_vert),
@@ -112,40 +112,17 @@ private fun StationCard(
             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
             color = MaterialTheme.colorScheme.onBackground,
           )
-          Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text("•", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(updatedLabel, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-          }
+          DotSeparatedRow(
+            listOf(subtitle, updatedLabel),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+          )
         }
       }
       Row(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.fillMaxWidth()) {
         readings.forEach { StationPollutantCell(it, Modifier.weight(1f)) }
       }
     }
-  }
-}
-
-@Composable
-private fun GovMonitorTag() {
-  Box(
-    Modifier.clip(RoundedCornerShape(8.dp))
-      .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.08f))
-      .padding(horizontal = 6.dp, vertical = 2.dp),
-  ) {
-    Text(LocalStrings.current.govMonitor, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onPrimaryContainer)
-  }
-}
-
-@Composable
-private fun StatusBadge(level: MeasurementLevel) {
-  val c = LocalAqColors.current.forLevel(level)
-  Box(
-    Modifier.clip(RoundedCornerShape(100.dp))
-      .background(c.copy(alpha = 0.12f))
-      .padding(horizontal = 8.dp, vertical = 2.dp),
-  ) {
-    Text(level.aqStatus(LocalStrings.current).label, style = MaterialTheme.typography.labelSmall, color = c)
   }
 }
 
@@ -158,7 +135,7 @@ private fun StationPollutantCell(reading: PollutantReading, modifier: Modifier =
   ) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
       Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-        Box(Modifier.size(8.dp).clip(CircleShape).background(LocalAqColors.current.forLevel(reading.level)))
+        LevelDot(reading.level, size = 8.dp)
         Text(reading.value.toString(), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
       }
       Text(reading.unitSymbol, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)

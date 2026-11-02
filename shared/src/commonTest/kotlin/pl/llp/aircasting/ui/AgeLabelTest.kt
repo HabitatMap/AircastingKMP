@@ -1,11 +1,11 @@
-package pl.llp.aircasting.home.components
+package pl.llp.aircasting.ui
 
 import pl.llp.aircasting.i18n.EnStrings
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.time.Instant
 
-class FormattingTest {
+class AgeLabelTest {
 
   @Test
   fun age_under_a_minute_reads_just_now() {

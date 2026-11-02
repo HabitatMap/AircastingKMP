@@ -1,4 +1,4 @@
-package pl.llp.aircasting.home.components
+package pl.llp.aircasting.ui
 
 import pl.llp.aircasting.domain.MeasurementLevel
 import pl.llp.aircasting.i18n.Strings

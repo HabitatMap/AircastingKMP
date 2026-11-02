@@ -7,7 +7,9 @@ import pl.llp.aircasting.domain.ExploreFilters
 import pl.llp.aircasting.domain.MapItem
 import pl.llp.aircasting.domain.MapViewport
 import pl.llp.aircasting.domain.SensorThreshold
+import pl.llp.aircasting.domain.StationDetails
 import pl.llp.aircasting.domain.ThresholdsRepository
+import kotlin.getOrThrow
 
 class FakeExploreMapRepository(
   private val respond: suspend (MapViewport, ExploreFilters) -> List<MapItem> = { _, _ -> emptyList() },
@@ -35,5 +37,14 @@ class FakeThresholdsRepository(initial: List<SensorThreshold>) : ThresholdsRepos
   }
   override suspend fun delete(sensorName: String) {
     all.value = all.value.filterNot { it.sensorName == sensorName }
+  }
+}
+
+class FakeStationDetailsRepository(var result: Result<StationDetails>) : StationDetailsRepository {
+  val uuids = mutableListOf<String>()
+
+  override suspend fun station(uuid: String): StationDetails {
+    uuids += uuid
+    return result.getOrThrow()
   }
 }

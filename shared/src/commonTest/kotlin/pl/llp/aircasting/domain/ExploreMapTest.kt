@@ -1,5 +1,6 @@
 package pl.llp.aircasting.domain
 
+import kotlin.collections.emptyList
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -25,16 +26,19 @@ class ExploreMapTest {
   }
 
   @Test
+  fun value_for_is_the_reading_of_that_types_stream() {
+    val station = station(stream(MeasurementType.ParticulateMatter, 12), stream(MeasurementType.Temperature, 71))
+
+    assertEquals(71, station.valueFor(MeasurementType.Temperature))
+    assertNull(station.valueFor(MeasurementType.Humidity))
+  }
+
+  @Test
   fun level_is_null_when_there_is_nothing_to_colour() {
     val thresholds = mapOf("AirBeam-PM2.5" to SensorThreshold("AirBeam-PM2.5", 0, 9, 35, 55, 150))
-    val station = MapStation(
-      uuid = "u1", source = DataSource.AirBeam, title = "Roof", provider = "jane",
-      location = GeoLocation(40.1, -73.2), lastMeasuredAt = Instant.fromEpochMilliseconds(0),
-      measurementTypes = listOf(MeasurementType.ParticulateMatter), value = 12,
-    )
 
-    assertNull(station.copy(value = null).levelFor(MeasurementType.ParticulateMatter, thresholds))
-    assertNull(station.levelFor(MeasurementType.ParticulateMatter, emptyMap()))
+    assertNull(station().levelFor(MeasurementType.ParticulateMatter, thresholds)) // no PM stream
+    assertNull(station(stream(MeasurementType.ParticulateMatter, 12)).levelFor(MeasurementType.ParticulateMatter, emptyMap())) // no threshold row
   }
 
   @Test
@@ -57,13 +61,17 @@ class ExploreMapTest {
 
   @Test
   fun result_count_counts_a_station_once_and_a_cluster_as_its_members() {
-    val station = MapStation(
-      uuid = "u", source = DataSource.AirBeam, title = "t", provider = "p",
-      location = GeoLocation(0.0, 0.0), lastMeasuredAt = Instant.fromEpochMilliseconds(0),
-      measurementTypes = emptyList(), value = null,
-    )
+    val station = station()
     val items = listOf(station, MapCluster(GeoLocation(1.0, 1.0), count = 37), station)
 
     assertEquals(39, items.resultCount())
   }
+
+  private fun stream(type: MeasurementType, value: Int) =
+    MapStream(id = 1, type = type, value = value, measuredAt = Instant.fromEpochMilliseconds(0))
+
+  private fun station(vararg streams: MapStream) = MapStation(
+    uuid = "u1", source = DataSource.AirBeam, title = "Roof", provider = "jane",
+    location = GeoLocation(40.1, -73.2), streams = streams.toList(),
+  )
 }

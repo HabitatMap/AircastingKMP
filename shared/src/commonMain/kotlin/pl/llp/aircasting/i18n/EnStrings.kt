@@ -304,6 +304,10 @@ object EnStrings : Strings {
   override val exploreTemperature = "Temperature"
   override val exploreHumidity = "Humidity"
   override val exploreClearAll = "Clear all"
+  override val stationNow: String = "NOW"
+  override val stationMin24h: String = "MIN. 24H"
+  override val stationMax24h: String = "MAX. 24H"
+  override val stationOutdoor: String = "Outdoor"
   override fun exploreShowResults(n: Int?): String =
     when (n) {
       null -> "Show results"

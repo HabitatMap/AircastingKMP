@@ -163,12 +163,22 @@ already existed is `session_uuid_taken` (409) — stop retrying, continue with t
 
 | `type` | Fields |
 |---|---|
-| `station` | `uuid` (session uuid for AirBeam, station uuid for gov), `source` (`airbeam`/`government`), `title`, `provider` (AirBeam: owner's username; gov: agency name, e.g. `US EPA AirNow`), `latitude`, `longitude`, `last_measured_at` (epoch **ms**, UTC — newest of its selected streams), `measurement_types[]` (selected types it measures, catalogue order), `value?` |
+| `station` | `uuid` (session uuid for AirBeam, station uuid for gov), `source` (`airbeam`/`government`), `title`, `provider` (AirBeam: owner's username; gov: agency name, e.g. `US EPA AirNow`), `latitude`, `longitude`, `streams[]` (≥ 1, see below) |
 | `cluster` | `latitude`, `longitude` (mean of members), `count` (≥ 2), `value?` (mean of members' values) |
 
-**`value`** is present **only when exactly one measurement type is selected**, rounded to an integer.
-AirBeam: last hourly average (newest reading while there's none yet); gov: newest reading. Temperature
-is **Fahrenheit** (server default).
+*Changed on experimental 2026-10-29:* a station's `last_measured_at`, `measurement_types[]` and
+`value?` were replaced by **`streams[]`** — one entry per **selected** type the item reports, catalogue
+order: `stream_id`, `sensor_name`, `measurement_type`, `unit_symbol`,
+`last_measurement { value, time }`.
+
+- `stream_id` = `streams.id` (AirBeam) or `station_streams.id` (gov) — two tables, so unique only
+  within a `source`. It is the key to the public stream-detail endpoints (see *Explore session
+  details* below).
+- `last_measurement` is never null (a stream without a reading is left out). `value` is an **integer**
+  (rounded, as the map draws it); AirBeam: last hourly average (newest reading while there's none
+  yet); gov: newest reading. `time` = epoch **ms, true UTC**. Temperature is **Fahrenheit**.
+- Every stream always carries its value, so the client — not the server — decides when to show one
+  (exactly one type selected). A cluster still carries `value` only for exactly one selected type.
 
 **Each filter = exactly one sensor per source** (BE `Explore::Parameters::CATALOGUE`,
 HabitatMap/AirCasting PR #1247, read 2026-10-22):
@@ -190,9 +200,84 @@ of the type: their mean" only covers a government station with a duplicated stre
 **No unit, thresholds or level in the response** — colouring is the client's job, from the user's
 local thresholds (`DOMAIN_KNOWLEDGE.md` → *Explore map*).
 
-**Not covered yet (later BE work):** tapping an item → details / follow. There is no `Mobile app:`
-endpoint that reads a public fixed session or gov station by `uuid` (`/api/v3/fixed_sessions/{uuid}`
-is auth'd and own-sessions-only).
+### Explore station details — `GET /api/v3/explore/stations/{uuid}` (announced, not live yet)
+
+*Contract from the BE team, 2026-10-30. Not on experimental yet (no swagger entry; the path falls
+through to the web app's HTML). Re-check the swagger before relying on optional/nullable fields.*
+
+Public (`security: []`), like `/explore/map`. Keyed by the map station's `uuid`; one call returns the
+whole details header, so the details route only needs the `uuid`.
+
+```json
+{ "uuid": "0b7e…", "source": "airbeam", "title": "Home AirBeam Garden", "provider": "jane",
+  "latitude": 40.1, "longitude": -73.2, "active": true,
+  "device_model": "AirBeamMini", "share_url": "https://aircasting.org/s/ab12c",
+  "streams": [ { "stream_id": 35404, "sensor_name": "AirBeam-PM1",
+                 "measurement_type": "Particulate Matter", "unit_symbol": "µg/m³",
+                 "update_frequency": "1 minute",
+                 "last_measurement": { "value": 8, "time": 1793282400000 },
+                 "last_24h": { "min": 3, "max": 10 } } ] }
+```
+
+- Covers BE gaps listed in `design/EXPLORE_SCREEN.md`: all streams by `uuid` (PM1 included — note two
+  streams can share one `measurement_type`, so streams are keyed by `stream_id`/`sensor_name`, not type),
+  `device_model`, a public `share_url`, and MIN/MAX 24 h computed server-side.
+- `stream_id` still keys the per-stream endpoints below (graph data).
+- **Open with BE:** is `device_model` null for gov? `share_url` ever null? Can `last_24h` be null?
+  Is `sensor_name` canonical (`AirBeam-PM1`) or raw (`AirBeamMini-PM1`)? 404 body for an unknown uuid?
+  Is `last_measurement.time` true UTC like the map's (client assumes yes for "N min ago")?
+  Client treats `device_model`/`share_url` as nullable until answered.
+
+### Explore session details — public stream endpoints
+
+There is still no `Mobile app:` endpoint that reads a public fixed session or gov station by `uuid`
+(`/api/v3/fixed_sessions/{uuid}` is auth'd and own-sessions-only). Details go **per stream**, via the
+map's `stream_id`, to two public (`security: []`) endpoints tagged `Web app:`:
+
+| Method | Path | For `source` |
+|---|---|---|
+| GET | `/api/v3/fixed_streams/{stream_id}` | `airbeam` |
+| GET | `/api/v3/station_streams/{stream_id}` | `government` |
+
+Same `200` shape for both (read 2026-10-29):
+- `stream` — `active`, `title`, `latitude`, `longitude`, `profile` (owner / agency), `sensor_name`,
+  `unit_symbol`, `update_frequency` (`"1 minute"`, `"1 hour"`), `last_update` (ISO, nullable),
+  `session_id`, `start_time`, `end_time` (ISO), and the **server's** thresholds `min`·`low`·`middle`·
+  `high`·`max`.
+- `measurements[]` — `{ time, value }` for the **last 2 days**, `value` a float. **Ordering:** spec
+  says newest first; live gov data comes **oldest first** — sort client-side, don't trust either.
+- `stream_daily_averages[]` — `{ date: "YYYY-MM-DD", value: int }`, last 3 full calendar months.
+- **Times here are local-as-UTC** (the station's wall clock encoded as a UTC epoch / ISO string) —
+  unlike the map's `last_measurement.time`, which is true UTC. Use the map's time for "N min ago".
+- `404 not_found` — unknown id, or (gov) a stream with no measurements.
+
+Longer ranges: `GET /api/v3/fixed_measurements?stream_id&start_time&end_time` (AirBeam, epoch ms) and
+`GET /api/v3/{fixed,station}_stream_daily_averages?stream_id&start_date&end_date`.
+
+- `stream.sensor_name` is the **raw model spelling** (`AirBeamMini-PM1`, verified live 2026-10-30), not
+  the canonical `AirBeam-PM1` — resolve it via `threshold_sets` `aliases` before any threshold lookup.
+- `stream.session_id` (AirBeam) = legacy `sessions.id` — the key to the deprecated session endpoint below.
+
+**All of a session's streams (AirBeam only):** `GET /api/fixed/sessions/{session_id}/streams.json?measurements_limit=N`
+(public, tag `Mobile app: Fixed sessions [DEPRECATED]`). Returns `title`, `username`, `is_indoor`,
+`latitude`/`longitude`, `notes[]` and **every** stream — incl. PM1/PM10, which Explore's catalogue never
+sends — each with `stream_id`, raw `sensor_name`, `measurement_short_type`, `sensor_unit`, server
+thresholds and `measurements[]`. Verified live 2026-10-30 (session 30277: `AirBeamMini-PM1` +
+`AirBeamMini-PM2.5`). This is what legacy `SearchFollowViewModel` loads
+(`ActiveFixedSessionsRepository.getSessionWithStreamsAndMeasurements`). Chain from the map:
+`stream_id` → `fixed_streams/{id}` → `stream.session_id` → this endpoint. No gov equivalent; there is no
+endpoint that lists a gov station's streams by station `uuid`.
+
+**Other endpoints the details screen touches (read 2026-10-30):**
+
+| Action | Endpoint | Notes |
+|---|---|---|
+| Default thresholds / "Reset to default" | `GET /api/v3/threshold_sets` (public, `Mobile app: Thresholds`) | One entry per **parameter** (canonical `sensor_name`, e.g. `AirBeam-PM2.5`) with `aliases[]` (every model spelling) and `thresholds {very_low, low, medium, high, very_high}`. **Defaults only** — per-user edits are not stored by the server; the spec says a client keeps its own overrides. `Government-PM2.5` is an alias of `AirBeam-PM2.5` (0·9·35·55·150). |
+| Threshold alert (bell) | `GET/POST /api/fixed/threshold_alerts`, `DELETE …/{id}` | **Basic auth** (not bearer). Body: `session_uuid`, `sensor_name` (raw, e.g. `AirBeam2-PM2.5`), `threshold_value`, `frequency` (min between emails), `timezone_offset` (s). Whether a gov station `uuid` is accepted is not documented. |
+| Export, AirBeam | `GET /api/sessions/export_by_uuid.json?uuid&email` | Public; emails a CSV. |
+| Export, gov | `GET /api/v3/station_streams/export?station_stream_ids[]&email` | Public; emails a CSV; ≤ 100 stream ids. |
+| Share | `POST /api/short_url` | Shortens a same-host web URL (e.g. `…/fixed_map?…`). There is no endpoint that returns a public session's share link. `share_url` exists only on own sessions (`fixed_sessions/{uuid}`). |
+| Favourite | — | No endpoint. Legacy "follow" was **local only** (`SessionFollower` sets `followedAt` in the local DB). |
 
 ---
 
@@ -418,6 +503,9 @@ Bearer auth. Every field is optional — send only what changes:
 - `password` requires both `password_confirmation` (must match) and `current_password`;
   `current_password` is needed **only** when changing the password.
 - **200** → the full user, same shape as `GET` (incl. `authentication_token`).
+- **The token survives a password change** (live-verified on experimental, 2026-10-27): the 200
+  carries the same `authentication_token`, and the old token still authenticates afterwards. So
+  the client can ignore the token in the response and keep the stored one.
 - **422** → `{ error_code, message, fields }` for a validation error, a wrong `current_password`,
   **or an empty update** ("nothing to change"). Unlike sign-up's 422, the spec promises no flat
   per-field keys here — decode `fields`: each key maps to a **list** of `{ code, message, params? }`,

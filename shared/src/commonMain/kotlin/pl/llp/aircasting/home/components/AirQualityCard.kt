@@ -35,6 +35,8 @@ import pl.llp.aircasting.domain.PollutantReading
 import pl.llp.aircasting.domain.worstLevel
 import pl.llp.aircasting.home.HomeUiState
 import pl.llp.aircasting.i18n.LocalStrings
+import pl.llp.aircasting.ui.AqStatus
+import pl.llp.aircasting.ui.aqStatus
 import pl.llp.aircasting.ui.theme.AircastingTheme
 import pl.llp.aircasting.ui.theme.LocalAqColors
 import org.jetbrains.compose.resources.painterResource

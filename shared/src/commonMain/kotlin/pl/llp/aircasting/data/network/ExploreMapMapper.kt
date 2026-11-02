@@ -1,11 +1,11 @@
 package pl.llp.aircasting.data.network
 
-import io.ktor.openapi.ReferenceOr.Companion.value
 import pl.llp.aircasting.domain.DataSource
 import pl.llp.aircasting.domain.GeoLocation
 import pl.llp.aircasting.domain.MapCluster
 import pl.llp.aircasting.domain.MapItem
 import pl.llp.aircasting.domain.MapStation
+import pl.llp.aircasting.domain.MapStream
 import pl.llp.aircasting.domain.MeasurementType
 import kotlin.time.Instant
 
@@ -18,18 +18,13 @@ private fun ExploreMapItemDto.toMapItem(): MapItem? {
     is ExploreMapClusterDto -> MapCluster(location, count)
     is ExploreMapStationDto -> {
       val source = DataSource.entries.find { it.apiName == source } ?: return null
-      MapStation(
-        uuid = uuid,
-        source = source,
-        title = title,
-        provider = provider,
-        location = location,
-        lastMeasuredAt = Instant.fromEpochMilliseconds(lastMeasuredAt),
-        measurementTypes = measurementTypes.mapNotNull { name ->
-          MeasurementType.entries.find { it.apiName == name }
-        },
-        value = value,
-      )
+      MapStation(uuid, source, title, provider, location, streams.mapNotNull { it.toMapStream() })
     }
   }
+}
+
+/** Null = a measurement type this app doesn't know; dropped, the rest of the station stays. */
+private fun ExploreMapStreamDto.toMapStream(): MapStream? {
+  val type = MeasurementType.entries.find { it.apiName == measurementType } ?: return null
+  return MapStream(streamId, type, lastMeasurement.value, Instant.fromEpochMilliseconds(lastMeasurement.time))
 }

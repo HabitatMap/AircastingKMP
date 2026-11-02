@@ -28,4 +28,6 @@ class ExploreMapApi(private val client: HttpClient) {
     }
   }
     .body()
+
+  suspend fun station(uuid: String): StationDetailsDto = client.get(ApiEndpoints.v3ExploreStation(uuid)).body()
 }

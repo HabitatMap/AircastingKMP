@@ -43,6 +43,7 @@ object ApiEndpoints {
   // Mobile app: Explore map v3 (public, no auth)
   // =========================================================================
   const val V3ExploreMap = "/api/v3/explore/map"
+  fun v3ExploreStation(uuid: String) = "/api/v3/explore/stations/$uuid"
 
   // =========================================================================
   // Fixed Stations & Map Query (Home screen & explore)

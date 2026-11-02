@@ -7,6 +7,7 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
 import org.koin.core.Koin
 import org.koin.core.context.startKoin
+import org.koin.core.module.dsl.viewModel
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.KoinAppDeclaration
 import org.koin.dsl.module
@@ -36,6 +37,9 @@ import pl.llp.aircasting.data.network.upload.MobileUploadLoop
 import pl.llp.aircasting.explore.ExploreMapRepository
 import pl.llp.aircasting.explore.ExploreViewModel
 import pl.llp.aircasting.explore.NetworkExploreMapRepository
+import pl.llp.aircasting.explore.NetworkStationDetailsRepository
+import pl.llp.aircasting.explore.StationDetailsRepository
+import pl.llp.aircasting.explore.StationDetailsViewModel
 import pl.llp.aircasting.home.FakeHomeRepository
 import pl.llp.aircasting.home.HomeRepository
 import pl.llp.aircasting.home.HomeViewModel
@@ -131,6 +135,8 @@ val exploreModule = module {
   single { ExploreMapApi(get()) }
   single<ExploreMapRepository> { NetworkExploreMapRepository(get()) }
   viewModelOf(::ExploreViewModel)
+  single<StationDetailsRepository> { NetworkStationDetailsRepository(get()) }
+  viewModel { (uuid: String) -> StationDetailsViewModel(uuid, get(), get()) }
 }
 
 val helpModule = module {

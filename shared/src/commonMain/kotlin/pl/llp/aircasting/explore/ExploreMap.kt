@@ -19,5 +19,7 @@ expect fun ExploreMap(
   flyTo: GeoLocation?,
   onFlownTo: () -> Unit,
   onCameraIdle: (MapViewport) -> Unit,
+  /** A station pill was tapped. Dots (clusters / zoomed-out) aren't tappable. */
+  onStationClick: (uuid: String) -> Unit,
   modifier: Modifier = Modifier,
 )

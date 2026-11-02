@@ -10,10 +10,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -21,7 +18,7 @@ import androidx.compose.ui.unit.dp
 import pl.llp.aircasting.home.components.AirQualityCard
 import pl.llp.aircasting.home.components.HomeTopBar
 import pl.llp.aircasting.home.components.NearbyStationsSection
-import pl.llp.aircasting.i18n.LocalStrings
+import pl.llp.aircasting.ui.components.ErrorState
 
 @Composable
 fun HomeScreen(
@@ -39,15 +36,6 @@ fun HomeScreen(
         is HomeScreenState.Content -> HomeContent(state.ui, onRequestLocation)
       }
     }
-  }
-}
-
-@Composable
-private fun ErrorState(onRetry: () -> Unit) {
-  val strings = LocalStrings.current
-  Column(horizontalAlignment = Alignment.CenterHorizontally) {
-    Text(strings.errorTitle, style = MaterialTheme.typography.titleMedium)
-    Button(onClick = onRetry, modifier = Modifier.padding(top = 12.dp)) { Text(strings.errorRetry) }
   }
 }
 

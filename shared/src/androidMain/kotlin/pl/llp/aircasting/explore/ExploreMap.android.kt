@@ -51,6 +51,7 @@ actual fun ExploreMap(
   flyTo: GeoLocation?,
   onFlownTo: () -> Unit,
   onCameraIdle: (MapViewport) -> Unit,
+  onStationClick: (uuid: String) -> Unit,
   modifier: Modifier,
 ) {
   val camera = rememberCameraPositionState {
@@ -114,6 +115,9 @@ actual fun ExploreMap(
             label, marker,
             state = rememberUpdatedMarkerState(marker.station.location.toLatLng()),
             anchor = CENTER,
+            // Returning true consumes the tap.
+            // Otherwise, Google Maps also centres the camera on the marker while the screen slides in.
+            onClick = { onStationClick(marker.station.uuid); true },
           ) {
             StationPill(label, marker.level?.let(LocalAqColors.current::forLevel))
           }

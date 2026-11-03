@@ -11,11 +11,13 @@ import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import pl.llp.aircasting.bluetooth.BluetoothRadio
 import pl.llp.aircasting.i18n.LocalStrings
+import pl.llp.aircasting.record.AirBeamLocationScreen
 import pl.llp.aircasting.record.DevicePickerScreen
 import pl.llp.aircasting.record.DeviceStatusScreen
 import pl.llp.aircasting.record.DeviceStepUi
 import pl.llp.aircasting.record.NewSessionStep
 import pl.llp.aircasting.record.NewSessionViewModel
+import pl.llp.aircasting.record.PinPickerViewModel
 import pl.llp.aircasting.record.RecordMethodScreen
 import pl.llp.aircasting.record.RecordingMethod
 import pl.llp.aircasting.record.RecordingViewModel
@@ -71,7 +73,22 @@ fun NewSessionDestination(onExit: () -> Unit) {
       onCancel = onExit,
       onStart = { recorder.start(state.form) },
     )
-    NewSessionStep.Location -> Unit // slice 5: "Where's your AirBeam?" (ExploreMap + PlaceSearch)
+    NewSessionStep.Location -> {
+      val picker = koinViewModel<PinPickerViewModel>()
+      val pickerState by picker.state.collectAsStateWithLifecycle()
+      AirBeamLocationScreen(
+        state = state,
+        picker = pickerState,
+        onSearch = picker::search,
+        onSelectPlace = picker::selectPlace,
+        onLocateMe = picker::locateMe,
+        onFlownTo = picker::onFlownTo,
+        onPinMoved = vm::placePin,
+        onBack = back,
+        onCancel = onExit,
+        onConfirm = vm::next,
+      )
+    }
     NewSessionStep.Device -> {
       val strings = LocalStrings.current
       val permission = rememberBluetoothPermission()

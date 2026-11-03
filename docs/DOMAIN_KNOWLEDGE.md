@@ -169,6 +169,11 @@ Paths below are under legacy `app/src/main/java/pl/llp/aircasting/`.
 - Outdoor uses the map's camera target. The map starts at the current location, or New York
   `(40.7128, -74.0060)` when there is none, at zoom 13, with Places autocomplete.
   (`SessionBuilder`, `Session.Location`, `ChooseLocationViewMvcImpl`)
+- In the rewrite (2026-10-29), choosing Outdoor drops the pin on the phone's latest fix, or on
+  New York without one (`NewSessionViewModel.setIndoor`). A pin already moved is kept.
+- The pin is drawn at the map's centre. Each time the camera settles, the pin becomes the
+  camera target the map SDK reports (`MapViewport.centre`), which is what legacy read on Continue.
+- The map opens at zoom 10, not 13, because it reuses the shared `ExploreMap`.
 
 **Streaming method.** (`FixedSessionDetailsViewMvcImpl:68-97`)
 - AirBeam2 and AirBeam3 get a WiFi/Cellular toggle, with WiFi as the default.

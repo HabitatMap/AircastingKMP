@@ -370,4 +370,8 @@ object FrStrings : Strings {
   override val wifiPasswordPlaceholder = "Saisissez le mot de passe Wi-Fi"
   override val wifiPasswordHint = "Saisissez le mot de passe de ce réseau Wi-Fi."
   override val wifiShowNearby = "Afficher les réseaux à proximité"
+  override val locationTitle = "Où se trouve votre AirBeam ?"
+  override val locationSearchHint = "Rechercher une adresse"
+  override val confirmLocation = "Confirmer l'emplacement"
+  override val myLocation = "Ma position"
 }

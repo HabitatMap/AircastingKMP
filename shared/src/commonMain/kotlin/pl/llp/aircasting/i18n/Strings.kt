@@ -353,5 +353,10 @@ interface Strings {
   val thresholdMedium: String
   val thresholdHigh: String
   val thresholdMax: String
+  val locationTitle: String
+  val locationSearchHint: String
+  val confirmLocation: String
+  val myLocation: String
+
   val wifiShowNearby: String
 }

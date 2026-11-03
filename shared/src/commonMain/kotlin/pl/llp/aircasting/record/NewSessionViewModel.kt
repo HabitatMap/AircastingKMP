@@ -35,7 +35,7 @@ private val TagSeparators = Regex("[\\s,]+")
 private fun List<String>.plusTags(words: List<String>) =
   (this + words.map { it.trim() }.filter { it.isNotEmpty() }).distinct()
 
-class NewSessionViewModel(location: PhoneLocation) : ViewModel() {
+class NewSessionViewModel(private val location: PhoneLocation) : ViewModel() {
   private val _state = MutableStateFlow(NewSessionState())
   val state: StateFlow<NewSessionState> = _state.asStateFlow()
 
@@ -57,6 +57,10 @@ class NewSessionViewModel(location: PhoneLocation) : ViewModel() {
     val words = text.split(TagSeparators)
     form.copy(committedTags = form.committedTags.plusTags(words.dropLast(1)), tagDraft = words.last())
   }
+  /** Outdoor drops the pin where the phone is, or New York without a fix (legacy ChooseLocationViewMvcImpl). */
+  fun setIndoor(indoor: Boolean) = edit {
+    it.copy(indoor = indoor, outdoorLocation = it.outdoorLocation ?: if (indoor) null else location.latest() ?: NewYork)
+  }
 
   fun commitTagDraft() = edit { it.copy(committedTags = it.committedTags.plusTags(listOf(it.tagDraft)), tagDraft = "") }
 
@@ -66,8 +70,6 @@ class NewSessionViewModel(location: PhoneLocation) : ViewModel() {
   fun removeTag(tag: String) = edit { it.copy(committedTags = it.committedTags - tag) }
 
   fun setInterval(interval: SamplingInterval) = edit { it.copy(interval = interval) }
-
-  fun setIndoor(indoor: Boolean) = edit { it.copy(indoor = indoor) }
 
   fun placePin(location: GeoLocation) = edit { it.copy(outdoorLocation = location) }
 
@@ -93,3 +95,5 @@ class NewSessionViewModel(location: PhoneLocation) : ViewModel() {
 /** Both are required (legacy); a password of spaces is still a password. */
 private val NewSessionForm.hasWifi: Boolean
   get() = wifi.ssid.isNotBlank() && wifi.password.isNotEmpty()
+
+private val NewYork = GeoLocation(40.7128, -74.0060)

@@ -54,6 +54,7 @@ import pl.llp.aircasting.home.HomeViewModel
 import pl.llp.aircasting.onboarding.OnboardingRepository
 import pl.llp.aircasting.onboarding.StoredOnboardingRepository
 import pl.llp.aircasting.record.NewSessionViewModel
+import pl.llp.aircasting.record.PinPickerViewModel
 import pl.llp.aircasting.record.RecordingViewModel
 import pl.llp.aircasting.recording.FixedSessionRegistrar
 import pl.llp.aircasting.recording.FixedSessionStarter
@@ -87,6 +88,7 @@ val recordModule = module {
   single { FixedSessionRegistrar(get(), get(), TimeZone.currentSystemDefault()) }
   single { FixedSessionStarter(get(), get<FixedSessionRegistrar>()::register) }
   viewModelOf(::NewSessionViewModel)
+  viewModelOf(::PinPickerViewModel)
   viewModelOf(::RecordingViewModel)
 }
 

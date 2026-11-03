@@ -5,6 +5,12 @@ import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
+import pl.llp.aircasting.bluetooth.AirBeamDevice
+import pl.llp.aircasting.bluetooth.DeviceId
+import pl.llp.aircasting.bluetooth.DiscoveredAirBeam
+import pl.llp.aircasting.domain.GeoLocation
+import pl.llp.aircasting.recording.PhoneLocation
+import pl.llp.aircasting.recording.Placement
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -12,21 +18,18 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
-import pl.llp.aircasting.bluetooth.AirBeamDevice
-import pl.llp.aircasting.bluetooth.DeviceId
-import pl.llp.aircasting.bluetooth.DiscoveredAirBeam
-import pl.llp.aircasting.domain.GeoLocation
-import pl.llp.aircasting.recording.PhoneLocation
-import pl.llp.aircasting.recording.Placement
 
 class NewSessionViewModelTest {
   @BeforeTest
   fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
+
   @AfterTest
   fun tearDown() = Dispatchers.resetMain()
 
   private val location = TrackingPhoneLocation()
-  private val ab3 = DiscoveredAirBeam(DeviceId("id-ab3"), "AirBeam3:246f28c47698", AirBeamDevice.AirBeam3)
+  private val park = GeoLocation(latitude = 50.05, longitude = 19.93)
+  private val ab3 =
+    DiscoveredAirBeam(DeviceId("id-ab3"), "AirBeam3:246f28c47698", AirBeamDevice.AirBeam3)
 
   /** As legacy `startNewSessionWizard`: the GPS gets the whole wizard to find a fix before Start. */
   @Test
@@ -101,6 +104,7 @@ class NewSessionViewModelTest {
     assertEquals(1f, NewSessionStep.Confirm.progress)
     assertTrue(NewSessionStep.entries.all { it.progress in 0f..1f })
   }
+
   @Test
   fun `an AirBeam method leads to the device step`() {
     val vm = NewSessionViewModel(location)
@@ -138,6 +142,7 @@ class NewSessionViewModelTest {
     vm.back()
     assertEquals(NewSessionStep.Method, vm.state.value.step)
   }
+
   @Test
   fun `a fixed session starts indoor and skips the location step`() {
     val vm = fixedAtDetails()
@@ -163,23 +168,6 @@ class NewSessionViewModelTest {
     vm.editWifiPassword("secret")
     vm.next()
     assertEquals(NewSessionStep.Confirm, vm.state.value.step)
-  }
-
-  @Test
-  fun `an outdoor fixed session needs a pin on the location step`() {
-    val vm = fixedAtDetails()
-    vm.fillDetails()
-    vm.setIndoor(false)
-    vm.next()
-    assertEquals(NewSessionStep.Location, vm.state.value.step)
-    assertNull(vm.state.value.form.placement)
-    assertFalse(vm.state.value.canContinue)
-
-    vm.placePin(rooftop)
-    vm.next()
-
-    assertEquals(NewSessionStep.Confirm, vm.state.value.step)
-    assertEquals(Placement.Outdoor(rooftop), vm.state.value.form.placement)
   }
 
   @Test
@@ -303,6 +291,46 @@ class NewSessionViewModelTest {
     assertEquals(listOf("Scooter"), state.matchingTags)
   }
 
+  /** Legacy ChooseLocationViewMvcImpl: the map opens where the phone is. */
+  @Test
+  fun `choosing outdoor drops the pin where the phone is`() {
+    location.fix = rooftop
+    val vm = fixedAtDetails()
+
+    vm.setIndoor(false)
+
+    assertEquals(Placement.Outdoor(rooftop), vm.state.value.form.placement)
+  }
+
+  /** …or on New York without a fix. */
+  @Test
+  fun `without a fix the pin starts in new york`() {
+    val vm = fixedAtDetails()
+
+    vm.setIndoor(false)
+
+    assertEquals(Placement.Outdoor(GeoLocation(40.7128, -74.0060)), vm.state.value.form.placement)
+  }
+
+  @Test
+  fun `a pin moved on the map survives switching back and forth`() {
+    location.fix = rooftop
+    val vm = fixedAtDetails()
+    vm.fillDetails()
+    vm.setIndoor(false)
+    vm.next()
+    vm.placePin(park)
+
+    vm.back()
+    vm.setIndoor(true)
+    vm.setIndoor(false)
+    vm.next()
+    assertEquals(Placement.Outdoor(park), vm.state.value.form.placement)
+
+    vm.next()
+    assertEquals(NewSessionStep.Confirm, vm.state.value.step)
+  }
+
   private val rooftop = GeoLocation(latitude = 50.06, longitude = 19.94)
 
   private fun fixedAtDetails() = NewSessionViewModel(location).apply {
@@ -322,8 +350,9 @@ class NewSessionViewModelTest {
 private class TrackingPhoneLocation : PhoneLocation {
   var tracking = false
     private set
+  var fix: GeoLocation? = null
 
-  override fun latest(): GeoLocation? = null
+  override fun latest(): GeoLocation? = fix
 
   override suspend fun awaitFix() = awaitCancellation()
 

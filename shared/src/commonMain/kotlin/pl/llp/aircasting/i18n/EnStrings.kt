@@ -342,6 +342,10 @@ object EnStrings : Strings {
   override val wifiPasswordPlaceholder = "Enter Wi-Fi password"
   override val wifiPasswordHint = "Enter the password for this Wi-Fi network."
   override val wifiShowNearby = "Show nearby networks"
+  override val locationTitle = "Where\u2019s your AirBeam?"
+  override val locationSearchHint = "Search for an address"
+  override val confirmLocation = "Confirm location"
+  override val myLocation = "My location"
 }
 
 /** Every available locale, keyed by BCP-47 tag. Lyricist selects one by the system locale at runtime. */

@@ -17,11 +17,6 @@ class ChartAxisTest {
   }
 
   @Test
-  fun the_tooltip_reads_time_then_rounded_value_and_unit() {
-    assertEquals("01:00 · 13 µg/m³", markerLabel(oneAm, 12.6, "µg/m³"))
-  }
-
-  @Test
   fun hour_labels_start_at_the_first_full_hour() {
     assertEquals(0, secondsToNextHour(oneAm))
     assertEquals(3_600 - 90, secondsToNextHour(oneAm + 90))

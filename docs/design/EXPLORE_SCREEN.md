@@ -34,6 +34,10 @@ Top → bottom:
   the third one `MIN. 24H` — a design typo; frame 2 says `MAX. 24H`.)
 - **Graph | Map** segmented toggle.
   - *Graph:* line over threshold-coloured bands, hours on the x-axis, tap → tooltip (`01:00 · 13 µg/m³`).
+    Graph frame `720:867`: full-bleed, 406 dp plot. Bands use their own light palette (red `#E85E60`,
+    orange `#FCA443`, yellow `#FDD961`, green `#96D788`; not Figma variables, no dark variant) →
+    `AqBandColors`. Tooltip = `Background` card with `M3/Elevation Light/1`, time in Label Small, level
+    dot + value in Title Small Emphasized + unit; white 1 dp guideline; 12 dp `Primary Container` dot.
   - *Map:* track of coloured points + expand-to-full-screen button.
 - **Threshold slider** (5 handles, e.g. 0·12·32·55·150) + `Reset to default`.
 

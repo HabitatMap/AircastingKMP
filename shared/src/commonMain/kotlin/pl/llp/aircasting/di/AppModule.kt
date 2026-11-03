@@ -38,8 +38,11 @@ import pl.llp.aircasting.explore.ExploreMapRepository
 import pl.llp.aircasting.explore.ExploreViewModel
 import pl.llp.aircasting.explore.NetworkExploreMapRepository
 import pl.llp.aircasting.explore.NetworkStationDetailsRepository
+import pl.llp.aircasting.explore.SampleStationMeasurementsRepository
 import pl.llp.aircasting.explore.StationDetailsRepository
 import pl.llp.aircasting.explore.StationDetailsViewModel
+import pl.llp.aircasting.explore.StationGraphViewModel
+import pl.llp.aircasting.explore.StationMeasurementsRepository
 import pl.llp.aircasting.home.FakeHomeRepository
 import pl.llp.aircasting.home.HomeRepository
 import pl.llp.aircasting.home.HomeViewModel
@@ -137,6 +140,10 @@ val exploreModule = module {
   viewModelOf(::ExploreViewModel)
   single<StationDetailsRepository> { NetworkStationDetailsRepository(get()) }
   viewModel { (uuid: String) -> StationDetailsViewModel(uuid, get(), get()) }
+  viewModel { (uuid: String) -> StationDetailsViewModel(uuid, get(), get()) }
+  // TODO: network implementation once the endpoint shape is settled.
+  single<StationMeasurementsRepository> { SampleStationMeasurementsRepository(get()) }
+  viewModel { (streamId: Long) -> StationGraphViewModel(streamId, get()) }
 }
 
 val helpModule = module {

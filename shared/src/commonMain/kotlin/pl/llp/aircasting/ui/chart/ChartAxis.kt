@@ -3,7 +3,6 @@ package pl.llp.aircasting.ui.chart
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import pl.llp.aircasting.domain.SensorThreshold
-import kotlin.math.roundToInt
 import kotlin.time.Instant
 
 private const val SECONDS_PER_HOUR = 3_600
@@ -13,9 +12,6 @@ internal fun hourMinuteUtc(x: Double): String {
   val time = Instant.fromEpochSeconds(x.toLong()).toLocalDateTime(TimeZone.UTC)
   return "${time.hour.twoDigits()}:${time.minute.twoDigits()}"
 }
-
-/** Tooltip text, as the design's `01:00 · 13 µg/m³`. */
-internal fun markerLabel(x: Double, y: Double, unit: String): String = "${hourMinuteUtc(x)} · ${y.roundToInt()} $unit"
 
 /** Offset from the first point to the next full hour: Vico's aligned placer counts label positions from minX. */
 internal fun secondsToNextHour(minX: Double): Int {

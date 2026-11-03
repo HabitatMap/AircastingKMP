@@ -40,3 +40,16 @@ internal val DarkAqColors = AqColors(
 )
 
 val LocalAqColors = staticCompositionLocalOf { LightAqColors }
+
+/**
+ * Graph background bands (Figma `720:867`): lighter than [AqColors], which is for dots and text on
+ * the surface. Not Figma variables, and no dark variant designed yet. [AqColors.hazardous] is
+ * unused — the top band ends at "very high".
+ */
+val AqBandColors = AqColors(
+  good = Color(0xFF96D788),
+  moderate = Color(0xFFFDD961),
+  unhealthySensitive = Color(0xFFFCA443),
+  unhealthy = Color(0xFFE85E60),
+  hazardous = Color(0xFFE85E60),
+)

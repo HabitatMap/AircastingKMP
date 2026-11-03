@@ -72,6 +72,7 @@ kotlin {
       implementation(libs.ktor.serialization.kotlinx.json)
       implementation(libs.kotlinx.serialization.json)
       implementation(libs.kotlinx.datetime)
+      implementation(libs.vico.compose)
       implementation(libs.compose.runtime)
       implementation(libs.compose.foundation)
       implementation(libs.compose.material3)

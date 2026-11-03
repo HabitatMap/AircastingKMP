@@ -72,9 +72,11 @@ Endpoints: `API_V3.md` → *Explore session details*.
 - *MIN / MAX 24 h:* compute from `measurements[]`. Sort it first (live order contradicts the spec),
   then cut a 24 h window ending at the newest point. **Open:** raw points or hourly averages?
   AirBeam NOW is an hourly average, but its raw points come every minute.
-- *Graph:* sort the points, then probably bucket them hourly (AirBeam is 1-minute data, ~2 880
-  points over 48 h). Axis labels come from local-as-UTC times, so format them as UTC and don't
-  convert again.
+- *Graph:* sort the points and plot them **raw, not hourly**. The chart frame (`693:1565`) draws a
+  dense, jagged line, so it shows every reading (AirBeam: 1-minute data, ~1 440 points per 24 h; gov:
+  hourly). Axis labels come from local-as-UTC times, so format them as UTC and don't convert again.
+  **Open (design):** the frame's x-axis spans only ~8 h (19:00–03:00). Is it a pannable 24 h, or
+  does it show only the last ~8 h?
 - *Every stream of an AirBeam (PM1, PM10, and all types regardless of the active filter):* chain
   `fixed_streams/{id}` → `session_id` → deprecated `/api/fixed/sessions/{id}/streams.json`. This is
   what legacy does.

@@ -1,6 +1,7 @@
 package pl.llp.aircasting.ui.chart
 
 import pl.llp.aircasting.domain.SensorThreshold
+import kotlin.collections.emptyList
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -48,6 +49,26 @@ class ChartAxisTest {
     val points = listOf(ChartPoint(0.0, 7.0), ChartPoint(1.0, 7.0))
 
     assertEquals(6.0..8.0, yRange(points, threshold = null))
+  }
+
+  @Test
+  fun a_window_crossing_midnight_gets_one_line_at_00_00() {
+    val sevenPm = oneAm - 6 * 3_600 // 2026-10-26T19:00
+    val midnight = oneAm - 3_600
+
+    assertEquals(listOf(midnight), midnightsBetween(sevenPm, sevenPm + 24 * 3_600))
+  }
+
+  @Test
+  fun a_window_within_one_day_gets_no_line() {
+    assertEquals(emptyList(), midnightsBetween(oneAm, oneAm + 10 * 3_600))
+  }
+  @Test
+  fun a_series_starting_exactly_at_midnight_gets_no_line_on_its_left_edge() {
+    // Legacy draws the line only once the day *changes* from the first point's day.
+    val midnight = oneAm - 3_600
+
+    assertEquals(emptyList(), midnightsBetween(midnight, midnight + 5 * 3_600))
   }
 }
 

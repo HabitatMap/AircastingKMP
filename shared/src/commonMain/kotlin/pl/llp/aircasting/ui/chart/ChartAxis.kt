@@ -6,6 +6,16 @@ import pl.llp.aircasting.domain.SensorThreshold
 import kotlin.time.Instant
 
 private const val SECONDS_PER_HOUR = 3_600
+private const val SECONDS_PER_DAY = 86_400
+
+/**
+ * Midnights after [fromX] up to [toX], for the dashed day-change line (legacy GraphDataGenerator).
+ * Plain multiples of a day: x is local-as-UTC, so UTC midnight is the station's midnight.
+ */
+internal fun midnightsBetween(fromX: Double, toX: Double): List<Double> {
+  val first = (fromX.toLong() / SECONDS_PER_DAY + 1) * SECONDS_PER_DAY
+  return (first..toX.toLong() step SECONDS_PER_DAY.toLong()).map { it.toDouble() }
+}
 
 /** `HH:mm` of an epoch-seconds x. UTC on purpose: Explore times are local-as-UTC (DOMAIN_KNOWLEDGE.md). */
 internal fun hourMinuteUtc(x: Double): String {

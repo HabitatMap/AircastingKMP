@@ -42,8 +42,10 @@ import com.patrykandpatrick.vico.compose.cartesian.marker.rememberDefaultCartesi
 import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
 import com.patrykandpatrick.vico.compose.cartesian.rememberVicoScrollState
 import com.patrykandpatrick.vico.compose.cartesian.rememberVicoZoomState
+import com.patrykandpatrick.vico.compose.common.DashedShape
 import com.patrykandpatrick.vico.compose.common.Fill
 import com.patrykandpatrick.vico.compose.common.Insets
+import com.patrykandpatrick.vico.compose.common.component.LineComponent
 import com.patrykandpatrick.vico.compose.common.component.ShapeComponent
 import com.patrykandpatrick.vico.compose.common.component.rememberLineComponent
 import com.patrykandpatrick.vico.compose.common.component.rememberTextComponent
@@ -104,8 +106,17 @@ fun MeasurementChart(
   val colors = MaterialTheme.colorScheme
   val typography = MaterialTheme.typography
   val y = remember(points, threshold) { yRange(points, threshold) }
-  val decorations = remember(threshold) {
-    threshold?.let { bands(it, AqBandColors) }.orEmpty() + visibleRange
+  val midnightLine = remember {
+    LineComponent(
+      fill = Fill(MidnightLineColor),
+      thickness = 1.dp,
+      shape = DashedShape(dashLength = 8.dp, gapLength = 4.dp),
+    )
+  }
+  val decorations = remember(threshold, points, midnightLine) {
+    threshold?.let { bands(it, AqBandColors) }.orEmpty() +
+      MidnightLines(midnightsBetween(points.first().x, points.last().x), midnightLine) +
+      visibleRange
   }
   val firstX = points.first().x
   val labelColor = colors.onSurfaceVariant
@@ -265,3 +276,23 @@ private class MarkerFormatter(
     }
   }
 }
+
+/** Dashed vertical line at each midnight, under the line (legacy GraphContainer.midnightPointLine). */
+private class MidnightLines(private val xs: List<Double>, private val line: LineComponent) : Decoration {
+  override fun drawUnderLayers(context: CartesianDrawingContext) {
+    with(context) {
+      // Same x → pixel mapping as LineCartesianLayer.getDrawX, so the line meets the data exactly.
+      val drawingStart = (if (isLtr) layerBounds.left else layerBounds.right) +
+        layoutDirectionMultiplier * layerDimensions.startPadding - scroll
+      xs.forEach { x ->
+        val px = drawingStart +
+          layoutDirectionMultiplier * layerDimensions.xSpacing * ((x - ranges.minX) / ranges.xStep).toFloat()
+        if (px in layerBounds.left..layerBounds.right) {
+          line.drawVertical(this, px, layerBounds.top, layerBounds.bottom)
+        }
+      }
+    }
+  }
+}
+
+private val MidnightLineColor = Color(0xFF737578)

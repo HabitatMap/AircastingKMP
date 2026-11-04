@@ -35,10 +35,10 @@ class ExploreMapTest {
 
   @Test
   fun level_is_null_when_there_is_nothing_to_colour() {
-    val thresholds = mapOf("AirBeam-PM2.5" to SensorThreshold("AirBeam-PM2.5", 0, 9, 35, 55, 150))
+    val thresholds = Thresholds(listOf(SensorThreshold("AirBeam-PM2.5", 0, 9, 35, 55, 150)), emptyMap())
 
     assertNull(station().levelFor(MeasurementType.ParticulateMatter, thresholds)) // no PM stream
-    assertNull(station(stream(MeasurementType.ParticulateMatter, 12)).levelFor(MeasurementType.ParticulateMatter, emptyMap())) // no threshold row
+    assertNull(station(stream(MeasurementType.ParticulateMatter, 12)).levelFor(MeasurementType.ParticulateMatter, Thresholds(emptyList(), emptyMap()))) // no threshold row
   }
 
   @Test

@@ -44,9 +44,9 @@ class StationDetailsViewModel(
   private val loaded = MutableStateFlow<StationDetailsState>(StationDetailsState.Loading)
 
   // Thresholds are a live DB flow: an edit elsewhere recolours this screen without refetching.
-  val state: StateFlow<StationDetailsState> = combine(loaded, thresholds.observeAll()) { state, all ->
+  val state: StateFlow<StationDetailsState> = combine(loaded, thresholds.observe()) { state, all ->
     if (state !is StationDetailsState.Content) state
-    else state.copy(threshold = all.find { it.sensorName == state.selected?.sensorName })
+    else state.copy(threshold = state.selected?.let { all.forSensor(it.sensorName) })
   }
     .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), StationDetailsState.Loading)
 

@@ -29,11 +29,18 @@ object ApiEndpoints {
   const val V3FixedSessions = "/api/v3/fixed_sessions"
   fun v3FixedSession(uuid: String) = "/api/v3/fixed_sessions/$uuid"
   fun v3FixedSessionMeasurements(uuid: String) = "/api/v3/fixed_sessions/$uuid/measurements"
+
   // =========================================================================
   // Mobile app: Threshold alerts (HTTP Bearer Auth: Bearer <user_token>)
   // =========================================================================
   const val ThresholdAlerts = "/api/fixed/threshold_alerts"
   fun thresholdAlert(id: Long) = "/api/fixed/threshold_alerts/$id"
+
+  // =========================================================================
+  // Mobile app: Thresholds v3 (public, no auth)
+  // =========================================================================
+  const val V3ThresholdSets = "/api/v3/threshold_sets"
+
   // =========================================================================
   // Mobile app: Export & sharing
   // =========================================================================

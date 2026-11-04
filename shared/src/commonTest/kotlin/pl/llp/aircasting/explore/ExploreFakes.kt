@@ -9,6 +9,7 @@ import pl.llp.aircasting.domain.MapViewport
 import pl.llp.aircasting.domain.SensorThreshold
 import pl.llp.aircasting.domain.StationDetails
 import pl.llp.aircasting.domain.ThresholdsRepository
+import pl.llp.aircasting.ui.chart.ChartPoint
 import kotlin.getOrThrow
 
 class FakeExploreMapRepository(
@@ -45,6 +46,15 @@ class FakeStationDetailsRepository(var result: Result<StationDetails>) : Station
 
   override suspend fun station(uuid: String): StationDetails {
     uuids += uuid
+    return result.getOrThrow()
+  }
+}
+
+class FakeStationMeasurementsRepository(var result: Result<List<ChartPoint>>) : StationMeasurementsRepository {
+  val streamIds = mutableListOf<Long>()
+
+  override suspend fun measurements(streamId: Long): List<ChartPoint> {
+    streamIds += streamId
     return result.getOrThrow()
   }
 }

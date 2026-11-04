@@ -25,6 +25,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import org.koin.compose.koinInject
 import pl.llp.aircasting.domain.DataSource
@@ -56,7 +58,7 @@ fun StationDetailsScreen(
         StationDetailsState.Loading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
         StationDetailsState.Error -> ErrorState(onRetry, Modifier.align(Alignment.Center))
         is StationDetailsState.Content -> Column(
-          Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 24.dp),
+          Modifier.verticalScroll(rememberScrollState()).padding(horizontal = ScreenPadding),
           verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
           val details = state.details
@@ -103,11 +105,23 @@ fun StationDetailsScreen(
               Stat(strings.stationMin24h, stream.min24h, stream.unitSymbol, state.levelOf(stream.min24h))
               Stat(strings.stationMax24h, stream.max24h, stream.unitSymbol, state.levelOf(stream.max24h))
             }
+            // Figma draws the graph edge to edge, through the screen padding.
+            StationGraph(stream, state.threshold, Modifier.bleed(ScreenPadding))
           }
         }
       }
     }
   }
+}
+
+private val ScreenPadding = 24.dp
+
+/** Widens the child by [padding] on each side, undoing the parent's horizontal padding. */
+private fun Modifier.bleed(padding: Dp): Modifier = layout { measurable, constraints ->
+  val extra = padding.roundToPx() * 2
+  val width = constraints.maxWidth + extra
+  val placeable = measurable.measure(constraints.copy(minWidth = width, maxWidth = width))
+  layout(constraints.maxWidth, placeable.height) { placeable.place(-extra / 2, 0) }
 }
 
 private fun DataSource.tag(strings: Strings): String = when (this) {

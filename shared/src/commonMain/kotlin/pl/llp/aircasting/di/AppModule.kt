@@ -1,5 +1,6 @@
 package pl.llp.aircasting.di
 
+import co.touchlab.kermit.Logger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -32,8 +33,10 @@ import pl.llp.aircasting.data.network.HttpServerProbe
 import pl.llp.aircasting.data.network.MobileSessionsApi
 import pl.llp.aircasting.data.network.ServerProbe
 import pl.llp.aircasting.data.network.ThresholdAlertsApi
+import pl.llp.aircasting.data.network.ThresholdSetsApi
 import pl.llp.aircasting.data.network.createAircastingHttpClient
 import pl.llp.aircasting.data.network.upload.MobileUploadLoop
+import pl.llp.aircasting.domain.ThresholdDefaultsSync
 import pl.llp.aircasting.explore.ExploreMapRepository
 import pl.llp.aircasting.explore.ExploreViewModel
 import pl.llp.aircasting.explore.NetworkExploreMapRepository
@@ -109,15 +112,15 @@ val networkModule = module {
   single<ServerProbe> { HttpServerProbe(platformHttpEngine()) }
   // Modern v3 APIs
   single { MobileSessionsApi(get()) }
-  // single { FixedSessionsApi(get()) }
   // Search & Regional Exploration (Home screen)
   single { FixedStationsApi(get()) }
   single { FixedStationsRepository(get(), get()) }
   // Alerts & Export
   single { ThresholdAlertsApi(get()) }
+  // Thresholds: server defaults, refreshed on app start
+  single { ThresholdSetsApi(get()) }
+  single { ThresholdDefaultsSync(get(), get()) }
   single { ExportApi(get()) }
-  // Deprecated Sync Fallback
-  // single { LegacySessionsApi(get()) }
   single<Clock> { Clock.System }
   single<HomeRepository> { FakeHomeRepository() }
   viewModelOf(::HomeViewModel)
@@ -170,6 +173,7 @@ fun initKoin(extra: KoinAppDeclaration = {}) = startKoin {
 }.also {
   startUploadLoop(it.koin)
   startRecordingEngine(it.koin)
+  refreshThresholdDefaults(it.koin)
 }
 
 private fun startRecordingEngine(koin: Koin) {
@@ -182,4 +186,16 @@ private fun startRecordingEngine(koin: Koin) {
 private fun startUploadLoop(koin: Koin) {
   val loop = koin.get<MobileUploadLoop>()
   CoroutineScope(SupervisorJob() + Dispatchers.Default).launch { loop.run() }
+}
+
+/** One-shot, fire-and-forget. On failure the stored defaults (first launch: the bundled seed) stay. */
+private fun refreshThresholdDefaults(koin: Koin) {
+  val sync = koin.get<ThresholdDefaultsSync>()
+  CoroutineScope(SupervisorJob() + Dispatchers.Default).launch {
+    try {
+      sync.refresh()
+    } catch (e: Exception) {
+      Logger.withTag("Thresholds").w(e) { "threshold_sets refresh failed; keeping stored defaults" }
+    }
+  }
 }

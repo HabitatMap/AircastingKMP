@@ -126,6 +126,18 @@ class StationDetailsViewModelTest {
     assertEquals(MeasurementLevel.MEDIUM, content(vm).levelOf(8)) // now 8 > low
     assertEquals(listOf("u1"), repo.uuids)
   }
+
+  @Test
+  fun a_model_spelled_stream_uses_its_parameters_threshold() = runTest {
+    val station = STATION.copy(streams = listOf(PM1.copy(sensorName = "AirBeamMini-PM1")))
+    val repo = FakeStationDetailsRepository(Result.success(station))
+    val thresholds = FakeThresholdsRepository(listOf(PM1_T), aliases = mapOf("AirBeamMini-PM1" to "AirBeam-PM1"))
+    val vm = subscribe(StationDetailsViewModel("u1", repo, thresholds))
+
+    advanceUntilIdle()
+
+    assertEquals(PM1_T, content(vm).threshold)
+  }
 }
 
 // Two streams of one measurement type: why selection is by stream id, not MeasurementType.

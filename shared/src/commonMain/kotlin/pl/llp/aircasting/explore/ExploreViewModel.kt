@@ -24,7 +24,7 @@ import pl.llp.aircasting.domain.MapItem
 import pl.llp.aircasting.domain.MapStation
 import pl.llp.aircasting.domain.MapViewport
 import pl.llp.aircasting.domain.MeasurementType
-import pl.llp.aircasting.domain.SensorThreshold
+import pl.llp.aircasting.domain.Thresholds
 import pl.llp.aircasting.domain.ThresholdsRepository
 import pl.llp.aircasting.domain.levelFor
 import pl.llp.aircasting.home.LocationProvider
@@ -33,6 +33,7 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import pl.llp.aircasting.domain.SensorThreshold
 import pl.llp.aircasting.domain.resultCount
 
 @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
@@ -82,11 +83,10 @@ class ExploreViewModel(
 
 
   private val mapState: Flow<ExploreUiState> =
-    combine(loaded, filters, thresholds.observeAll(), startCentre, sheet) { loaded, filters, all, centre, sheet ->
-    val byName = all.associateBy { it.sensorName }
+    combine(loaded, filters, thresholds.observe(), startCentre, sheet) { loaded, filters, all, centre, sheet ->
       ExploreUiState(
         filters = filters,
-        markers = loaded.items.toMarkers(loaded.filters.colourType, byName),
+        markers = loaded.items.toMarkers(loaded.filters.colourType, all),
         error = loaded.failed,
         startCentre = centre,
         sheet = sheet,
@@ -110,15 +110,6 @@ class ExploreViewModel(
 
   fun onFlownTo() {
     flyTo.value = null
-  }
-
-  /** Any cluster in the response means we're zoomed out: the whole map turns into plain dots (design frame 4). */
-  private fun List<MapItem>.toMarkers(colourType: MeasurementType?, thresholds: Map<String, SensorThreshold>): List<ExploreMarker> {
-    val clustered = any { it is MapCluster }
-    return map { item ->
-      if (clustered || item !is MapStation) ExploreMarker.Dot(item.location)
-      else ExploreMarker.Station(item, colourType?.let { item.levelFor(it, thresholds) })
-    }
   }
 
   fun onCameraIdle(viewport: MapViewport) {
@@ -170,7 +161,7 @@ class ExploreViewModel(
 }
 
 /** Any cluster in the response means we're zoomed out: the whole map turns into plain dots (design frame 4). */
-private fun List<MapItem>.toMarkers(colourType: MeasurementType?, thresholds: Map<String, SensorThreshold>): List<ExploreMarker> {
+private fun List<MapItem>.toMarkers(colourType: MeasurementType?, thresholds: Thresholds): List<ExploreMarker> {
   val clustered = any { it is MapCluster }
   return map { item ->
     if (clustered || item !is MapStation) ExploreMarker.Dot(item.location)

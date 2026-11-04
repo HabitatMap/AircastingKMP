@@ -34,6 +34,7 @@ data class MapCluster(override val location: GeoLocation, val count: Int) : MapI
 
 /** A station's reading for one selected [type]. [id] keys the stream-detail endpoints, unique only within the station's source. */
 data class MapStream(val id: Long, val type: MeasurementType, val value: Int, val measuredAt: Instant)
+
 /** One AirBeam fixed session or government station, with a stream per selected type it reports. */
 data class MapStation(
   val uuid: String,
@@ -47,6 +48,14 @@ data class MapStation(
   fun valueFor(type: MeasurementType): Int? = streams.find { it.type == type }?.value
 }
 
+fun MapStation.levelFor(
+  type: MeasurementType,
+  thresholds: Thresholds,
+): MeasurementLevel? {
+  val value = valueFor(type) ?: return null
+  val sensorName = source.sensorNameFor(type) ?: return null
+  return thresholds.forSensor(sensorName)?.levelFor(value.toDouble())
+}
 
 /**
  * The one sensor whose thresholds colour this source's [type] value; null if the source

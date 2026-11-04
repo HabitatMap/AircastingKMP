@@ -595,6 +595,11 @@ Existing installs only get new defaults via a `.sqm` migration.
 move `AirBeamMini-PM2.5` or Explore's `AirBeam-PM2.5`. Decide per-sensor vs per-family key when
 building the slider screen.
 
+**Refresh (*decided 2026-11-04*):** on every app start (`initKoin` → `ThresholdDefaultsSync`)
+`GET /api/v3/threshold_sets` replaces `threshold_defaults` + `threshold_aliases` wholesale in one
+transaction; `threshold_overrides` is never touched. Failure → keep what's stored (bundled seed on
+first offline launch). Server floats are rounded to the integer columns.
+
 ---
 
 ## 8. Cross-Cutting Concerns

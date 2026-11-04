@@ -124,6 +124,11 @@ fun MeasurementChart(
   val panSlop = with(LocalDensity.current) { PanSlop.toPx() }
   val chartConfiguration = remember(system, panSlop) { ChartViewConfiguration(system, panSlop) }
   val markerController = remember(panSlop, system.touchSlop) { ScrubUntilPanController(panSlop, system.touchSlop) }
+  val zoomState = rememberVicoZoomState(
+    initialZoom = remember { Zoom.max(Zoom.x(INITIAL_VISIBLE_SECONDS), Zoom.Content) },
+    minZoom = Zoom.Content,
+    maxZoom = remember { Zoom.x(MIN_VISIBLE_SECONDS) },
+  )
   CompositionLocalProvider(LocalViewConfiguration provides chartConfiguration) {
     CartesianChartHost(
       chart = rememberCartesianChart(
@@ -202,13 +207,9 @@ fun MeasurementChart(
         getXStep = { _, _, _ -> 1.0 },
       ),
       modelProducer = modelProducer,
-      modifier = modifier,
+      modifier = modifier.pinchToZoom(zoomState),
       scrollState = rememberVicoScrollState(initialScroll = Scroll.Absolute.End),
-      zoomState = rememberVicoZoomState(
-        initialZoom = remember { Zoom.max(Zoom.x(INITIAL_VISIBLE_SECONDS), Zoom.Content) },
-        minZoom = Zoom.Content,
-        maxZoom = remember { Zoom.x(MIN_VISIBLE_SECONDS) },
-      ),
+      zoomState = zoomState,
       // Diff animations interpolate every point on each reload: a stall at these densities.
       animationSpec = null,
       animateIn = false,

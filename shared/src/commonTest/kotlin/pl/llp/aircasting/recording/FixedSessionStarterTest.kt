@@ -84,16 +84,6 @@ class FixedSessionStarterTest {
     assertEquals(FixedStartResult.ServerError, starter.start(MINI_V2, DETAILS, OUTDOOR, WIFI))
     assertTrue(link.configured.isEmpty())
   }
-
-  @Test
-  fun pm_ids_are_looked_up_by_canonical_name_with_no_fallback() = runTest {
-    // What legacy looked up — v3 never answers with these names.
-    registration = REGISTERED.copy(sensorTypeIds = mapOf("AirBeamMini-PM1" to 7, "AirBeamMini-PM2.5" to 8))
-
-    assertEquals(FixedStartResult.ServerError, starter.start(MINI_V2, DETAILS, OUTDOOR, WIFI))
-    assertTrue(link.configured.isEmpty())
-  }
-
   @Test
   fun only_mini_v2_starts_fixed_for_now() = runTest {
     val ab3 = DiscoveredAirBeam(DeviceId("11:22:33:44:55:66"), "AirBeam3:246f28", AirBeamDevice.AirBeam3)
@@ -102,6 +92,24 @@ class FixedSessionStarterTest {
 
     assertEquals(FixedStartResult.DeviceFailed(ConfigResult.BadConfigFailure), result)
     assertTrue(registered.isEmpty())
+  }
+
+  @Test
+  fun pm_ids_are_found_under_the_names_we_sent() = runTest {
+    // What the live v3 backend answers with (and what legacy looked up).
+    registration = REGISTERED.copy(sensorTypeIds = mapOf("AirBeamMini-PM1" to 7, "AirBeamMini-PM2.5" to 8))
+
+    assertEquals(FixedStartResult.Started, starter.start(MINI_V2, DETAILS, OUTDOOR, WIFI))
+    val config = link.configured.single() as SessionConfig.FixedWiFi
+    assertEquals(7 to 8, config.pm1Index to config.pm25Index)
+  }
+
+  @Test
+  fun a_missing_pm_id_fails_before_the_device_is_touched() = runTest {
+    registration = REGISTERED.copy(sensorTypeIds = mapOf("AirBeamMini-PM1" to 7))
+
+    assertEquals(FixedStartResult.ServerError, starter.start(MINI_V2, DETAILS, OUTDOOR, WIFI))
+    assertTrue(link.configured.isEmpty())
   }
 
   private companion object {

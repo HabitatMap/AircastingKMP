@@ -53,8 +53,9 @@ class FixedSessionStarter(
       log.e(e) { "${session.uuid}: backend create failed" }
       return FixedStartResult.ServerError
     }
-    val pm1 = registered.sensorTypeIds[PM1]
-    val pm25 = registered.sensorTypeIds[PM25]
+    val ids = registered.sensorTypeIds
+    val pm1 = ids[MINI_PM1] ?: ids[PM1]
+    val pm25 = ids[MINI_PM25] ?: ids[PM25]
     if (pm1 == null || pm25 == null) {
       log.e { "${session.uuid}: no PM sensor_type_id in ${registered.sensorTypeIds}" }
       return FixedStartResult.ServerError
@@ -80,6 +81,8 @@ class FixedSessionStarter(
   }
 }
 
-/** v3 names created streams by their canonical type, not the `AirBeamMini-…` names we send (API_V3.md). */
+/** The live v3 backend answers with the names we sent (as legacy expects); API_V3.md documents the canonical ones. */
+private const val MINI_PM1 = "AirBeamMini-PM1"
+private const val MINI_PM25 = "AirBeamMini-PM2.5"
 private const val PM1 = "AirBeam-PM1"
 private const val PM25 = "AirBeam-PM2.5"

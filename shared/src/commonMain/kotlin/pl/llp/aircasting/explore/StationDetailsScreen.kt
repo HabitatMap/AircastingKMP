@@ -84,7 +84,7 @@ fun StationDetailsScreen(
               listOfNotNull(
                 strings.stationOutdoor, // Explore only returns outdoor sessions
                 details.deviceModel?.let(::deviceDisplayName) ?: details.provider,
-                selected?.let { ageLabel(it.measuredAt, now, strings) },
+                selected?.measuredAt?.let { ageLabel(it, now, strings) },
               ),
               style = MaterialTheme.typography.bodyMedium,
               color = MaterialTheme.colorScheme.onBackground,
@@ -148,14 +148,15 @@ private fun StreamChip(label: String, selected: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-private fun Stat(label: String, value: Int, unit: String, level: MeasurementLevel?) {
+/** [value] null (no reading) → a dash. */
+private fun Stat(label: String, value: Int?, unit: String, level: MeasurementLevel?) {
   Column {
     Text(label, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
       level?.let { LevelDot(it) }
       Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(
-          "$value",
+          value?.toString() ?: "–",
           Modifier.alignByBaseline(),
           style = MaterialTheme.typography.headlineSmallEmphasized,
           color = MaterialTheme.colorScheme.onBackground,

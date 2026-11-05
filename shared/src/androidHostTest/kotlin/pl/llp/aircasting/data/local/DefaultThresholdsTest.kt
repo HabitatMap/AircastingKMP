@@ -3,11 +3,8 @@ package pl.llp.aircasting.data.local
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import pl.llp.aircasting.bluetooth.AirBeamDevice
-import pl.llp.aircasting.domain.DataSource
 import pl.llp.aircasting.domain.LocalThresholdsRepository
-import pl.llp.aircasting.domain.MeasurementType
 import pl.llp.aircasting.domain.SensorThreshold
-import pl.llp.aircasting.domain.sensorNameFor
 import pl.llp.aircasting.recording.streamsFor
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -46,11 +43,9 @@ class DefaultThresholdsTest {
 
   @Test
   fun everyExploreSensorHasADefault() = runTest {
-    DataSource.entries.forEach { source ->
-      MeasurementType.entries.mapNotNull(source::sensorNameFor).forEach { name ->
-        assertNotNull(forSensor(name), "no default for $name")
-      }
-    }
+    // BE Explore::Parameters::CATALOGUE (docs/API_V3.md → Explore map)
+    listOf("AirBeam-PM2.5", "AirBeam-F", "AirBeam-RH", "Government-PM2.5", "Government-NO2", "Government-Ozone")
+      .forEach { assertNotNull(forSensor(it), "no default for $it") }
   }
 
   @Test

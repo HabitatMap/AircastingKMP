@@ -26,5 +26,5 @@ private fun ExploreMapItemDto.toMapItem(): MapItem? {
 /** Null = a measurement type this app doesn't know; dropped, the rest of the station stays. */
 private fun ExploreMapStreamDto.toMapStream(): MapStream? {
   val type = MeasurementType.entries.find { it.apiName == measurementType } ?: return null
-  return MapStream(streamId, type, lastMeasurement.value, Instant.fromEpochMilliseconds(lastMeasurement.time))
+  return MapStream(streamId, type, sensorName, unitSymbol, lastMeasurement.value, Instant.fromEpochMilliseconds(lastMeasurement.time))
 }

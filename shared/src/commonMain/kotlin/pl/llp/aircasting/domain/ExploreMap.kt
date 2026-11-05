@@ -1,19 +1,18 @@
 package pl.llp.aircasting.domain
 
-import io.ktor.openapi.ReferenceOr.Companion.value
 import kotlin.math.log2
 import kotlin.time.Instant
 
 /**
- * The `measurement_type` catalogue the Explore map filters by. [apiName] is the wire value,
- * [unitSymbol] the unit the server's values are in (temperature: °F, the server default).
+ * The `measurement_type` catalogue the Explore map filters by. [apiName] is the wire value.
+ * Units and sensors come per stream from the server, not from here.
  */
-enum class MeasurementType(val apiName: String, val unitSymbol: String) {
-  ParticulateMatter("Particulate Matter", "µg/m³"),
-  NitrogenDioxide("Nitrogen Dioxide", "ppb"),
-  Ozone("Ozone", "ppb"),
-  Temperature("Temperature", "°F"),
-  Humidity("Humidity", "%"),
+enum class MeasurementType(val apiName: String) {
+  ParticulateMatter("Particulate Matter"),
+  NitrogenDioxide("Nitrogen Dioxide"),
+  Ozone("Ozone"),
+  Temperature("Temperature"),
+  Humidity("Humidity"),
 }
 
 enum class DataSource(val apiName: String) {
@@ -32,8 +31,18 @@ sealed interface MapItem {
 /** Several items sharing a server grid cell. Never colour-coded; zooming in splits it. */
 data class MapCluster(override val location: GeoLocation, val count: Int) : MapItem
 
-/** A station's reading for one selected [type]. [id] keys the stream-detail endpoints, unique only within the station's source. */
-data class MapStream(val id: Long, val type: MeasurementType, val value: Int, val measuredAt: Instant)
+/**
+ * A station's reading for one selected [type]. [sensorName] keys the user's thresholds; [id] keys the
+ * stream-detail endpoints, unique only within the station's source.
+ */
+data class MapStream(
+  val id: Long,
+  val type: MeasurementType,
+  val sensorName: String,
+  val unitSymbol: String,
+  val value: Int,
+  val measuredAt: Instant,
+)
 
 /** One AirBeam fixed session or government station, with a stream per selected type it reports. */
 data class MapStation(
@@ -44,38 +53,15 @@ data class MapStation(
   override val location: GeoLocation,
   val streams: List<MapStream>,
 ) : MapItem {
-  /** This station's reading for [type]; null when it doesn't report it. */
-  fun valueFor(type: MeasurementType): Int? = streams.find { it.type == type }?.value
+  /** This station's stream for [type]; null when it doesn't report it. */
+  fun streamFor(type: MeasurementType): MapStream? = streams.find { it.type == type }
+  fun valueFor(type: MeasurementType): Int? = streamFor(type)?.value
 }
 
-fun MapStation.levelFor(
-  type: MeasurementType,
-  thresholds: Thresholds,
-): MeasurementLevel? {
-  val value = valueFor(type) ?: return null
-  val sensorName = source.sensorNameFor(type) ?: return null
-  return thresholds.forSensor(sensorName)?.levelFor(value.toDouble())
-}
-
-/**
- * The one sensor whose thresholds colour this source's [type] value; null if the source
- * doesn't measure it. Mirrors the BE `Explore::Parameters::CATALOGUE`
- * (docs/API_V3.md → Explore map).
- */
-fun DataSource.sensorNameFor(type: MeasurementType): String? = when (this) {
-  DataSource.AirBeam -> when (type) {
-    MeasurementType.ParticulateMatter -> "AirBeam-PM2.5"
-    MeasurementType.Temperature -> "AirBeam-F"
-    MeasurementType.Humidity -> "AirBeam-RH"
-    MeasurementType.NitrogenDioxide, MeasurementType.Ozone -> null
-  }
-
-  DataSource.Government -> when (type) {
-    MeasurementType.ParticulateMatter -> "Government-PM2.5"
-    MeasurementType.NitrogenDioxide -> "Government-NO2"
-    MeasurementType.Ozone -> "Government-Ozone"
-    MeasurementType.Temperature, MeasurementType.Humidity -> null
-  }
+/** Coloured by the stream's own sensor (any model spelling resolves through [Thresholds]' aliases). */
+fun MapStation.levelFor(type: MeasurementType, thresholds: Thresholds): MeasurementLevel? {
+  val stream = streamFor(type) ?: return null
+  return thresholds.forSensor(stream.sensorName)?.levelFor(stream.value.toDouble())
 }
 
 /** The filter dialog's selection. Null [source] / empty [measurementTypes] = "Show all". */
@@ -98,11 +84,3 @@ fun List<MapItem>.resultCount(): Int = sumOf {
   }
 }
 
-fun MapStation.levelFor(
-  type: MeasurementType,
-  thresholds: Map<String, SensorThreshold>
-): MeasurementLevel? {
-  val value = valueFor(type) ?: return null
-  val sensorName = source.sensorNameFor(type) ?: return null
-  return thresholds[sensorName]?.levelFor(value.toDouble())
-}

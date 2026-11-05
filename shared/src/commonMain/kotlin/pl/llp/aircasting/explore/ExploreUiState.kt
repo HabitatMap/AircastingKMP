@@ -34,8 +34,8 @@ sealed interface ExploreMarker {
 
 /** Pill text: the selected type's value with its unit (design frames 2–3), else the source badge (frame 1). */
 fun ExploreMarker.Station.label(colourType: MeasurementType?): String {
-  val value = colourType?.let(station::valueFor)
-  return if (colourType != null && value != null) "$value ${colourType.unitSymbol}"
+  val stream = colourType?.let(station::streamFor)
+  return if (stream != null) "${stream.value} ${stream.unitSymbol}"
   else when (station.source) {
     DataSource.AirBeam -> "AIRBEAM"
     DataSource.Government -> "GOV"

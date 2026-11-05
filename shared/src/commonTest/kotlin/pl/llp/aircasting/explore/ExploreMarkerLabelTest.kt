@@ -12,18 +12,18 @@ import kotlin.time.Instant
 
 class ExploreMarkerLabelTest {
 
-  private fun marker(source: DataSource, value: Int?, type: MeasurementType = MeasurementType.ParticulateMatter) =
+  private fun marker(
+    source: DataSource,
+    value: Int?,
+    type: MeasurementType = MeasurementType.ParticulateMatter,
+    unit: String = "µg/m³",
+  ) =
     ExploreMarker.Station(
       MapStation(
         uuid = "u1", source = source, title = "Station", provider = "p",
         location = GeoLocation(0.0, 0.0),
         streams = listOfNotNull(value?.let {
-          MapStream(
-            1,
-            type,
-            it,
-            Instant.fromEpochMilliseconds(0)
-          )
+          MapStream(1, type, sensorName = "AirBeam-PM2.5", unitSymbol = unit, value = it, measuredAt = Instant.fromEpochMilliseconds(0))
         }),
       ),
       level = MeasurementLevel.LOW,
@@ -31,7 +31,12 @@ class ExploreMarkerLabelTest {
   @Test
   fun one_type_selected_shows_value_with_unit() {
     assertEquals("6 µg/m³", marker(DataSource.Government, 6).label(MeasurementType.ParticulateMatter))
-    assertEquals("71 °F", marker(DataSource.AirBeam, 71, MeasurementType.Temperature).label(MeasurementType.Temperature))
+    assertEquals("71 °F", marker(DataSource.AirBeam, 71, MeasurementType.Temperature, unit = "°F").label(MeasurementType.Temperature))
+  }
+
+  @Test
+  fun the_unit_is_the_streams_own() {
+    assertEquals("21 °C", marker(DataSource.AirBeam, 21, MeasurementType.Temperature, unit = "°C").label(MeasurementType.Temperature))
   }
 
   @Test

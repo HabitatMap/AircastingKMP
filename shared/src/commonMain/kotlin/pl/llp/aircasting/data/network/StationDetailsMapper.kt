@@ -16,10 +16,10 @@ fun StationDetailsDto.toStationDetails(): StationDetails = StationDetails(
       id = it.streamId,
       sensorName = it.sensorName,
       unitSymbol = it.unitSymbol,
-      value = it.lastMeasurement.value,
-      min24h = it.last24h.min,
-      max24h = it.last24h.max,
-      measuredAt = Instant.fromEpochMilliseconds(it.lastMeasurement.time),
+      value = it.lastMeasurement?.value,
+      min24h = it.last24h?.min,
+      max24h = it.last24h?.max,
+      measuredAt = it.lastMeasurement?.time?.let(Instant::fromEpochMilliseconds),
     )
   },
 )

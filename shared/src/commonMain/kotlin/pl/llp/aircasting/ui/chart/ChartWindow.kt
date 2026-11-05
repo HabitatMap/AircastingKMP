@@ -26,18 +26,26 @@ internal fun windowFor(visible: ClosedFloatingPointRange<Double>): ClosedFloatin
   return (visible.start - margin)..(visible.endInclusive + margin)
 }
 
+/** Slack on the visible width: the probe derives it from Float pixels, so it never lands exactly on a limit. */
+private const val WIDTH_SLACK = 1.01
+
+
 /**
- * Reload when the view leaves [loaded], or when zooming in has left fewer than half the points it
- * was decimated for. Zooming out needs no rule of its own: the view then outgrows [loaded].
+ * Reload when the view leaves [loaded]; when zooming in has left fewer than half the points it was
+ * decimated for; or at max zoom, when [loaded] was decimated for a wider view. The halving rule
+ * can't cover that last case: zoom stops at [MIN_VISIBLE_SECONDS], short of half of any window
+ * loaded for under twice that. Zooming out needs no rule of its own: the view then outgrows [loaded].
  */
 internal fun needsReload(
   loaded: ClosedFloatingPointRange<Double>,
   visible: ClosedFloatingPointRange<Double>,
 ): Boolean {
   val loadedForWidth = loaded.width / (1 + 2 * MARGIN)
+  val atMaxZoom = visible.width <= MIN_VISIBLE_SECONDS * WIDTH_SLACK
   return visible.start < loaded.start ||
     visible.endInclusive > loaded.endInclusive ||
-    visible.width < loadedForWidth / 2
+    visible.width < loadedForWidth / 2 ||
+    (atMaxZoom && loadedForWidth > visible.width * WIDTH_SLACK)
 }
 
 /**

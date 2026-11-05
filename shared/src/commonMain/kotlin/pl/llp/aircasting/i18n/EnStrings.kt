@@ -315,6 +315,7 @@ object EnStrings : Strings {
       else -> "Show $n results"
     }
   override fun exploreRemoveFilter(name: String): String = "Remove filter: $name"
+  override val colourThresholds: String = "Colour thresholds"
 }
 
 /** Every available locale, keyed by BCP-47 tag. Lyricist selects one by the system locale at runtime. */

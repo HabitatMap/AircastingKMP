@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import org.koin.compose.koinInject
 import pl.llp.aircasting.domain.DataSource
 import pl.llp.aircasting.domain.MeasurementLevel
+import pl.llp.aircasting.domain.SensorThreshold
 import pl.llp.aircasting.i18n.LocalStrings
 import pl.llp.aircasting.i18n.Strings
 import pl.llp.aircasting.settings.SettingsScaffold
@@ -49,6 +50,7 @@ fun StationDetailsScreen(
   onBack: () -> Unit,
   onRetry: () -> Unit,
   onSelectStream: (streamId: Long) -> Unit,
+  onThresholdChange: (SensorThreshold) -> Unit,
 ) {
   val strings = LocalStrings.current
   // App-bar actions (export, share, favourite, alert) stay hidden until they work.
@@ -107,6 +109,8 @@ fun StationDetailsScreen(
             }
             // Figma draws the graph edge to edge, through the screen padding.
             StationGraph(details, stream, state.threshold, Modifier.bleed(ScreenPadding))
+            // No threshold for this sensor → nothing to edit (and the chart is uncoloured).
+            state.threshold?.let { ThresholdSlider(it, stream.unitSymbol, onChange = onThresholdChange) }
           }
         }
       }

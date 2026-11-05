@@ -325,4 +325,7 @@ interface Strings {
   val stationOutdoor: String
   fun exploreShowResults(n: Int?): String
   fun exploreRemoveFilter(name: String): String
+
+  // Thresholds
+  val colourThresholds: String
 }

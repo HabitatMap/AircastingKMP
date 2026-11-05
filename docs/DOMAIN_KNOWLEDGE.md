@@ -596,9 +596,17 @@ Values = server defaults (*Explore map* above); `Phone Microphone` 20·60·70·8
 `MicrophoneReader` (server agrees). Seeded keys = every name in `streamsFor(device)` + every Explore
 catalogue sensor (`API_V3.md` → *Explore map*); `DefaultThresholdsTest` fails if a new sensor lands without a default.
 Existing installs only get new defaults via a `.sqm` migration.
-**Open decision:** keys are exact sensor names, like legacy — a slider on `AirBeam3-PM2.5` won't
-move `AirBeamMini-PM2.5` or Explore's `AirBeam-PM2.5`. Decide per-sensor vs per-family key when
-building the slider screen.
+
+**Key (*decided 2026-11-04*):** per family. Overrides are keyed by the canonical `threshold_sets`
+name, and `Thresholds.forSensor` resolves any model spelling through `aliases`, so a slider edit on
+`AirBeamMini-PM2.5` also recolours `AirBeam3-PM2.5` and Explore's `AirBeam-PM2.5`.
+
+**Slider (*legacy `HLUSlider`/`HLUDialog`*):** the track spans veryLow..veryHigh; only low/medium/high
+are draggable, and the ends are edited as numbers in the Thresholds sheet. Saved on release
+(`onStopTrackingTouch`), not on every move. Order is strict, `min < low < medium < high < max`
+(`HLUDialog.validate`); the slider clamps a dragged bound one unit inside its neighbours
+(`SensorThreshold.moveBound`). Temperature bounds are shown in °C when the Celsius setting is on
+(`TemperatureConverter`); the rewrite doesn't do that yet.
 
 **Refresh (*decided 2026-11-04*):** on every app start (`initKoin` → `ThresholdDefaultsSync`)
 `GET /api/v3/threshold_sets` replaces `threshold_defaults` + `threshold_aliases` wholesale in one

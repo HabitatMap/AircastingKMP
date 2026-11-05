@@ -343,4 +343,5 @@ object FrStrings : Strings {
     }
 
   override fun exploreRemoveFilter(name: String): String = "Retirer le filtre : $name"
+  override val colourThresholds: String = "Seuils de couleur"
 }

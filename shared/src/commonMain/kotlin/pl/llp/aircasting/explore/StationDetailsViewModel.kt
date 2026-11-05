@@ -38,7 +38,7 @@ sealed interface StationDetailsState {
 class StationDetailsViewModel(
   private val uuid: String,
   private val repository: StationDetailsRepository,
-  thresholds: ThresholdsRepository,
+  private val thresholds: ThresholdsRepository,
 ) : ViewModel() {
   /** What the network gave us + the chip; [state] adds the threshold on top. */
   private val loaded = MutableStateFlow<StationDetailsState>(StationDetailsState.Loading)
@@ -67,6 +67,15 @@ class StationDetailsViewModel(
         StationDetailsState.Error
       }
     }
+  }
+
+  /**
+   * Slider release (later: the sheet's Save). [threshold] comes from Thresholds.forSensor, so it is
+   * canonically named and one save covers every model spelling. No state update here: the DB flow
+   * feeding [state] re-emits it.
+   */
+  fun saveThreshold(threshold: SensorThreshold) {
+    viewModelScope.launch { thresholds.save(threshold) }
   }
 
   fun selectStream(id: Long) {

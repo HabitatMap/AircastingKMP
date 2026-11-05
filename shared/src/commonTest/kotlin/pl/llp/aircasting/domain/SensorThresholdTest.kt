@@ -47,4 +47,33 @@ class SensorThresholdTest {
     assertEquals(MeasurementLevel.LOW, pm25.levelFor(12.4))
     assertEquals(MeasurementLevel.MEDIUM, pm25.levelFor(12.6))
   }
+
+  @Test
+  fun bands_span_the_bounds_low_to_high() = assertEquals(
+    listOf(
+      0..12 to MeasurementLevel.LOW,
+      12..35 to MeasurementLevel.MEDIUM,
+      35..55 to MeasurementLevel.HIGH,
+      55..150 to MeasurementLevel.VERY_HIGH,
+    ),
+    pm25.bands,
+  )
+
+  @Test
+  fun moving_a_bound_sets_it() =
+    assertEquals(pm25.copy(medium = 40), pm25.moveBound(InnerBound.Medium, 40))
+
+  @Test
+  fun a_bound_stops_one_short_of_its_upper_neighbour() =
+    assertEquals(pm25.copy(medium = 54), pm25.moveBound(InnerBound.Medium, 90)) // high = 55
+
+  @Test
+  fun a_bound_stops_one_short_of_its_lower_neighbour() =
+    assertEquals(pm25.copy(low = 1), pm25.moveBound(InnerBound.Low, -10)) // veryLow = 0
+
+  @Test
+  fun the_nearest_bound_takes_the_drag() {
+    assertEquals(InnerBound.Low, pm25.nearestBound(20)) // |20−12| < |20−35|
+    assertEquals(InnerBound.High, pm25.nearestBound(140))
+  }
 }

@@ -17,5 +17,8 @@ data class StationDetailsRoute(val uuid: String)
 fun StationDetailsDestination(uuid: String, onBack: () -> Unit) {
   val vm = koinViewModel<StationDetailsViewModel> { parametersOf(uuid) }
   val state by vm.state.collectAsStateWithLifecycle()
-  StationDetailsScreen(state, onBack = onBack, onRetry = vm::load, onSelectStream = vm::selectStream)
+  StationDetailsScreen(
+    state, onBack = onBack, onRetry = vm::load, onSelectStream = vm::selectStream,
+    onThresholdChange = vm::saveThreshold,
+  )
 }

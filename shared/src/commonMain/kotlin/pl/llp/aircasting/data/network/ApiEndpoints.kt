@@ -51,6 +51,7 @@ object ApiEndpoints {
   // =========================================================================
   const val V3ExploreMap = "/api/v3/explore/map"
   fun v3ExploreStation(uuid: String) = "/api/v3/explore/stations/$uuid"
+  fun v3ExploreStationMeasurements(uuid: String) = "/api/v3/explore/stations/$uuid/measurements"
 
   // =========================================================================
   // Fixed Stations & Map Query (Home screen & explore)

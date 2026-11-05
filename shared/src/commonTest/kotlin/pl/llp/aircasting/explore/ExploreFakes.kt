@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
+import kotlinx.datetime.TimeZone
 import pl.llp.aircasting.domain.ExploreFilters
 import pl.llp.aircasting.domain.MapItem
 import pl.llp.aircasting.domain.MapViewport
@@ -13,6 +14,7 @@ import pl.llp.aircasting.domain.Thresholds
 import pl.llp.aircasting.domain.ThresholdsRepository
 import pl.llp.aircasting.ui.chart.ChartPoint
 import kotlin.getOrThrow
+import kotlin.time.Instant
 
 class FakeExploreMapRepository(
   private val respond: suspend (MapViewport, ExploreFilters) -> List<MapItem> = { _, _ -> emptyList() },
@@ -49,12 +51,15 @@ class FakeStationDetailsRepository(var result: Result<StationDetails>) : Station
     return result.getOrThrow()
   }
 }
+data class MeasurementsRequest(val uuid: String, val sensorName: String, val newest: Instant, val timeZone: TimeZone)
 
 class FakeStationMeasurementsRepository(var result: Result<List<ChartPoint>>) : StationMeasurementsRepository {
-  val streamIds = mutableListOf<Long>()
+  val requests = mutableListOf<MeasurementsRequest>()
 
-  override suspend fun measurements(streamId: Long): List<ChartPoint> {
-    streamIds += streamId
+  override suspend fun measurements(
+    uuid: String, sensorName: String, newest: Instant, timeZone: TimeZone,
+  ): List<ChartPoint> {
+    requests += MeasurementsRequest(uuid, sensorName, newest, timeZone)
     return result.getOrThrow()
   }
 }

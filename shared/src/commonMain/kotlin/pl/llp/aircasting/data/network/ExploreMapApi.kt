@@ -8,6 +8,7 @@ import pl.llp.aircasting.domain.DataSource
 import pl.llp.aircasting.domain.MapViewport
 import pl.llp.aircasting.domain.MeasurementType
 import kotlin.math.roundToInt
+import kotlin.time.Instant
 
 /** Public, server-clustered map of active fixed sessions + government stations. No auth. */
 class ExploreMapApi(private val client: HttpClient) {
@@ -30,4 +31,14 @@ class ExploreMapApi(private val client: HttpClient) {
     .body()
 
   suspend fun station(uuid: String): StationDetailsDto = client.get(ApiEndpoints.v3ExploreStation(uuid)).body()
+
+
+  /** Both bounds inclusive, true UTC, at most 12 h apart. Oldest first. */
+  suspend fun stationMeasurements(
+    uuid: String, sensorName: String, start: Instant, end: Instant,
+  ): List<StationMeasurementDto> = client.get(ApiEndpoints.v3ExploreStationMeasurements(uuid)) {
+    parameter("sensor_name", sensorName)
+    parameter("start_time", start.toEpochMilliseconds())
+    parameter("end_time", end.toEpochMilliseconds())
+  }.body()
 }

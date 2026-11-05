@@ -14,6 +14,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 import pl.llp.aircasting.domain.SensorThreshold
+import pl.llp.aircasting.domain.StationDetails
 import pl.llp.aircasting.domain.StationStream
 import pl.llp.aircasting.ui.chart.MeasurementChart
 import pl.llp.aircasting.ui.components.ErrorState
@@ -23,9 +24,13 @@ private val GraphHeight = 440.dp
 
 /** The selected stream's 24 h graph, under the stats. [threshold] = the header's, so both colour alike. */
 @Composable
-fun StationGraph(stream: StationStream, threshold: SensorThreshold?, modifier: Modifier = Modifier) {
+fun StationGraph(
+  station: StationDetails, stream: StationStream, threshold: SensorThreshold?, modifier: Modifier = Modifier,
+) {
   // One ViewModel per stream id: switching chips keeps each stream's loaded points.
-  val vm = koinViewModel<StationGraphViewModel>(key = "graph-${stream.id}") { parametersOf(stream.id) }
+  val vm = koinViewModel<StationGraphViewModel>(key = "graph-${stream.id}") {
+    parametersOf(station.uuid, stream, station.timeZone)
+  }
   val state by vm.state.collectAsStateWithLifecycle()
   Box(modifier.fillMaxWidth().height(GraphHeight), contentAlignment = Alignment.Center) {
     when (val graph = state) {

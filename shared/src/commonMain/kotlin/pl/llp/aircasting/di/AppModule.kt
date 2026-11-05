@@ -36,12 +36,13 @@ import pl.llp.aircasting.data.network.ThresholdAlertsApi
 import pl.llp.aircasting.data.network.ThresholdSetsApi
 import pl.llp.aircasting.data.network.createAircastingHttpClient
 import pl.llp.aircasting.data.network.upload.MobileUploadLoop
+import pl.llp.aircasting.domain.StationStream
 import pl.llp.aircasting.domain.ThresholdDefaultsSync
 import pl.llp.aircasting.explore.ExploreMapRepository
 import pl.llp.aircasting.explore.ExploreViewModel
 import pl.llp.aircasting.explore.NetworkExploreMapRepository
 import pl.llp.aircasting.explore.NetworkStationDetailsRepository
-import pl.llp.aircasting.explore.SampleStationMeasurementsRepository
+import pl.llp.aircasting.explore.NetworkStationMeasurementsRepository
 import pl.llp.aircasting.explore.StationDetailsRepository
 import pl.llp.aircasting.explore.StationDetailsViewModel
 import pl.llp.aircasting.explore.StationGraphViewModel
@@ -143,10 +144,10 @@ val exploreModule = module {
   viewModelOf(::ExploreViewModel)
   single<StationDetailsRepository> { NetworkStationDetailsRepository(get()) }
   viewModel { (uuid: String) -> StationDetailsViewModel(uuid, get(), get()) }
-  viewModel { (uuid: String) -> StationDetailsViewModel(uuid, get(), get()) }
-  // TODO: network implementation once the endpoint shape is settled.
-  single<StationMeasurementsRepository> { SampleStationMeasurementsRepository(get()) }
-  viewModel { (streamId: Long) -> StationGraphViewModel(streamId, get()) }
+  single<StationMeasurementsRepository> { NetworkStationMeasurementsRepository(get()) }
+  viewModel { (uuid: String, stream: StationStream, timeZone: TimeZone) ->
+    StationGraphViewModel(uuid, stream, timeZone, get())
+  }
 }
 
 val helpModule = module {

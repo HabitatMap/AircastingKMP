@@ -67,4 +67,13 @@ class ChartWindowTest {
     assertTrue(needsReload(loaded = 50.0..250.0, visible = 130.0..170.0))
     assertFalse(needsReload(loaded = 50.0..250.0, visible = 120.0..180.0))
   }
+
+  @Test
+  fun the_window_at_max_zoom_on_1_Hz_data_is_drawn_raw() {
+    // Legacy showed every measurement when zoomed all the way in; we keep that.
+    val day = seconds(86_400)
+    val window = windowFor(43_200.0..(43_200.0 + MIN_VISIBLE_SECONDS))
+
+    assertEquals(pointsIn(day, window).size, pointsToDraw(day, window).size)
+  }
 }

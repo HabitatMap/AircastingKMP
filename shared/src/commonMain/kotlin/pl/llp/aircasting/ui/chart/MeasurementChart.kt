@@ -63,8 +63,7 @@ import kotlin.math.roundToInt
 
 /** Seconds visible at first: the design frame spans ~8 h (19:00–03:00). Open with design: see EXPLORE_SCREEN.md. */
 private const val INITIAL_VISIBLE_SECONDS = 8 * 3_600.0
-/** Furthest zoom-in. */
-private const val MIN_VISIBLE_SECONDS = 15 * 60.0
+
 /** How far sideways (from where the finger landed) the tooltip scrubs before the chart pans. System default: 8 dp. */
 private val PanSlop = 48.dp
 /** The system configuration with the chart's own touch slop. */

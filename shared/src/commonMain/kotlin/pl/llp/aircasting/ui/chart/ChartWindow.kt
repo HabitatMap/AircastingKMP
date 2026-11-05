@@ -6,8 +6,17 @@ package pl.llp.aircasting.ui.chart
  * so it only ever gets the visible slice, decimated.
  */
 
-/** Points fed to Vico per window: ~600 on screen, since the window is twice the visible width. */
-internal const val POINTS_PER_WINDOW = 1_200
+/**
+ * Points fed to Vico per window. The window is twice the visible width, so ~1 000 land on screen:
+ * about one per horizontal pixel on a 1080 px phone, the spike's rule
+ * (docs/design/VICO_CHART_SPIKE_REPORT.md). It also exceeds the ~1 802 points a max-zoom window
+ * holds at 1 Hz, so that window is drawn raw. The spike benchmarked 800: re-benchmark on a device
+ * when raising this.
+ */
+internal const val POINTS_PER_WINDOW = 2_000
+
+/** Furthest zoom-in, in seconds visible. Lives here because the window budget is sized against it. */
+internal const val MIN_VISIBLE_SECONDS = 15 * 60.0
 
 /** Extra width loaded on each side of the visible range, as a fraction of it, so short pans need no reload. */
 private const val MARGIN = 0.5

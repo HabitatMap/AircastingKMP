@@ -6,6 +6,26 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class ChartWindowTest {
+  /** A max-zoom view as the probe reports it: Float pixel maths leaves the width a bit off the limit. */
+  private val maxZoom = 450.0..(450.0 + MIN_VISIBLE_SECONDS + 0.3)
+
+  @Test
+  fun reaching_max_zoom_reloads_a_window_decimated_for_a_wider_view() {
+    // Zooming in steadily from 8 h last reloads just under 30 min; the halving rule can't fire
+    // again because zoom stops at 15. Without this, max zoom stays decimated.
+    val loadedFor30Min = windowFor(0.0..1_800.0)
+
+    assertTrue(needsReload(loaded = loadedFor30Min, visible = maxZoom))
+  }
+
+  @Test
+  fun a_window_loaded_at_max_zoom_is_not_reloaded_again() {
+    // Guards against a reload on every frame: the probe's width wobbles around the limit.
+    val loadedAtMaxZoom = windowFor(450.0..(450.0 + MIN_VISIBLE_SECONDS))
+
+    assertFalse(needsReload(loaded = loadedAtMaxZoom, visible = maxZoom))
+  }
+
   /** One point per second, x = 0 … n-1. */
   private fun seconds(n: Int) = List(n) { ChartPoint(it.toDouble(), 1.0) }
 
@@ -63,8 +83,19 @@ class ChartWindowTest {
 
   @Test
   fun zooming_in_past_twice_the_loaded_resolution_reloads() {
-    // Loaded for a 100 s view; a 40 s view would show under half the points it was decimated for.
-    assertTrue(needsReload(loaded = 50.0..250.0, visible = 130.0..170.0))
-    assertFalse(needsReload(loaded = 50.0..250.0, visible = 120.0..180.0))
+    // Loaded for a 2 h view; a 50 min view would show under half the points it was decimated for.
+    val loadedFor2h = windowFor(0.0..7_200.0)
+
+    assertTrue(needsReload(loaded = loadedFor2h, visible = 1_800.0..4_800.0))
+    assertFalse(needsReload(loaded = loadedFor2h, visible = 1_200.0..5_400.0))
+  }
+
+  @Test
+  fun the_window_at_max_zoom_on_1_Hz_data_is_drawn_raw() {
+    // Legacy showed every measurement when zoomed all the way in; we keep that.
+    val day = seconds(86_400)
+    val window = windowFor(43_200.0..(43_200.0 + MIN_VISIBLE_SECONDS))
+
+    assertEquals(pointsIn(day, window).size, pointsToDraw(day, window).size)
   }
 }

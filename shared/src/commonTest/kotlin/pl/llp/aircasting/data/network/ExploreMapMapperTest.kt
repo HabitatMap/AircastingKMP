@@ -61,7 +61,8 @@ class ExploreMapMapperTest {
           location = GeoLocation(40.1, -73.2),
           streams = listOf(
             MapStream(
-              id = 4821, type = MeasurementType.ParticulateMatter, value = 12,
+              id = 4821, type = MeasurementType.ParticulateMatter,
+              sensorName = "AirBeam-PM2.5", unitSymbol = "µg/m³", value = 12,
               measuredAt = Instant.fromEpochMilliseconds(1792659600000),
             )
           ),

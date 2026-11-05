@@ -328,8 +328,11 @@ class ExploreViewModelTest {
         MapStream(
           1,
           MeasurementType.ParticulateMatter,
-          it,
-          Instant.fromEpochMilliseconds(0)
+          // What the server sends per source (BE catalogue), so each colours by its own sensor.
+          sensorName = "${source.name}-PM2.5",
+          unitSymbol = "µg/m³",
+          value = it,
+          measuredAt = Instant.fromEpochMilliseconds(0),
         )
       }),
     )

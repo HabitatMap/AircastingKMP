@@ -29,8 +29,8 @@ sealed interface StationDetailsState {
     val threshold: SensorThreshold? = null,
   ) : StationDetailsState {
     val selected: StationStream? get() = details.streams.find { it.id == selectedStreamId }
-    /** Level of any of [selected]'s values — NOW, MIN or MAX all share its threshold. */
-    fun levelOf(value: Int): MeasurementLevel? = threshold?.levelFor(value.toDouble())
+    /** Level of any of [selected]'s values — NOW, MIN or MAX all share its threshold. Null value → null. */
+    fun levelOf(value: Int?): MeasurementLevel? = value?.let { threshold?.levelFor(it.toDouble()) }
   }
   data object Error : StationDetailsState
 }

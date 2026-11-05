@@ -13,13 +13,16 @@ data class StationDetails(
   val streams: List<StationStream>,
 )
 
-/** Keyed by [id], not type: PM1 and PM2.5 share `Particulate Matter`. Values rounded by the server. */
+/**
+ * Keyed by [id], not type: PM1 and PM2.5 share `Particulate Matter`. Values rounded by the server.
+ * [value]/[measuredAt] null = never reported; [min24h]/[max24h] null = nothing in the last 24 h.
+ */
 data class StationStream(
   val id: Long,
   val sensorName: String,
   val unitSymbol: String,
-  val value: Int,
-  val min24h: Int,
-  val max24h: Int,
-  val measuredAt: Instant,
+  val value: Int?,
+  val min24h: Int?,
+  val max24h: Int?,
+  val measuredAt: Instant?,
 )

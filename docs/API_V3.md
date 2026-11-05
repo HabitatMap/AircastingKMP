@@ -197,20 +197,22 @@ of the type: their mean" only covers a government station with a duplicated stre
 **Clusters are never colour-coded** (plain blue dot in the design), so the client ignores a cluster's
 `value`.
 
-**No unit, thresholds or level in the response** — colouring is the client's job, from the user's
-local thresholds (`DOMAIN_KNOWLEDGE.md` → *Explore map*).
+**No thresholds or level in the response** — colouring is the client's job, from the user's
+local thresholds (`DOMAIN_KNOWLEDGE.md` → *Explore map*). Each stream's own `sensor_name` is the
+threshold key and its `unit_symbol` the label unit, so the client keeps **no** copy of the catalogue
+above (it used to: `sensorNameFor`, hardcoded units — removed 2026-11-05).
 
-### Explore station details — `GET /api/v3/explore/stations/{uuid}` (announced, not live yet)
+### Explore station details — `GET /api/v3/explore/stations/{uuid}` [A]
 
-*Contract from the BE team, 2026-10-30. Not on experimental yet (no swagger entry; the path falls
-through to the web app's HTML). Re-check the swagger before relying on optional/nullable fields.*
+*Contract from the BE team 2026-10-30; live on experimental, swagger re-read 2026-11-05.*
 
-Public (`security: []`), like `/explore/map`. Keyed by the map station's `uuid`; one call returns the
-whole details header, so the details route only needs the `uuid`.
+Public (`security: []`), like `/explore/map`. Keyed by the map station's `uuid` (session uuid for
+AirBeam, station uuid for gov — never overlap, so no `source` needed); one call returns the whole
+details header, so the details route only needs the `uuid`.
 
 ```json
 { "uuid": "0b7e…", "source": "airbeam", "title": "Home AirBeam Garden", "provider": "jane",
-  "latitude": 40.1, "longitude": -73.2, "active": true,
+  "latitude": 40.1, "longitude": -73.2, "time_zone": "America/New_York", "is_active": true,
   "device_model": "AirBeamMini", "share_url": "https://aircasting.org/s/ab12c",
   "streams": [ { "stream_id": 35404, "sensor_name": "AirBeam-PM1",
                  "measurement_type": "Particulate Matter", "unit_symbol": "µg/m³",
@@ -219,14 +221,21 @@ whole details header, so the details route only needs the `uuid`.
                  "last_24h": { "min": 3, "max": 10 } } ] }
 ```
 
-- Covers BE gaps listed in `design/EXPLORE_SCREEN.md`: all streams by `uuid` (PM1 included — note two
-  streams can share one `measurement_type`, so streams are keyed by `stream_id`/`sensor_name`, not type),
-  `device_model`, a public `share_url`, and MIN/MAX 24 h computed server-side.
+- **Every stream** of the station (not only the map's filter chips), catalogue order then by sensor
+  name. Two streams can share one `measurement_type` (PM1/PM2.5), so key by `stream_id`/`sensor_name`.
+- `sensor_name` as in `/api/sensors` (e.g. `AirBeam-PM1`, `Government-Ozone`); resolve thresholds
+  through `threshold_sets` aliases anyway. `unit_symbol` is the display unit (temperature °F).
+- **A station that stopped reporting still answers**, with `is_active: false`:
+  `last_measurement` is **null** if the stream never reported (else `time` = epoch ms, true UTC,
+  possibly days old), `last_24h` is **null** if nothing came in 24 h (min/max from raw readings).
+  Client keeps both nullable so one quiet stream doesn't fail the whole screen.
+- `device_model` required but **null** for gov and for an AirBeam with an unrecognised model.
+- `share_url` **may be absent** (gov station without a token) → "not shareable". Append
+  `?sensor_name=<stream>` before sharing; `/s/…` = AirBeam, `/g/…` = gov.
+- `time_zone` = station's IANA zone; `update_frequency` = display text (`1 minute` / `1 hour`).
+- `404` → `{ error_code: "not_found", message }`.
 - `stream_id` still keys the per-stream endpoints below (graph data).
-- **Open with BE:** is `device_model` null for gov? `share_url` ever null? Can `last_24h` be null?
-  Is `sensor_name` canonical (`AirBeam-PM1`) or raw (`AirBeamMini-PM1`)? 404 body for an unknown uuid?
-  Is `last_measurement.time` true UTC like the map's (client assumes yes for "N min ago")?
-  Client treats `device_model`/`share_url` as nullable until answered.
+- Unused by the client so far: `is_active`, `time_zone`, `share_url`, `update_frequency`.
 
 ### Explore session details — public stream endpoints
 

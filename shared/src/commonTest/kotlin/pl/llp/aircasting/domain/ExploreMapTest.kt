@@ -9,20 +9,15 @@ import kotlin.time.Instant
 class ExploreMapTest {
 
   @Test
-  fun airbeam_sensor_per_measurement_type() {
-    assertEquals("AirBeam-PM2.5", DataSource.AirBeam.sensorNameFor(MeasurementType.ParticulateMatter))
-    assertEquals("AirBeam-F", DataSource.AirBeam.sensorNameFor(MeasurementType.Temperature))
-    assertEquals("AirBeam-RH", DataSource.AirBeam.sensorNameFor(MeasurementType.Humidity))
-    assertNull(DataSource.AirBeam.sensorNameFor(MeasurementType.NitrogenDioxide))
-    assertNull(DataSource.AirBeam.sensorNameFor(MeasurementType.Ozone))
-  }
-  @Test
-  fun government_sensor_per_measurement_type() {
-    assertEquals("Government-PM2.5", DataSource.Government.sensorNameFor(MeasurementType.ParticulateMatter))
-    assertEquals("Government-NO2", DataSource.Government.sensorNameFor(MeasurementType.NitrogenDioxide))
-    assertEquals("Government-Ozone", DataSource.Government.sensorNameFor(MeasurementType.Ozone))
-    assertNull(DataSource.Government.sensorNameFor(MeasurementType.Temperature))
-    assertNull(DataSource.Government.sensorNameFor(MeasurementType.Humidity))
+  fun level_comes_from_the_streams_own_sensor_through_aliases() {
+    val thresholds = Thresholds(
+      listOf(SensorThreshold("AirBeam-PM2.5", 0, 9, 35, 55, 150)),
+      aliases = mapOf("AirBeamMini-PM2.5" to "AirBeam-PM2.5"),
+    )
+    val station = station(stream(MeasurementType.ParticulateMatter, 12, sensorName = "AirBeamMini-PM2.5"))
+
+    // 12 > low (9), ≤ medium (35)
+    assertEquals(MeasurementLevel.MEDIUM, station.levelFor(MeasurementType.ParticulateMatter, thresholds))
   }
 
   @Test
@@ -67,8 +62,11 @@ class ExploreMapTest {
     assertEquals(39, items.resultCount())
   }
 
-  private fun stream(type: MeasurementType, value: Int) =
-    MapStream(id = 1, type = type, value = value, measuredAt = Instant.fromEpochMilliseconds(0))
+  private fun stream(type: MeasurementType, value: Int, sensorName: String = "AirBeam-PM2.5", unitSymbol: String = "µg/m³") =
+    MapStream(
+      id = 1, type = type, sensorName = sensorName, unitSymbol = unitSymbol, value = value,
+      measuredAt = Instant.fromEpochMilliseconds(0),
+    )
 
   private fun station(vararg streams: MapStream) = MapStation(
     uuid = "u1", source = DataSource.AirBeam, title = "Roof", provider = "jane",

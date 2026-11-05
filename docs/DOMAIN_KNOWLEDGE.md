@@ -403,8 +403,8 @@ Replaces the legacy per-sensor `/api/fixed/active/sessions.json` search with the
   `value` with no thresholds anyway. Same idea as legacy `SearchFollowViewModel.follow()`, which
   overwrote a followed session's stream thresholds with the user's saved ones
   (`setSessionThresholdsAccordingToUserSettings`). Lookup key = the station's one sensor for the
-  selected type: `(source, measurement type)` → sensor name per the catalogue in `API_V3.md` →
-  *Explore map*. Clusters are never coloured.
+  selected type: that stream's own `sensor_name` from the response (*2026-11-05*; was a client-side
+  copy of the BE catalogue). Unit label = the stream's `unit_symbol`. Clusters are never coloured.
 - **Temperature is Fahrenheit on the wire.** Celsius is a UI-only setting, converted at display time
   (legacy `Settings.isCelsiusScaleEnabled` + `TemperatureConverter`, which also converts the HLU
   threshold bounds). Thresholds are stored in °F.
@@ -589,7 +589,7 @@ Mini V2 mobile. Level banding lives in `Measurement.getLevel`.
 coding always has a reference point; the user later edits them (sliders → `insertOrReplaceThreshold`).
 Values = server defaults (*Explore map* above); `Phone Microphone` 20·60·70·80·100 from legacy
 `MicrophoneReader` (server agrees). Seeded keys = every name in `streamsFor(device)` + every Explore
-`sensorNameFor` name; `DefaultThresholdsTest` fails if a new sensor lands without a default.
+catalogue sensor (`API_V3.md` → *Explore map*); `DefaultThresholdsTest` fails if a new sensor lands without a default.
 Existing installs only get new defaults via a `.sqm` migration.
 **Open decision:** keys are exact sensor names, like legacy — a slider on `AirBeam3-PM2.5` won't
 move `AirBeamMini-PM2.5` or Explore's `AirBeam-PM2.5`. Decide per-sensor vs per-family key when

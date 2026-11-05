@@ -52,6 +52,20 @@ class NetworkStationDetailsRepositoryTest {
     assertNull(details.deviceModel)
   }
 
+  @Test
+  fun a_quiet_station_still_opens_with_no_reading() = runTest {
+    val json = AIRBEAM_JSON
+      .replace("""{"value":8,"time":1793282400000}""", "null")
+      .replace("""{"min":3,"max":10}""", "null")
+
+    val pm1 = repository(json).station("x").streams.first()
+
+    assertNull(pm1.value)
+    assertNull(pm1.measuredAt)
+    assertNull(pm1.min24h)
+    assertNull(pm1.max24h)
+  }
+
   private fun repository(json: String, onRequest: (HttpRequestData) -> Unit = {}): StationDetailsRepository {
     val engine = MockEngine { request ->
       onRequest(request)

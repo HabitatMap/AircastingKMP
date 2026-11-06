@@ -343,4 +343,16 @@ object FrStrings : Strings {
     }
 
   override fun exploreRemoveFilter(name: String): String = "Retirer le filtre : $name"
+  override val colourThresholds: String = "Seuils de couleur"
+  override val save = "Enregistrer"
+  override val thresholdsEdit = "Modifier"
+  override val thresholdsTitle = "Seuils"
+  override val thresholdsHint = "Les mesures sous Min ou au-dessus de Max sont masquées."
+  override val thresholdsReset = "Rétablir les valeurs par défaut"
+  override val thresholdsInvalid = "Saisissez un nombre entier supérieur à la valeur du dessous"
+  override val thresholdMin = "Min"
+  override val thresholdLow = "Bas"
+  override val thresholdMedium = "Moyen"
+  override val thresholdHigh = "Élevé"
+  override val thresholdMax = "Max"
 }

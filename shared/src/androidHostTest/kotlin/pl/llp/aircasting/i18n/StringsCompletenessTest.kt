@@ -39,6 +39,8 @@ class StringsCompletenessTest {
     "appSettingFahrenheit",
     "appSettingCelsius",
     "micDecibels",
+    "thresholdMin", // "Min"/"Max" are the French labels too
+    "thresholdMax",
     "customServerUrlLabel",
     "customServerPortLabel",
     "newSessionDeviceAirBeamHeader",

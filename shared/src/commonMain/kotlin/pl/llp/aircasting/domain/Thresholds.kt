@@ -14,7 +14,13 @@ class Thresholds(
 ) {
   // associateBy keeps the last element per key, so an override wins over its default.
   private val effective = (defaults + overrides).associateBy { it.sensorName }
+  private val defaults = defaults.associateBy { it.sensorName }
 
   /** Override, else default. Always named canonically, so saving an edited copy applies to every model. */
-  fun forSensor(sensorName: String): SensorThreshold? = effective[aliases[sensorName] ?: sensorName]
+  fun forSensor(sensorName: String): SensorThreshold? = effective[canonical(sensorName)]
+
+  /** The server default, ignoring the user's override: what "Reset to default" restores. */
+  fun defaultFor(sensorName: String): SensorThreshold? = defaults[canonical(sensorName)]
+
+  private fun canonical(sensorName: String) = aliases[sensorName] ?: sensorName
 }

@@ -2,6 +2,7 @@ package pl.llp.aircasting.explore
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -138,6 +139,45 @@ class StationDetailsViewModelTest {
     advanceUntilIdle()
 
     assertEquals(PM1_T, content(vm).threshold)
+  }
+
+  @Test
+  fun a_slider_edit_saves_one_override_for_every_model_spelling() = runTest {
+    val station = STATION.copy(streams = listOf(PM1.copy(sensorName = "AirBeamMini-PM1")))
+    val repo = FakeStationDetailsRepository(Result.success(station))
+    val thresholds = FakeThresholdsRepository(listOf(PM1_T), aliases = mapOf("AirBeamMini-PM1" to "AirBeam-PM1"))
+    val vm = subscribe(StationDetailsViewModel("u1", repo, thresholds))
+    advanceUntilIdle()
+
+    vm.saveThreshold(content(vm).threshold!!.copy(low = 5)); advanceUntilIdle()
+
+    assertEquals(5, content(vm).threshold?.low)
+    assertEquals(5, thresholds.observe().first().forSensor("AirBeam-PM1")?.low)
+  }
+
+  @Test
+  fun the_selected_streams_default_is_exposed_alongside_the_users_edit() = runTest {
+    val thresholds = FakeThresholdsRepository(listOf(PM1_T))
+    val vm = subscribe(StationDetailsViewModel("u1", FakeStationDetailsRepository(Result.success(STATION)), thresholds))
+    advanceUntilIdle()
+
+    vm.saveThreshold(PM1_T.copy(low = 5)); advanceUntilIdle()
+
+    assertEquals(5, content(vm).threshold?.low)
+    assertEquals(PM1_T, content(vm).defaultThreshold)
+  }
+
+  @Test
+  fun saving_the_default_values_drops_the_override() = runTest {
+    val thresholds = FakeThresholdsRepository(listOf(PM1_T))
+    val vm = subscribe(StationDetailsViewModel("u1", FakeStationDetailsRepository(Result.success(STATION)), thresholds))
+    advanceUntilIdle()
+    vm.saveThreshold(PM1_T.copy(low = 5)); advanceUntilIdle()
+
+    vm.saveThreshold(PM1_T); advanceUntilIdle()
+
+    assertEquals(PM1_T, content(vm).threshold)
+    assertEquals(emptyList(), thresholds.overrides.value)
   }
 }
 

@@ -315,6 +315,18 @@ object EnStrings : Strings {
       else -> "Show $n results"
     }
   override fun exploreRemoveFilter(name: String): String = "Remove filter: $name"
+  override val colourThresholds: String = "Colour thresholds"
+  override val save = "Save"
+  override val thresholdsEdit = "Edit"
+  override val thresholdsTitle = "Thresholds"
+  override val thresholdsHint = "Readings below Min or above Max are hidden."
+  override val thresholdsReset = "Reset to default"
+  override val thresholdsInvalid = "Enter a whole number above the value below it"
+  override val thresholdMin = "Min"
+  override val thresholdLow = "Low"
+  override val thresholdMedium = "Medium"
+  override val thresholdHigh = "High"
+  override val thresholdMax = "Max"
 }
 
 /** Every available locale, keyed by BCP-47 tag. Lyricist selects one by the system locale at runtime. */

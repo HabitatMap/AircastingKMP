@@ -128,7 +128,9 @@ fun MeasurementChart(
   val zoomState = rememberVicoZoomState(
     initialZoom = remember { Zoom.max(Zoom.x(INITIAL_VISIBLE_SECONDS), Zoom.Content) },
     minZoom = Zoom.Content,
-    maxZoom = remember { Zoom.x(MIN_VISIBLE_SECONDS) },
+    // A series shorter than 15 min already fits at Content; Zoom.x alone would then sit below
+    // minZoom, which Vico rejects (IllegalArgumentException). max() keeps maxZoom ≥ minZoom.
+    maxZoom = remember { Zoom.max(Zoom.x(MIN_VISIBLE_SECONDS), Zoom.Content) },
   )
   CompositionLocalProvider(LocalViewConfiguration provides chartConfiguration) {
     CartesianChartHost(
@@ -230,15 +232,10 @@ private class VisibleRangeProbe : Decoration {
   }
 }
 
-/** One background band per level, from the user's threshold — the spike's bands. */
-private fun bands(threshold: SensorThreshold, aq: AqColors): List<Decoration> = listOf(
-  Triple(threshold.veryLow, threshold.low, MeasurementLevel.LOW),
-  Triple(threshold.low, threshold.medium, MeasurementLevel.MEDIUM),
-  Triple(threshold.medium, threshold.high, MeasurementLevel.HIGH),
-  Triple(threshold.high, threshold.veryHigh, MeasurementLevel.VERY_HIGH),
-).map { (from, to, level) ->
-  val range = from.toDouble()..to.toDouble()
-  UnderLayers(HorizontalBox(y = { range }, box = ShapeComponent(fill = Fill(aq.forLevel(level))), labelComponent = null))
+/** One background band per level, from the user's threshold. */
+private fun bands(threshold: SensorThreshold, aq: AqColors): List<Decoration> = threshold.bands.map { (range, level) ->
+  val y = range.first.toDouble()..range.last.toDouble()
+  UnderLayers(HorizontalBox(y = { y }, box = ShapeComponent(fill = Fill(aq.forLevel(level))), labelComponent = null))
 }
 
 /** `HorizontalBox` only draws over the layers, hiding the line; this re-points it under them. */
@@ -303,7 +300,7 @@ private class TimeAxisLabels : HorizontalAxis.ItemPlacer, CartesianValueFormatte
   ) = 0f
 }
 
-private val ElevationLight1 = listOf(
+val ElevationLight1 = listOf(
   Shadow(radius = 3.dp, color = Color(0x26000000), offset = DpOffset(0.dp, 1.dp), spread = 1.dp),
   Shadow(radius = 2.dp, color = Color(0x4D000000), offset = DpOffset(0.dp, 1.dp)),
 )

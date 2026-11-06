@@ -1,6 +1,10 @@
 package pl.llp.aircasting.domain
 
+import kotlin.math.abs
 import kotlin.math.round
+
+/** The three bounds the slider drags. The ends (veryLow, veryHigh) are only typed in, in the Thresholds sheet. */
+enum class InnerBound { Low, Medium, High }
 
 data class SensorThreshold(
   val sensorName: String,
@@ -21,4 +25,55 @@ data class SensorThreshold(
       else -> MeasurementLevel.EXTREMELY_LOW
     }
   }
+  /** The four coloured bands between the five bounds, low to high: what the chart and the slider paint. */
+  val bands: List<Pair<IntRange, MeasurementLevel>>
+    get() = listOf(
+      veryLow..low to MeasurementLevel.LOW,
+      low..medium to MeasurementLevel.MEDIUM,
+      medium..high to MeasurementLevel.HIGH,
+      high..veryHigh to MeasurementLevel.VERY_HIGH,
+    )
+
+  operator fun get(bound: InnerBound): Int = when (bound) {
+    InnerBound.Low -> low
+    InnerBound.Medium -> medium
+    InnerBound.High -> high
+  }
+
+  /** [bound] moved to [to], kept strictly between its neighbours (legacy HLUDialog: min < low < medium < high < max). */
+  fun moveBound(bound: InnerBound, to: Int): SensorThreshold = when (bound) {
+    InnerBound.Low -> copy(low = to.strictlyBetween(veryLow, medium))
+    InnerBound.Medium -> copy(medium = to.strictlyBetween(low, high))
+    InnerBound.High -> copy(high = to.strictlyBetween(medium, veryHigh))
+  }
+
+  /** The bound a touch at [value] grabs. */
+  fun nearestBound(value: Int): InnerBound = InnerBound.entries.minBy { abs(this[it] - value) }
+
+  /** The five bounds as the Thresholds sheet edits them, Min → Max. */
+  val bounds: List<Int> get() = listOf(veryLow, low, medium, high, veryHigh)
+
+  /** The sheet's [fields] (Min → Max) as this sensor's new bounds; null if any is in [invalidBounds]. */
+  fun withBounds(fields: List<String>): SensorThreshold? {
+    if (invalidBounds(fields).isNotEmpty()) return null
+    val v = fields.map { it.trim().toInt() }
+    return copy(veryLow = v[0], low = v[1], medium = v[2], high = v[3], veryHigh = v[4])
+  }
 }
+
+/**
+ * Indices of the sheet's [fields] (Min → Max) that can't be saved: blank, not a whole number, or not
+ * strictly above the field before it (legacy HLUDialog.validate: min < low < medium < high < max).
+ * Of an out-of-order pair the upper field is blamed; an unparseable neighbour isn't compared against.
+ */
+fun invalidBounds(fields: List<String>): Set<Int> {
+  val values = fields.map { it.trim().toIntOrNull() }
+  return values.indices.filterTo(mutableSetOf()) { i ->
+    val value = values[i] ?: return@filterTo true
+    val previous = values.getOrNull(i - 1)
+    previous != null && value <= previous
+  }
+}
+
+// Not coerceIn: that throws on an empty range, and a server could send out-of-order bounds.
+private fun Int.strictlyBetween(lower: Int, upper: Int) = coerceAtMost(upper - 1).coerceAtLeast(lower + 1)

@@ -18,7 +18,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -31,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import org.koin.compose.koinInject
 import pl.llp.aircasting.domain.DataSource
 import pl.llp.aircasting.domain.MeasurementLevel
+import pl.llp.aircasting.domain.SensorThreshold
 import pl.llp.aircasting.i18n.LocalStrings
 import pl.llp.aircasting.i18n.Strings
 import pl.llp.aircasting.settings.SettingsScaffold
@@ -49,6 +54,7 @@ fun StationDetailsScreen(
   onBack: () -> Unit,
   onRetry: () -> Unit,
   onSelectStream: (streamId: Long) -> Unit,
+  onThresholdChange: (SensorThreshold) -> Unit,
 ) {
   val strings = LocalStrings.current
   // App-bar actions (export, share, favourite, alert) stay hidden until they work.
@@ -107,6 +113,18 @@ fun StationDetailsScreen(
             }
             // Figma draws the graph edge to edge, through the screen padding.
             StationGraph(details, stream, state.threshold, Modifier.bleed(ScreenPadding))
+            // No threshold for this sensor → nothing to edit (and the chart is uncoloured).
+            state.threshold?.let { threshold ->
+              // Screen-local UI state; saveable, so rotation keeps the sheet open.
+              var editing by rememberSaveable { mutableStateOf(false) }
+              ThresholdSlider(threshold, stream.unitSymbol, onChange = onThresholdChange, onEdit = { editing = true })
+              if (editing) ThresholdsSheet(
+                threshold,
+                default = state.defaultThreshold,
+                onDismiss = { editing = false },
+                onSave = onThresholdChange,
+              )
+            }
           }
         }
       }

@@ -23,6 +23,12 @@ internal fun hourMinuteUtc(x: Double): String {
   return "${time.hour.twoDigits()}:${time.minute.twoDigits()}"
 }
 
+/** `HH:mm:ss` of an epoch-seconds x, for the marker tooltip. UTC for the same reason as [hourMinuteUtc]. */
+internal fun hourMinuteSecondUtc(x: Double): String {
+  val time = Instant.fromEpochSeconds(x.toLong()).toLocalDateTime(TimeZone.UTC)
+  return "${time.hour.twoDigits()}:${time.minute.twoDigits()}:${time.second.twoDigits()}"
+}
+
 /** Offset from the first point to the next full hour: Vico's aligned placer counts label positions from minX. */
 internal fun secondsToNextHour(minX: Double): Int {
   val intoHour = (minX.toLong() % SECONDS_PER_HOUR).toInt()

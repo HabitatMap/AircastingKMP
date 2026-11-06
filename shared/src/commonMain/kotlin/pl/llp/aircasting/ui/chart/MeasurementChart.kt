@@ -159,11 +159,7 @@ fun MeasurementChart(
           label = rememberAxisLabelComponent(style = MaterialTheme.typography.labelSmall.copy(color = labelColor)),
           valueFormatter = remember { TimeFormatter },
           // A label per full hour; Vico skips some (every 2 h, 3 h…) when they'd overlap.
-          itemPlacer = remember(firstX) {
-            HorizontalAxis.ItemPlacer.aligned(
-              spacing = { 3_600 },
-              offset = { secondsToNextHour(firstX) })
-          },
+          itemPlacer = remember(firstX) { EdgeToEdgeItemPlacer(firstX) },
         ),
         marker = rememberDefaultCartesianMarker(
           label = rememberTextComponent(
@@ -249,6 +245,19 @@ private class UnderLayers(private val delegate: Decoration) : Decoration {
   override fun drawUnderLayers(context: CartesianDrawingContext) = delegate.drawOverLayers(context)
 }
 
+/**
+ * Vico's aligned placer, minus the layer padding it reserves so the first and last labels fit: that
+ * padding left gaps before and after the line at full zoom-out. Only those two functions are
+ * overridden; the label-width measurement stays, so Vico still thins out overlapping hour labels.
+ */
+private class EdgeToEdgeItemPlacer(firstX: Double) : HorizontalAxis.ItemPlacer by HorizontalAxis.ItemPlacer.aligned(
+  spacing = { 3_600 },
+  offset = { secondsToNextHour(firstX) },
+) {
+  override fun getFirstLabelValue(context: CartesianMeasuringContext, maxLabelWidth: Float): Double? = null
+  override fun getLastLabelValue(context: CartesianMeasuringContext, maxLabelWidth: Float): Double? = null
+}
+
 private object TimeFormatter : CartesianValueFormatter {
   override fun format(context: CartesianMeasuringContext, value: Double, verticalAxisPosition: Axis.Position.Vertical?) =
     hourMinuteUtc(value)
@@ -268,7 +277,7 @@ private class MarkerFormatter(
   override fun format(context: CartesianDrawingContext, targets: List<CartesianMarker.Target>): CharSequence {
     val entry = (targets.first() as LineCartesianLayerMarkerTarget).points.first().entry
     return buildAnnotatedString {
-      append(hourMinuteUtc(entry.x))
+      append(hourMinuteSecondUtc(entry.x))
       append('\n')
       threshold?.let { withStyle(SpanStyle(color = aq.forLevel(it.levelFor(entry.y)))) { append("● ") } }
       withStyle(valueStyle) { append("${entry.y.roundToInt()}") }

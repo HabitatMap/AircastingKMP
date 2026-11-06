@@ -18,6 +18,11 @@ class ChartAxisTest {
   }
 
   @Test
+  fun tooltip_time_includes_seconds() {
+    assertEquals("01:05:59", hourMinuteSecondUtc(oneAm + 5 * 60 + 59))
+  }
+
+  @Test
   fun hour_labels_start_at_the_first_full_hour() {
     assertEquals(0, secondsToNextHour(oneAm))
     assertEquals(3_600 - 90, secondsToNextHour(oneAm + 90))

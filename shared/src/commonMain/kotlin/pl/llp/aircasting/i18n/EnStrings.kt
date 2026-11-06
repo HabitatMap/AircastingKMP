@@ -353,6 +353,9 @@ object EnStrings : Strings {
   override val startFailedUpload = "The AirBeam joined the Wi-Fi network but couldn\u2019t send its first measurement. Check that the network has internet access, then try again."
   override val startFailedNotConnected = "Lost the connection to the AirBeam. Make sure it\u2019s on and nearby, then try again."
   override val startFailedGeneric = "The AirBeam couldn\u2019t start the session. Try again."
+  override val wifiNearbyHeader = "Nearby networks"
+  override val wifiPermissionHint = "AirCasting needs location access to list the Wi-Fi networks around you."
+  override val wifiSearching = "Looking for 2.4 GHz networks\u2026"
 }
 
 /** Every available locale, keyed by BCP-47 tag. Lyricist selects one by the system locale at runtime. */

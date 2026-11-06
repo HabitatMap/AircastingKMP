@@ -21,6 +21,7 @@ actual fun rememberWifiNetworks(): WifiNetworks {
   }
   return remember {
     object : WifiNetworks {
+      override val listOnly = false
       override val names get() = names.value
       // Nothing to ask for here: location is asked for elsewhere, the entitlement is build-time.
       override val granted = true

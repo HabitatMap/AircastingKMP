@@ -182,6 +182,12 @@ Paths below are under legacy `app/src/main/java/pl/llp/aircasting/`.
 **Wi-Fi credentials.** (`FixedSessionDetailsViewMvcImpl:265-276`, `FixedSessionDetailsController`, `Network.kt`)
 - Both SSID and password are required, so open networks are rejected.
 - The SSID only came from a scan list. There was no manual entry.
+  - *Rewrite (2026-11-06):* Android keeps this. The SSID comes only from the scan list, which
+    rescans every 30 s (the 4-per-2-min throttle).
+  - A network stays listed for as long as the Details screen is open. Rows keep their place,
+    and new networks join at the end.
+  - Hidden networks can't be picked, as in legacy.
+  - iOS can't scan, so it keeps a typed field and also offers the current network.
 - The scan keeps 2.4 GHz networks only (`frequency` in whole GHz ≤ 2) and drops empty SSIDs.
 - Legacy dedupe was broken: `distinct()` on a non-data class. Dedupe by SSID in the rewrite.
 - *Rewrite:* iOS cannot list nearby networks (no public API). Only the current SSID can be

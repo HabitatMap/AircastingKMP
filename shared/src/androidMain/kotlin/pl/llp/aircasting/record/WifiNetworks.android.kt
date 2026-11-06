@@ -11,11 +11,14 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import co.touchlab.kermit.Logger
+import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.seconds
 
 @Composable
 actual fun rememberWifiNetworks(): WifiNetworks {
@@ -33,15 +36,15 @@ actual fun rememberWifiNetworks(): WifiNetworks {
   val names = remember { mutableStateOf(emptyList<String>()) }
 
   if (granted.value) {
-    DisposableEffect(context) {
-      val wifi = context.applicationContext.getSystemService(WifiManager::class.java)
+    val wifi = remember { context.applicationContext.getSystemService(WifiManager::class.java) }
+    DisposableEffect(wifi) {
       val publish = {
-        names.value = try {
+        try {
           @Suppress("DEPRECATION") // SSID: wifiSsid is API 33+, minSdk is 28
-          wifi.scanResults.map { ScannedNetwork(it.SSID, it.frequency, it.level) }.twoPointFourGhzNames()
+          val latest = wifi.scanResults.map { ScannedNetwork(it.SSID, it.frequency, it.level) }.twoPointFourGhzNames()
+          names.value = names.value.withNewlySeen(latest)
         } catch (e: SecurityException) {
           Logger.withTag("WifiNetworks").w(e) { "Scan results refused" }
-          emptyList()
         }
       }
       val receiver = object : BroadcastReceiver() {
@@ -54,9 +57,15 @@ actual fun rememberWifiNetworks(): WifiNetworks {
         ContextCompat.RECEIVER_NOT_EXPORTED,
       )
       publish() // the last scan's results, at once
-      @Suppress("DEPRECATION") // still the only way to ask for a fresh scan
-      wifi.startScan()
       onDispose { context.unregisterReceiver(receiver) }
+    }
+    // Android allows a foreground app 4 scans per 2 minutes: one every 30 s keeps the list growing.
+    LaunchedEffect(wifi) {
+      while (true) {
+        @Suppress("DEPRECATION") // still the only way to ask for a fresh scan
+        wifi.startScan()
+        delay(RescanEvery)
+      }
     }
   }
 
@@ -64,9 +73,11 @@ actual fun rememberWifiNetworks(): WifiNetworks {
     object : WifiNetworks {
       override val names get() = names.value
       override val granted get() = granted.value
+      override val listOnly = true
       override fun request() = launcher.launch(
         arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION),
       )
     }
   }
 }
+private val RescanEvery = 30.seconds

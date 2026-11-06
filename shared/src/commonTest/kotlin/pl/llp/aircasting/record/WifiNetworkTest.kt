@@ -35,4 +35,20 @@ class WifiNetworksTest {
 
     assertEquals(listOf("Cafe", "Home"), scan.twoPointFourGhzNames())
   }
+
+  /** One scan can miss a network that's there; once seen, it stays pickable while Details is open. */
+  @Test
+  fun a_network_missing_from_a_later_scan_stays_listed() {
+    val listed = listOf("Home", "Cafe").withNewlySeen(listOf("Home"))
+
+    assertEquals(listOf("Home", "Cafe"), listed)
+  }
+
+  /** Rows never move under the user's finger: newcomers join at the end. */
+  @Test
+  fun new_networks_join_at_the_end_without_reordering() {
+    val listed = listOf("Home", "Cafe").withNewlySeen(listOf("Office", "Cafe", "Home"))
+
+    assertEquals(listOf("Home", "Cafe", "Office"), listed)
+  }
 }

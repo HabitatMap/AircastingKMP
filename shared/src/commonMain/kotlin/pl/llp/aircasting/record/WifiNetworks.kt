@@ -12,12 +12,17 @@ fun List<ScannedNetwork>.twoPointFourGhzNames(): List<String> =
     .map { it.ssid }
     .distinct()
 
+/** Networks listed so far plus any [latest] scan found anew, appended so listed rows keep their place. */
+fun List<String>.withNewlySeen(latest: List<String>): List<String> = (this + latest).distinct()
+
 /** Networks to offer in the Wi-Fi name field, and a way to ask for what listing them needs. */
 @Stable
 interface WifiNetworks {
   /** Empty until known, and stays empty when the platform can't tell. */
   val names: List<String>
   val granted: Boolean
+  /** True where [names] is a real scan (Android): pick from it only, as legacy did. False where it can't be (iOS): typing stays. */
+  val listOnly: Boolean
   fun request()
 }
 

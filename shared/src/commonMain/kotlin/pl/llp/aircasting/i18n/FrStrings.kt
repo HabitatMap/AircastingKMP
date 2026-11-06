@@ -381,4 +381,7 @@ object FrStrings : Strings {
   override val startFailedUpload = "L'AirBeam a rejoint le réseau Wi-Fi mais n'a pas pu envoyer sa première mesure. Vérifiez que le réseau a accès à Internet, puis réessayez."
   override val startFailedNotConnected = "Connexion à l'AirBeam perdue. Vérifiez qu'il est allumé et à proximité, puis réessayez."
   override val startFailedGeneric = "L'AirBeam n'a pas pu démarrer la session. Réessayez."
+  override val wifiNearbyHeader = "Réseaux à proximité"
+  override val wifiPermissionHint = "AirCasting a besoin de l'accès à la position pour lister les réseaux Wi-Fi autour de vous."
+  override val wifiSearching = "Recherche de réseaux 2,4 GHz\u2026"
 }

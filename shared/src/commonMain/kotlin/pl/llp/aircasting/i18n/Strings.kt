@@ -367,4 +367,7 @@ interface Strings {
   val startFailedUpload: String
   val startFailedNotConnected: String
   val startFailedGeneric: String
+  val wifiNearbyHeader: String
+  val wifiPermissionHint: String
+  val wifiSearching: String
 }

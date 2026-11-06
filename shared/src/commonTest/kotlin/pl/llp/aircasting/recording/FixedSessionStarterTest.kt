@@ -21,7 +21,7 @@ class FixedSessionStarterTest {
   private var registration: RegisteredFixedSession? = REGISTERED
   private var createFails = false
 
-  private val starter = FixedSessionStarter(link) { session ->
+  private val starter = FixedSessionStarter(link, zoneOffsetHours = { 2 }) { session ->
     registered += session
     if (createFails) error("500 from the backend")
     registration
@@ -84,11 +84,42 @@ class FixedSessionStarterTest {
     assertEquals(FixedStartResult.ServerError, starter.start(MINI_V2, DETAILS, OUTDOOR, WIFI))
     assertTrue(link.configured.isEmpty())
   }
+  /** V1 firmware uploads to the realtime API as the user, so it gets the user's token, not v3's session token. */
   @Test
-  fun only_mini_v2_starts_fixed_for_now() = runTest {
-    val ab3 = DiscoveredAirBeam(DeviceId("11:22:33:44:55:66"), "AirBeam3:246f28", AirBeamDevice.AirBeam3)
+  fun an_ab3_uploads_as_the_user_with_the_phones_zone_offset() = runTest {
+    val result = starter.start(AB3, DETAILS, OUTDOOR, WIFI)
 
-    val result = starter.start(ab3, DETAILS, OUTDOOR, WIFI)
+    assertEquals(FixedStartResult.Started, result)
+    val config = link.configured.single() as SessionConfig.FixedWiFi
+    assertEquals(registered.single().uuid, config.uuid)
+    assertEquals(USER_TOKEN, config.authToken)
+    assertEquals(2, config.zoneOffset)
+    assertEquals("HomeNet" to "secret", config.ssid to config.password)
+    assertEquals(1, link.disconnects)
+  }
+
+  /** V1 frames carry sensor names: an answer without sensor_type_ids is fine. */
+  @Test
+  fun an_ab3_needs_no_sensor_type_ids() = runTest {
+    registration = REGISTERED.copy(sensorTypeIds = emptyMap())
+
+    assertEquals(FixedStartResult.Started, starter.start(AB3, DETAILS, OUTDOOR, WIFI))
+  }
+
+  @Test
+  fun an_ab2_on_cellular_needs_no_wifi() = runTest {
+    val result = starter.start(AB2, DETAILS, OUTDOOR, Uplink.Cellular)
+
+    assertEquals(FixedStartResult.Started, result)
+    val config = link.configured.single() as SessionConfig.FixedCellular
+    assertEquals(USER_TOKEN, config.authToken)
+    assertEquals(50.06 to 19.94, config.latitude to config.longitude)
+  }
+
+  /** Cellular is AB2/AB3 only (decision 2026-10-26); refused before an empty session is registered. */
+  @Test
+  fun a_mini_on_cellular_is_refused_before_anything_is_registered() = runTest {
+    val result = starter.start(MINI_V2, DETAILS, OUTDOOR, Uplink.Cellular)
 
     assertEquals(FixedStartResult.DeviceFailed(ConfigResult.BadConfigFailure), result)
     assertTrue(registered.isEmpty())
@@ -117,7 +148,10 @@ class FixedSessionStarterTest {
     val MINI_V2 = DiscoveredAirBeam(DeviceId("AA:BB:CC:DD:EE:FF"), "AirBeamMini-1234", AirBeamDevice.Mini.V2)
     val DETAILS = NewSessionDetails("Rooftop", listOf("home"))
     val OUTDOOR = Placement.Outdoor(GeoLocation(latitude = 50.06, longitude = 19.94))
-    val WIFI = WifiCredentials("HomeNet", "secret")
-    val REGISTERED = RegisteredFixedSession(TOKEN, mapOf("AirBeam-PM1" to 7, "AirBeam-PM2.5" to 8))
+    const val USER_TOKEN = "user-token"
+    val WIFI = Uplink.Wifi(WifiCredentials("HomeNet", "secret"))
+    val REGISTERED = RegisteredFixedSession(TOKEN, mapOf("AirBeam-PM1" to 7, "AirBeam-PM2.5" to 8), USER_TOKEN)
+    val AB3 = DiscoveredAirBeam(DeviceId("11:22:33:44:55:66"), "AirBeam3:246f28", AirBeamDevice.AirBeam3)
+    val AB2 = DiscoveredAirBeam(DeviceId("00:18:96:10:71:9F"), "AirBeam2:00189610719F", AirBeamDevice.AirBeam2)
   }
 }

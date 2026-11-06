@@ -83,6 +83,7 @@ class FixedSessionRegistrarTest {
       RegisteredFixedSession(
         sessionToken = TOKEN,
         sensorTypeIds = mapOf("AirBeam-PM1" to 1, "AirBeam-PM2.5" to 2),
+        userToken = "tok-123",
       ),
       registered,
     )

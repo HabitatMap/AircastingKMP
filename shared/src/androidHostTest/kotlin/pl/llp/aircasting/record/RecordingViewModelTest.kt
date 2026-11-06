@@ -69,9 +69,10 @@ class RecordingViewModelTest {
   private var registration: RegisteredFixedSession? =
     RegisteredFixedSession(
       "0123456789abcdef0123456789abcdef",
-      mapOf("AirBeam-PM1" to 1, "AirBeam-PM2.5" to 2)
+      mapOf("AirBeam-PM1" to 1, "AirBeam-PM2.5" to 2),
+      userToken = "user-token",
     )
-  private val fixedStarter = FixedSessionStarter(link) { session ->
+  private val fixedStarter = FixedSessionStarter(link, zoneOffsetHours = { 0 }) { session ->
     registered += session
     registration
   }

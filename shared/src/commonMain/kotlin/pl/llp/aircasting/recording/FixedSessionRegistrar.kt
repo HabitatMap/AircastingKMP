@@ -26,8 +26,11 @@ data class NewFixedSession(
   val placement: Placement,
 )
 
-/** What the AirBeam needs to upload on its own: its token (32 hex chars) and sensor_type_id by canonical sensor_name. */
-data class RegisteredFixedSession(val sessionToken: String, val sensorTypeIds: Map<String, Int>)
+/**
+ * What the AirBeam needs to upload on its own. Mini V2: [sessionToken] (32 hex chars) and sensor_type_ids
+ * by sensor_name. V1 devices upload to the realtime API as the user, so they get [userToken] instead.
+ */
+data class RegisteredFixedSession(val sessionToken: String, val sensorTypeIds: Map<String, Int>, val userToken: String)
 
 /**
  * Backend half of a fixed start (DOMAIN_KNOWLEDGE.md "Starting a fixed session"): creates the
@@ -48,6 +51,7 @@ class FixedSessionRegistrar(
     return RegisteredFixedSession(
       sessionToken = created.sessionToken,
       sensorTypeIds = created.streams.associate { it.sensorName to it.sensorTypeId },
+      userToken = token,
     )
   }
 

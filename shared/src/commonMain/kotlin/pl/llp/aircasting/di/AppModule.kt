@@ -6,6 +6,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.todayIn
 import org.koin.core.Koin
 import org.koin.core.context.startKoin
 import org.koin.core.module.dsl.viewModel
@@ -59,6 +60,7 @@ import pl.llp.aircasting.record.RecordingViewModel
 import pl.llp.aircasting.recording.FixedSessionRegistrar
 import pl.llp.aircasting.recording.FixedSessionStarter
 import pl.llp.aircasting.recording.RecordingEngine
+import pl.llp.aircasting.recording.standardOffsetHours
 import pl.llp.aircasting.scan.ScanViewModel
 import pl.llp.aircasting.settings.account.AccountRepository
 import pl.llp.aircasting.settings.account.AccountViewModel
@@ -86,7 +88,16 @@ val recordModule = module {
     )
   }
   single { FixedSessionRegistrar(get(), get(), TimeZone.currentSystemDefault()) }
-  single { FixedSessionStarter(get(), get<FixedSessionRegistrar>()::register) }
+  single {
+    FixedSessionStarter(
+      link = get(),
+      zoneOffsetHours = {
+        val zone = TimeZone.currentSystemDefault()
+        zone.standardOffsetHours(Clock.System.todayIn(zone).year)
+      },
+      register = get<FixedSessionRegistrar>()::register,
+    )
+  }
   viewModelOf(::NewSessionViewModel)
   viewModelOf(::PinPickerViewModel)
   viewModelOf(::RecordingViewModel)

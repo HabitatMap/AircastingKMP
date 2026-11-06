@@ -19,6 +19,7 @@ import pl.llp.aircasting.recording.FixedStartResult
 import pl.llp.aircasting.recording.NewSessionDetails
 import pl.llp.aircasting.recording.PhoneLocation
 import pl.llp.aircasting.recording.RecordingEngine
+import pl.llp.aircasting.recording.Uplink
 import kotlin.time.Duration.Companion.seconds
 
 /** How long Start waits for a fix before recording without one (e.g. indoors). */
@@ -88,7 +89,7 @@ class RecordingViewModel(
     if (picked == null || placement == null) return StartState.Failed(ConfigResult.BadConfigFailure)
     if (!linkTo(picked)) return StartState.Failed(ConfigResult.NotConnected)
     val details = NewSessionDetails(form.name, form.tags)
-    return when (val result = fixedStarter.start(picked, details, placement, form.wifi)) {
+    return when (val result = fixedStarter.start(picked, details, placement, Uplink.Wifi(form.wifi))) {
       FixedStartResult.Started -> StartState.Started
       FixedStartResult.SignedOut -> StartState.SignedOut
       FixedStartResult.ServerError -> StartState.ServerError

@@ -213,6 +213,18 @@ class ExploreViewModelTest {
   }
 
   @Test
+  fun remembers_where_the_camera_came_to_rest() = runTest {
+    val vm = ExploreViewModel(FakeExploreMapRepository(), thresholds, FakeLocationProvider(HERE), FakePlaceSearch())
+    subscribe(vm)
+
+    vm.onCameraIdle(NYC)
+    vm.onCameraIdle(NEWARK)
+    advanceUntilIdle()
+
+    assertEquals(NEWARK, vm.state.value.camera)
+  }
+
+  @Test
   fun without_a_location_the_map_keeps_its_default_start() = runTest {
     val vm = ExploreViewModel(FakeExploreMapRepository(), thresholds, NO_LOCATION, FakePlaceSearch())
     subscribe(vm)
@@ -317,8 +329,8 @@ class ExploreViewModelTest {
   private companion object {
     val HERE = GeoLocation(40.78, -73.96)
     val NO_LOCATION = FakeLocationProvider(null)
-    val NYC = MapViewport(GeoSquare(north = 40.95, south = 40.5, east = -73.7, west = -74.3), zoom = 10.0)
-    val NEWARK = MapViewport(GeoSquare(north = 40.8, south = 40.7, east = -74.1, west = -74.2), zoom = 12.0)
+    val NYC = MapViewport(GeoSquare(north = 40.95, south = 40.5, east = -73.7, west = -74.3), zoom = 10.0, GeoLocation(40.73, -74.0))
+    val NEWARK = MapViewport(GeoSquare(north = 40.8, south = 40.7, east = -74.1, west = -74.2), zoom = 12.0, GeoLocation(40.75, -74.15))
     val PM_ONLY = ExploreFilters(measurementTypes = setOf(MeasurementType.ParticulateMatter))
 
     fun station(source: DataSource, value: Int?) = MapStation(

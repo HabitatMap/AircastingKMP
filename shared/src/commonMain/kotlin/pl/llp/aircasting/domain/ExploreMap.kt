@@ -20,8 +20,11 @@ enum class DataSource(val apiName: String) {
   Government("government"),
 }
 
-/** What the map is showing: visible bounds + the map SDK's fractional zoom. */
-data class MapViewport(val bounds: GeoSquare, val zoom: Double)
+/**
+ * What the map is showing: visible bounds + the map SDK's fractional zoom, and the camera [centre] —
+ * reported by the SDK rather than derived from [bounds], whose Mercator midpoint isn't the centre.
+ */
+data class MapViewport(val bounds: GeoSquare, val zoom: Double, val centre: GeoLocation)
 
 /** A marker on the Explore map. */
 sealed interface MapItem {

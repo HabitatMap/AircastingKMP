@@ -5,6 +5,7 @@ import pl.llp.aircasting.i18n.AppStrings
 import pl.llp.aircasting.i18n.EnStrings
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class SessionSummaryTest {

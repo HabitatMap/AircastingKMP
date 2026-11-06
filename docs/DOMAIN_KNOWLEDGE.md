@@ -232,6 +232,21 @@ Paths below are under legacy `app/src/main/java/pl/llp/aircasting/`.
   token.
 - *Rewrite decision (2026-10-26):* **every device creates its fixed session with
   `POST /api/v3/fixed_sessions`**. The deprecated realtime endpoint is not used.
+- *V1 devices in the rewrite (2026-11-06):*
+  - **Token.** v3 takes any `model` and any known AirBeam `sensor_name`, so AB2, AB3 and Mini V1
+    register with their own `streamsFor` names. The device still gets the **user** token (legacy
+    `SyncableAirBeamConfigurator.authRequest` → `mSettings.getAuthToken()`), not the
+    `session_token`. V1 firmware uploads to `/api/realtime/measurements` with basic auth as the
+    user.
+  - **Unverified.** Those uploads should land in the v3-created session, because the realtime
+    endpoint wants "an existing fixed session owned by the authenticated user". This needs a
+    hardware check.
+  - **PM ids.** V1 frames name their sensor, so V1 needs no `sensor_type_id`s.
+  - **Zone offset.** The Wi-Fi config's zone offset is legacy `TimezoneHelper.getTimezoneOffsetInHours`:
+    `rawOffset`, i.e. the standard offset **without DST**, in whole hours, truncated toward zero.
+    kotlinx-datetime has no `rawOffset`, so the rewrite takes the smaller of the offsets on
+    1 January and 1 July (`TimeZone.standardOffsetHours`).
+  - **Cellular** goes to AB2 and AB3 only. Any other device is refused before anything is registered.
 
 **Cellular** (*rewrite decision, 2026-10-26*): offered for AB2 and AB3 only. Mini V1 and
 Mini V2 are Wi-Fi only.

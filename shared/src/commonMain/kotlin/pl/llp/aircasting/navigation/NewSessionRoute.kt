@@ -11,17 +11,22 @@ import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import pl.llp.aircasting.bluetooth.BluetoothRadio
 import pl.llp.aircasting.i18n.LocalStrings
+import pl.llp.aircasting.record.AirBeamLocationScreen
 import pl.llp.aircasting.record.DevicePickerScreen
 import pl.llp.aircasting.record.DeviceStatusScreen
 import pl.llp.aircasting.record.DeviceStepUi
 import pl.llp.aircasting.record.NewSessionStep
 import pl.llp.aircasting.record.NewSessionViewModel
+import pl.llp.aircasting.record.PinPickerViewModel
 import pl.llp.aircasting.record.RecordMethodScreen
+import pl.llp.aircasting.record.RecordingMethod
 import pl.llp.aircasting.record.RecordingViewModel
 import pl.llp.aircasting.record.SessionConfirmScreen
 import pl.llp.aircasting.record.SessionDetailsScreen
 import pl.llp.aircasting.record.StartState
 import pl.llp.aircasting.record.deviceStepUi
+import pl.llp.aircasting.record.rememberWifiNetworks
+import pl.llp.aircasting.record.startFailure
 import pl.llp.aircasting.scan.ScanUiState
 import pl.llp.aircasting.scan.ScanViewModel
 import pl.llp.aircasting.scan.rememberBluetoothPermission
@@ -49,8 +54,14 @@ fun NewSessionDestination(onExit: () -> Unit) {
     NewSessionStep.Details -> SessionDetailsScreen(
       state = state,
       onRename = vm::rename,
-      onEditTags = vm::editTags,
+      onEditTagDraft = vm::editTagDraft,
+      onCommitTag = vm::commitTagDraft,
       onAddTag = vm::addTag,
+      onRemoveTag = vm::removeTag,
+      onIndoor = vm::setIndoor,
+      onWifiName = vm::editWifiName,
+      onWifiPassword = vm::editWifiPassword,
+      wifiNetworks = if (state.form.method == RecordingMethod.AirBeamFixed) rememberWifiNetworks() else null,
       onInterval = vm::setInterval,
       onBack = back,
       onCancel = onExit,
@@ -59,10 +70,27 @@ fun NewSessionDestination(onExit: () -> Unit) {
     NewSessionStep.Confirm -> SessionConfirmScreen(
       state = state,
       preparing = (startState as? StartState.Preparing)?.step,
-      onBack = back,
+      failure = LocalStrings.current.startFailure(startState),
+      onBack = { recorder.clearFailure(); back() },
       onCancel = onExit,
       onStart = { recorder.start(state.form) },
     )
+    NewSessionStep.Location -> {
+      val picker = koinViewModel<PinPickerViewModel>()
+      val pickerState by picker.state.collectAsStateWithLifecycle()
+      AirBeamLocationScreen(
+        state = state,
+        picker = pickerState,
+        onSearch = picker::search,
+        onSelectPlace = picker::selectPlace,
+        onLocateMe = picker::locateMe,
+        onFlownTo = picker::onFlownTo,
+        onPinMoved = vm::placePin,
+        onBack = back,
+        onCancel = onExit,
+        onConfirm = vm::next,
+      )
+    }
     NewSessionStep.Device -> {
       val strings = LocalStrings.current
       val permission = rememberBluetoothPermission()

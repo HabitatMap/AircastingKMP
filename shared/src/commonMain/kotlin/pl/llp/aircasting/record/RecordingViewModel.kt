@@ -14,9 +14,12 @@ import pl.llp.aircasting.bluetooth.AirBeamLink
 import pl.llp.aircasting.bluetooth.ConfigResult
 import pl.llp.aircasting.bluetooth.DiscoveredAirBeam
 import pl.llp.aircasting.bluetooth.LinkState
+import pl.llp.aircasting.recording.FixedSessionStarter
+import pl.llp.aircasting.recording.FixedStartResult
 import pl.llp.aircasting.recording.NewSessionDetails
 import pl.llp.aircasting.recording.PhoneLocation
 import pl.llp.aircasting.recording.RecordingEngine
+import pl.llp.aircasting.recording.Uplink
 import kotlin.time.Duration.Companion.seconds
 
 /** How long Start waits for a fix before recording without one (e.g. indoors). */
@@ -24,10 +27,17 @@ internal val LocatingTimeout = 10.seconds
 
 sealed interface StartState {
   data object Idle : StartState
+
   /** Start was tapped; [step] is what it is waiting on before the session records. */
   data class Preparing(val step: PrepareStep) : StartState
   data object Started : StartState
   data class Failed(val result: ConfigResult) : StartState
+
+  /** Fixed only: the backend must create the session, and that needs an account. */
+  data object SignedOut : StartState
+
+  /** Fixed only: the backend refused; the AirBeam was not touched. */
+  data object ServerError : StartState
 }
 
 enum class PrepareStep { Locating, Configuring }
@@ -37,6 +47,7 @@ class RecordingViewModel(
   private val link: AirBeamLink,
   private val engine: RecordingEngine,
   private val location: PhoneLocation,
+  private val fixedStarter: FixedSessionStarter,
 ) : ViewModel() {
   private val log = Logger.withTag("RecordingViewModel")
 
@@ -48,19 +59,41 @@ class RecordingViewModel(
 
   fun start(form: NewSessionForm) {
     if (_startState.value is StartState.Preparing) return
-    _startState.value = StartState.Preparing(PrepareStep.Locating)
+    val fixed = form.method == RecordingMethod.AirBeamFixed
+    // A fixed session's place comes from the form, not the phone: no fix to wait for.
+    _startState.value =
+      StartState.Preparing(if (fixed) PrepareStep.Configuring else PrepareStep.Locating)
     viewModelScope.launch {
-      val picked = form.device
-      val result = when {
-        form.method != RecordingMethod.AirBeamMobile -> ConfigResult.BadConfigFailure
-        else -> {
-          locate()
-          _startState.value = StartState.Preparing(PrepareStep.Configuring)
-          if (picked == null || !linkTo(picked)) ConfigResult.NotConnected
-          else engine.start(picked, NewSessionDetails(form.name, form.tags))
-        }
+      _startState.value = if (fixed) startFixed(form) else startMobile(form)
+    }
+  }
+
+  private suspend fun startMobile(form: NewSessionForm): StartState {
+    val picked = form.device
+    val result = when {
+      form.method != RecordingMethod.AirBeamMobile -> ConfigResult.BadConfigFailure
+      else -> {
+        locate()
+        _startState.value = StartState.Preparing(PrepareStep.Configuring)
+        if (picked == null || !linkTo(picked)) ConfigResult.NotConnected
+        else engine.start(picked, NewSessionDetails(form.name, form.tags))
       }
-      _startState.value = if (result == ConfigResult.Success) StartState.Started else StartState.Failed(result)
+    }
+    return if (result == ConfigResult.Success) StartState.Started else StartState.Failed(result)
+  }
+
+  /** Mini V2 waits up to 30 s for its first upload, so this stays on Configuring that long. */
+  private suspend fun startFixed(form: NewSessionForm): StartState {
+    val picked = form.device
+    val placement = form.placement
+    if (picked == null || placement == null) return StartState.Failed(ConfigResult.BadConfigFailure)
+    if (!linkTo(picked)) return StartState.Failed(ConfigResult.NotConnected)
+    val details = NewSessionDetails(form.name, form.tags)
+    return when (val result = fixedStarter.start(picked, details, placement, Uplink.Wifi(form.wifi))) {
+      FixedStartResult.Started -> StartState.Started
+      FixedStartResult.SignedOut -> StartState.SignedOut
+      FixedStartResult.ServerError -> StartState.ServerError
+      is FixedStartResult.DeviceFailed -> StartState.Failed(result.result)
     }
   }
 
@@ -83,5 +116,9 @@ class RecordingViewModel(
 
   fun stop() {
     viewModelScope.launch { engine.stop() }
+  }
+
+  fun clearFailure() {
+    if (_startState.value !is StartState.Preparing) _startState.value = StartState.Idle
   }
 }

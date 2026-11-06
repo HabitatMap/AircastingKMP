@@ -99,7 +99,7 @@ class AirBeamProtocolTest {
       intervalSeconds = 60,
       pm1Index = 0,
       pm25Index = 1,
-      authToken = "my_token",
+      authToken = "0123456789abcdef0123456789abcdef", // a v3 session_token: 32 hex digits
       ssid = "MySSID",
       password = "MyPassword"
     )

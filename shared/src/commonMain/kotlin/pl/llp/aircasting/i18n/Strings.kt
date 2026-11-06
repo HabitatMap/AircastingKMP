@@ -57,6 +57,20 @@ interface Strings {
   val sessionTagsPlaceholder: String
   val latestTagsHeader: String
   fun addTagLabel(tag: String): String
+  fun removeTagLabel(tag: String): String
+  val matchingTagsHeader: String
+  fun addNewTag(tag: String): String
+  val placementHeader: String
+  val placementIndoor: String
+  val placementOutdoor: String
+  val placementHint: String
+  val wifiHeader: String
+  val wifiNameLabel: String
+  val wifiNamePlaceholder: String
+  val wifiNameHint: String
+  val wifiPasswordLabel: String
+  val wifiPasswordPlaceholder: String
+  val wifiPasswordHint: String
   val samplingIntervalHeader: String
   val samplingIntervalHint: String
   fun samplingSeconds(count: Int): String
@@ -339,4 +353,21 @@ interface Strings {
   val thresholdMedium: String
   val thresholdHigh: String
   val thresholdMax: String
+  val locationTitle: String
+  val locationSearchHint: String
+  val confirmLocation: String
+  val myLocation: String
+
+  val wifiShowNearby: String
+
+  val summaryPlacementLabel: String
+  val startFailedSignedOut: String
+  val startFailedServer: String
+  val startFailedWifi: String
+  val startFailedUpload: String
+  val startFailedNotConnected: String
+  val startFailedGeneric: String
+  val wifiNearbyHeader: String
+  val wifiPermissionHint: String
+  val wifiSearching: String
 }

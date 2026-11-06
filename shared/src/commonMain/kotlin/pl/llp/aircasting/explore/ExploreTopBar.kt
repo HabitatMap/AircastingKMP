@@ -71,7 +71,7 @@ fun ExploreTopBar(
       Modifier.height(64.dp).padding(start = 28.dp, end = 8.dp),
       verticalAlignment = Alignment.CenterVertically,
     ) {
-      SearchPill(query, onQueryChange, Modifier.weight(1f))
+      SearchPill(query, strings.exploreSearchHint, onQueryChange, Modifier.weight(1f))
       Spacer(Modifier.width(4.dp))
       IconButton(onClick = onOpenFilters) {
         Icon(
@@ -87,7 +87,7 @@ fun ExploreTopBar(
 
 /** Place search; the hint doubles as the placeholder. Name search waits on the BE (EXPLORE_SCREEN.md). */
 @Composable
-private fun SearchPill(query: String, onQueryChange: (String) -> Unit, modifier: Modifier) {
+internal fun SearchPill(query: String, placeholder: String, onQueryChange: (String) -> Unit, modifier: Modifier) {
   val colors = MaterialTheme.colorScheme
   Row(
     modifier
@@ -108,7 +108,7 @@ private fun SearchPill(query: String, onQueryChange: (String) -> Unit, modifier:
       decorationBox = { field ->
         if (query.isEmpty()) {
           Text(
-            LocalStrings.current.exploreSearchHint,
+            placeholder,
             style = MaterialTheme.typography.bodyLarge,
             color = colors.onSurfaceVariant,
             maxLines = 1,

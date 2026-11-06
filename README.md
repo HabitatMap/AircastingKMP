@@ -19,6 +19,20 @@ Use the run configurations provided by the run widget in your IDE's toolbar. You
 - Android app: `./gradlew :androidApp:assembleDebug`
 - iOS app: open the [/iosApp](./iosApp) directory in Xcode and run it from there.
 
+### Google Maps / Places keys (Android)
+
+Put `MAPS_API_KEY` and `PLACES_API_KEY` in `local.properties`. Both keys only accept requests from the
+Android apps they list, so a debug build gets a blank map and no place suggestions until the key
+lists package `pl.llp.aircasting` together with **your** debug certificate's SHA-1:
+
+```bash
+keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android | grep SHA1
+```
+
+Add it under *Google Cloud Console → APIs & Services → Credentials → (key) → Android apps*. Each
+developer's debug keystore has a different SHA-1, so each one needs adding. iOS keys are restricted by
+bundle id instead, so signing doesn't affect them.
+
 ### Running tests
 
 Use the run button in your IDE's editor gutter, or run tests using Gradle tasks:

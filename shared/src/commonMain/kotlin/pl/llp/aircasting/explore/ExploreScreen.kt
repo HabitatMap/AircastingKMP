@@ -90,7 +90,7 @@ fun ExploreScreen(
 }
 
 @Composable
-private fun PlaceSuggestions(
+internal fun PlaceSuggestions(
   suggestions: List<PlaceSuggestion>,
   onSelect: (PlaceSuggestion) -> Unit,
   modifier: Modifier,

@@ -47,6 +47,7 @@ import pl.llp.aircasting.bluetooth.protocol.AirBeamProtocol
 import pl.llp.aircasting.bluetooth.protocol.AirBeamProtocol.MiniV2.CommandResponse
 import pl.llp.aircasting.bluetooth.transport.accumulateDistinct
 import pl.llp.aircasting.bluetooth.v2_firmware_specific.DeviceReportedState
+import pl.llp.aircasting.bluetooth.v2_firmware_specific.awaitFixedStart
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -262,19 +263,23 @@ private class BleConnection(
     return when (config) {
       is SessionConfig.Mobile ->
         sendV2AndAwait(AirBeamProtocol.MiniV2.mobileSessionConfigCommand(config.uuid), 10.seconds)
-
-      // Device attempts to connect to WiFi: WiFi OK -> session starts; WiFi Failed -> Nack(0x05 InvalidWifiCredentials)
-      is SessionConfig.FixedWiFi -> sendV2AndAwait(
-        AirBeamProtocol.MiniV2.fixedWifiSessionConfigCommand(
-          uuid = config.uuid,
-          authToken = config.authToken,
-          ssid = config.ssid,
-          password = config.password,
-          pm1Index = config.pm1Index,
-          pm25Index = config.pm25Index,
-        ),
-        15.seconds,
-      )
+      // Legacy AirBeamMiniV2Configurator.configure(): clear the saved session (the device answers
+      // Ready) before a fixed 0x13. Wipes unsynced data — accepted, we skip the "sync first" dialog.
+      // WiFi fails -> Nack(0x05); first measurement POSTed -> Ready; see awaitFixedStart.
+      is SessionConfig.FixedWiFi -> {
+        val discarded = sendV2AndAwait(AirBeamProtocol.MiniV2.discardSessionCommand(), 5.seconds)
+        if (discarded != ConfigResult.Success) return discarded
+        sendV2AndAwaitFixedStart(
+          AirBeamProtocol.MiniV2.fixedWifiSessionConfigCommand(
+            uuid = config.uuid,
+            authToken = config.authToken,
+            ssid = config.ssid,
+            password = config.password,
+            pm1Index = config.pm1Index,
+            pm25Index = config.pm25Index,
+          ),
+        )
+      }
 
       is SessionConfig.FixedCellular -> {
         log.e { "Mini V2 does not support FixedCellular configuration" }
@@ -303,6 +308,15 @@ private class BleConnection(
       }
       else -> ConfigResult.Success
     }
+  }
+
+  /** Like [sendV2AndAwait], but silence is a failure: a fixed start must prove its first upload. */
+  private suspend fun sendV2AndAwaitFixedStart(command: ByteArray): ConfigResult = coroutineScope {
+    val verdict = async(start = CoroutineStart.UNDISPATCHED) {
+      awaitFixedStart(peripheral.observe(AirBeamGatt.MiniV2.response).mapNotNull { CommandResponse.parse(it) })
+    }
+    sendV2Command(command)
+    verdict.await().also { if (it != ConfigResult.Success) log.e { "Mini V2 fixed start failed: $it" } }
   }
 
   private fun mapNackToConfigResult(errorCode: AirBeamProtocol.MiniV2.NackErrorCode): ConfigResult {

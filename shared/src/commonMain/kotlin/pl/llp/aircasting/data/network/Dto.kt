@@ -113,10 +113,6 @@ data class FixedSessionSummaryDto(
   @SerialName("session_token") val sessionToken: String? = null,
 )
 @Serializable
-data class CreateFixedSessionRequestDto(
-  val session: FixedSessionPayloadDto,
-)
-@Serializable
 data class FixedSessionPayloadDto(
   val uuid: String,
   val title: String,
@@ -125,6 +121,23 @@ data class FixedSessionPayloadDto(
   val longitude: Double,
   @SerialName("is_indoor") val isIndoor: Boolean = false,
   val streams: List<CreateStreamPayloadDto> = emptyList(),
+)
+/** `POST /api/v3/fixed_sessions` — flat body, no `session` wrapper, and no `tag_list` (PATCH it after). */
+@Serializable
+data class CreateFixedSessionRequestDto(
+  val uuid: String,
+  val title: String,
+  val latitude: Double,
+  val longitude: Double,
+  @SerialName("contribute") val isContributingToCrowdMap: Boolean,
+  @SerialName("is_indoor") val isIndoor: Boolean,
+  @SerialName("time_zone") val timeZone: String,
+  val device: DeviceDto,
+  val streams: List<CreateStreamPayloadDto>,
+)
+@Serializable
+data class UpdateFixedSessionRequestDto(
+  @SerialName("tag_list") val tagList: String,
 )
 @Serializable
 data class CreateFixedSessionResponseDto(

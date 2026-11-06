@@ -13,6 +13,7 @@ import androidx.compose.ui.viewinterop.UIKitInteropProperties
 import androidx.compose.ui.viewinterop.UIKitView
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.ObjCSignatureOverride
 import kotlinx.cinterop.useContents
 import pl.llp.aircasting.domain.GeoLocation
 import pl.llp.aircasting.domain.GeoSquare
@@ -44,6 +45,7 @@ import swiftPMImport.Aircasting.shared.create
 actual fun ExploreMap(
   markers: List<ExploreMarker>,
   colourType: MeasurementType?,
+  initialCamera: MapViewport?,
   startCentre: GeoLocation?,
   flyTo: GeoLocation?,
   onFlownTo: () -> Unit,
@@ -59,6 +61,8 @@ actual fun ExploreMap(
       onStationTap = { currentOnStationClick(it) },
     )
   }
+  // Pinned at first composition: later idles update state.camera, but must not move this map.
+  val restored = remember { initialCamera }
   val style = mapStyle()
   // Colours resolve here, in Compose, then cross into UIKit as plain values.
   val aqColors = LocalAqColors.current
@@ -76,7 +80,8 @@ actual fun ExploreMap(
   UIKitView(
     factory = {
       apiKeyProvided
-      val camera = GMSCameraPosition.cameraWithLatitude(START.latitude, START.longitude, START_ZOOM)
+      val camera = restored?.let { GMSCameraPosition.cameraWithLatitude(it.centre.latitude, it.centre.longitude, it.zoom.toFloat()) }
+        ?: GMSCameraPosition.cameraWithLatitude(START.latitude, START.longitude, START_ZOOM)
       GMSMapView(frame = CGRectMake(0.0, 0.0, 0.0, 0.0), camera = camera).apply {
         this.delegate = delegate
       }
@@ -85,7 +90,7 @@ actual fun ExploreMap(
     update = { map ->
       delegate.style(map, style)
       delegate.show(map, styled)
-      delegate.centre(map, startCentre)
+      if (restored == null) delegate.centre(map, startCentre) // re-created map: stay where the user left it
       flyTo?.let {
         map.setCamera(GMSCameraPosition.cameraWithLatitude(it.latitude, it.longitude, USER_ZOOM))
         onFlownTo()
@@ -114,7 +119,24 @@ private class ExploreMapDelegate(
   private var styledWith: String? = null
   private val shown = mutableMapOf<StyledMarker, GMSMarker>()
 
+  /** Fires once the camera settles — after gestures, animations and the first layout. */
+  @ObjCSignatureOverride
+  override fun mapView(mapView: GMSMapView, idleAtCameraPosition: GMSCameraPosition) {
+    val bounds = GMSCoordinateBounds.create(region = mapView.projection.visibleRegion())
+    val ne = bounds.northEast.useContents { this.latitude to this.longitude }
+    val sw = bounds.southWest.useContents { this.latitude to this.longitude }
+    val centre = idleAtCameraPosition.target.useContents { GeoLocation(latitude, longitude) }
+    onCameraIdle(
+      MapViewport(
+        GeoSquare(north = ne.first, south = sw.first, east = ne.second, west = sw.second),
+        zoom = idleAtCameraPosition.zoom.toDouble(),
+        centre = centre,
+      ),
+    )
+  }
+
   /** Station pills carry their uuid in userData; dots don't, so they keep the SDK's default tap. */
+  @ObjCSignatureOverride
   override fun mapView(mapView: GMSMapView, didTapMarker: GMSMarker): Boolean {
     val uuid = didTapMarker.userData as? String ?: return false
     onStationTap(uuid)

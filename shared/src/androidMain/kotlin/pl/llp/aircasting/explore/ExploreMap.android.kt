@@ -47,6 +47,7 @@ import com.google.maps.android.compose.rememberComposeBitmapDescriptor
 actual fun ExploreMap(
   markers: List<ExploreMarker>,
   colourType: MeasurementType?,
+  initialCamera: MapViewport?,
   startCentre: GeoLocation?,
   flyTo: GeoLocation?,
   onFlownTo: () -> Unit,
@@ -54,8 +55,11 @@ actual fun ExploreMap(
   onStationClick: (uuid: String) -> Unit,
   modifier: Modifier,
 ) {
+  // Pinned at first composition: later idles update state.camera, but must not move this map.
+  val restored = remember { initialCamera }
   val camera = rememberCameraPositionState {
-    position = CameraPosition.fromLatLngZoom(LatLng(START.latitude, START.longitude), START_ZOOM)
+    position = restored?.let { CameraPosition.fromLatLngZoom(it.centre.toLatLng(), it.zoom.toFloat()) }
+      ?: CameraPosition.fromLatLngZoom(START.toLatLng(), START_ZOOM)
   }
   val currentOnCameraIdle by rememberUpdatedState(onCameraIdle)
   LaunchedEffect(camera) {
@@ -71,6 +75,7 @@ actual fun ExploreMap(
             west = bounds.southwest.longitude,
           ),
           zoom = camera.position.zoom.toDouble(),
+          centre = camera.position.target.let { GeoLocation(it.latitude, it.longitude) },
         )
       }
     }
@@ -78,6 +83,7 @@ actual fun ExploreMap(
       .collect { currentOnCameraIdle(it) }
   }
   LaunchedEffect(startCentre) {
+    if (restored != null) return@LaunchedEffect // re-created map: stay where the user left it
     startCentre?.let { camera.move(CameraUpdateFactory.newLatLngZoom(it.toLatLng(), USER_ZOOM)) }
   }
   val currentOnFlownTo by rememberUpdatedState(onFlownTo)

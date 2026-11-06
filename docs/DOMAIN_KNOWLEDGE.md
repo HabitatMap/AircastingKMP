@@ -421,6 +421,9 @@ Replaces the legacy per-sensor `/api/fixed/active/sessions.json` search with the
     `newLatLngZoom(location, 10f)`, used there for the searched place). Location via Home's
     `LocationProvider`, looked up once per `ExploreViewModel`. No permission / no fix → stays on the
     contiguous-US default; Explore never asks for permission itself.
+- **Keeps its camera** (*2026-11-06*): `ExploreViewModel` holds the last idle `MapViewport` (incl. the
+    SDK-reported centre) and a re-created map — back from station details, or a tab switch — reopens
+    there and skips the start-centre jump. Lives as long as the VM (Shell back-stack entry), not on disk.
 - place search uses a session token per keystroke run + fetch (billing), and no lookup for a blank query
 
 ### Explore session details — times shown in the station's wall clock (*checked 2026-11-02*)

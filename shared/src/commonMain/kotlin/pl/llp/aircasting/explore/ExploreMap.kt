@@ -14,6 +14,11 @@ import pl.llp.aircasting.domain.MeasurementType
 expect fun ExploreMap(
   markers: List<ExploreMarker>,
   colourType: MeasurementType?,
+  /**
+   * Opens the camera here instead of the default start. Read once, when the map enters composition;
+   * if set, [startCentre] is ignored so coming back doesn't snap to the user's location.
+   */
+  initialCamera: MapViewport?,
   /** Moves the camera here when it turns non-null. */
   startCentre: GeoLocation?,
   flyTo: GeoLocation?,

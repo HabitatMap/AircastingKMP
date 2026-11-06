@@ -50,6 +50,7 @@ fun ExploreScreen(
       ExploreMap(
         markers = state.markers,
         colourType = state.filters.colourType,
+        initialCamera = state.camera,
         startCentre = state.startCentre,
         flyTo = state.flyTo,
         onFlownTo = onFlownTo,

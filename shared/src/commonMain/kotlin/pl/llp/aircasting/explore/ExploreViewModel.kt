@@ -94,8 +94,8 @@ class ExploreViewModel(
     }
 
   val state: StateFlow<ExploreUiState> =
-    combine(mapState, suggestions, flyTo) { state, suggestions, flyTo ->
-      state.copy(suggestions = suggestions, flyTo = flyTo)
+    combine(mapState, suggestions, flyTo, viewport) { state, suggestions, flyTo, camera ->
+      state.copy(suggestions = suggestions, flyTo = flyTo, camera = camera)
     }
       .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ExploreUiState())
 

@@ -4,6 +4,7 @@ import pl.llp.aircasting.domain.DataSource
 import pl.llp.aircasting.domain.ExploreFilters
 import pl.llp.aircasting.domain.GeoLocation
 import pl.llp.aircasting.domain.MapStation
+import pl.llp.aircasting.domain.MapViewport
 import pl.llp.aircasting.domain.MeasurementLevel
 import pl.llp.aircasting.domain.MeasurementType
 
@@ -20,6 +21,8 @@ data class ExploreUiState(
   val suggestions: List<PlaceSuggestion> = emptyList(),
   /** One-shot camera jump to a picked place; null once the map has moved. */
   val flyTo: GeoLocation? = null,
+  /** Where the camera last came to rest; a re-created map (back from details, tab switch) reopens here. */
+  val camera: MapViewport? = null,
 )
 
 /** The [draft] being edited and how many results it would show; null [count] = still counting, or the count failed. */

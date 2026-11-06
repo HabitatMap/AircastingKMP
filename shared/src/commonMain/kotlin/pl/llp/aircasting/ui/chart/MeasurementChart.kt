@@ -128,7 +128,9 @@ fun MeasurementChart(
   val zoomState = rememberVicoZoomState(
     initialZoom = remember { Zoom.max(Zoom.x(INITIAL_VISIBLE_SECONDS), Zoom.Content) },
     minZoom = Zoom.Content,
-    maxZoom = remember { Zoom.x(MIN_VISIBLE_SECONDS) },
+    // A series shorter than 15 min already fits at Content; Zoom.x alone would then sit below
+    // minZoom, which Vico rejects (IllegalArgumentException). max() keeps maxZoom ≥ minZoom.
+    maxZoom = remember { Zoom.max(Zoom.x(MIN_VISIBLE_SECONDS), Zoom.Content) },
   )
   CompositionLocalProvider(LocalViewConfiguration provides chartConfiguration) {
     CartesianChartHost(

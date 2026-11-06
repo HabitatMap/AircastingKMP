@@ -7,6 +7,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.TimeZone
 import pl.llp.aircasting.data.network.ExploreMapApi
 import pl.llp.aircasting.data.network.createAircastingHttpClient
 import pl.llp.aircasting.domain.DataSource
@@ -35,7 +36,8 @@ class NetworkStationDetailsRepositoryTest {
 
     assertEquals(
       StationDetails(
-        source = DataSource.AirBeam, title = "Home AirBeam Garden", provider = "jane", deviceModel = "AirBeamMini",
+        uuid = "0b7e3f5a", source = DataSource.AirBeam, title = "Home AirBeam Garden", provider = "jane",
+        deviceModel = "AirBeamMini", timeZone = TimeZone.of("America/New_York"),
         streams = listOf(
           StationStream(35404, "AirBeam-PM1", "µg/m³", value = 8, min24h = 3, max24h = 10, measuredAt = MEASURED_AT),
           StationStream(35405, "AirBeam-PM2.5", "µg/m³", value = 12, min24h = 5, max24h = 20, measuredAt = MEASURED_AT),
@@ -77,7 +79,7 @@ class NetworkStationDetailsRepositoryTest {
 
 private const val AIRBEAM_JSON = """
 {"uuid":"0b7e3f5a","source":"airbeam","title":"Home AirBeam Garden","provider":"jane",
- "latitude":40.1,"longitude":-73.2,"active":true,"device_model":"AirBeamMini",
+ "latitude":40.1,"longitude":-73.2,"active":true,"device_model":"AirBeamMini","time_zone":"America/New_York",
  "share_url":"https://aircasting.org/s/ab12c",
  "streams":[
   {"stream_id":35404,"sensor_name":"AirBeam-PM1","measurement_type":"Particulate Matter","unit_symbol":"µg/m³",

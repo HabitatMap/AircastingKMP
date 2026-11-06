@@ -10,6 +10,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.datetime.TimeZone
 import pl.llp.aircasting.domain.DataSource
 import pl.llp.aircasting.domain.MeasurementLevel
 import pl.llp.aircasting.domain.SensorThreshold
@@ -147,8 +148,8 @@ private val PM1 = StationStream(
 )
 private val PM25 = PM1.copy(id = 2, sensorName = "AirBeam-PM2.5", value = 12)
 private val STATION = StationDetails(
-  source = DataSource.AirBeam, title = "Garden", provider = "jane", deviceModel = "AirBeamMini",
-  streams = listOf(PM1, PM25),
+  uuid = "0b7e3f5a", source = DataSource.AirBeam, title = "Garden", provider = "jane", deviceModel = "AirBeamMini",
+  timeZone = TimeZone.UTC, streams = listOf(PM1, PM25),
 )
 private val PM1_T = SensorThreshold("AirBeam-PM1", 0, 9, 35, 55, 150)
 private val PM25_T = SensorThreshold("AirBeam-PM2.5", 0, 9, 35, 55, 150)

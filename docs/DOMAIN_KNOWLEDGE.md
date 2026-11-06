@@ -608,6 +608,18 @@ are draggable, and the ends are edited as numbers in the Thresholds sheet. Saved
 (`SensorThreshold.moveBound`). Temperature bounds are shown in °C when the Celsius setting is on
 (`TemperatureConverter`); the rewrite doesn't do that yet.
 
+**Thresholds sheet (*legacy `HLUDialog`*):** all five bounds as whole numbers; Save only if
+`min < low < medium < high < max` (`invalidBounds`: blank/non-integer fields, and the upper field of an
+out-of-order pair, are flagged after the first failed Save). "Reset to default" drops the override
+only once confirmed: Reset refills the fields with the server default and **keeps the sheet open**;
+nothing is stored until Save (product choice; legacy `resetToDefaultsClicked` deletes and closes at
+once). A Save whose values equal the default deletes the override
+(`ThresholdsRepository.resetToDefault`) rather than storing a copy, so the sensor keeps following the
+server default, as after a legacy reset.
+Legacy also clipped the graph's y-axis to exactly veryLow..veryHigh (`GraphContainer.updateValueAxis`),
+which is what makes the sheet's "readings below Min or above Max are hidden" true; the rewrite's
+`yRange` still extends to the highest reading.
+
 **Refresh (*decided 2026-11-04*):** on every app start (`initKoin` → `ThresholdDefaultsSync`)
 `GET /api/v3/threshold_sets` replaces `threshold_defaults` + `threshold_aliases` wholesale in one
 transaction; `threshold_overrides` is never touched. Failure → keep what's stored (bundled seed on

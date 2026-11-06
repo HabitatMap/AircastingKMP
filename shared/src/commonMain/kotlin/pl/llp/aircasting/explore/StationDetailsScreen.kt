@@ -18,7 +18,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -110,7 +114,17 @@ fun StationDetailsScreen(
             // Figma draws the graph edge to edge, through the screen padding.
             StationGraph(details, stream, state.threshold, Modifier.bleed(ScreenPadding))
             // No threshold for this sensor → nothing to edit (and the chart is uncoloured).
-            state.threshold?.let { ThresholdSlider(it, stream.unitSymbol, onChange = onThresholdChange) }
+            state.threshold?.let { threshold ->
+              // Screen-local UI state; saveable, so rotation keeps the sheet open.
+              var editing by rememberSaveable { mutableStateOf(false) }
+              ThresholdSlider(threshold, stream.unitSymbol, onChange = onThresholdChange, onEdit = { editing = true })
+              if (editing) ThresholdsSheet(
+                threshold,
+                default = state.defaultThreshold,
+                onDismiss = { editing = false },
+                onSave = onThresholdChange,
+              )
+            }
           }
         }
       }

@@ -2,6 +2,7 @@ package pl.llp.aircasting.domain
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
 class SensorThresholdTest {
 
@@ -76,4 +77,27 @@ class SensorThresholdTest {
     assertEquals(InnerBound.Low, pm25.nearestBound(20)) // |20−12| < |20−35|
     assertEquals(InnerBound.High, pm25.nearestBound(140))
   }
+
+  @Test
+  fun bounds_list_min_to_max() = assertEquals(listOf(0, 12, 35, 55, 150), pm25.bounds)
+
+  @Test
+  fun ordered_whole_numbers_are_valid() =
+    assertEquals(emptySet(), invalidBounds(listOf("0", "12", "35", "55", "150")))
+
+  @Test
+  fun a_blank_or_non_numeric_field_is_invalid() =
+    assertEquals(setOf(1, 3), invalidBounds(listOf("0", "", "35", "4.5", "150")))
+
+  @Test
+  fun a_field_not_above_the_one_before_is_invalid() =
+    assertEquals(setOf(2), invalidBounds(listOf("0", "12", "12", "55", "150")))
+
+  @Test
+  fun valid_fields_become_the_bounds_and_keep_the_sensor() =
+    assertEquals(pm25.copy(veryLow = 5, veryHigh = 200), pm25.withBounds(listOf("5", "12", "35", "55", " 200 ")))
+
+  @Test
+  fun invalid_fields_give_nothing_to_save() =
+    assertNull(pm25.withBounds(listOf("0", "60", "35", "55", "150")))
 }

@@ -1,5 +1,7 @@
 package pl.llp.aircasting.explore
 
+import aircasting.shared.generated.resources.Res
+import aircasting.shared.generated.resources.ic_tune
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
@@ -7,15 +9,21 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -33,6 +41,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import org.jetbrains.compose.resources.painterResource
 import pl.llp.aircasting.domain.InnerBound
 import pl.llp.aircasting.domain.SensorThreshold
 import pl.llp.aircasting.i18n.LocalStrings
@@ -55,6 +64,7 @@ fun ThresholdSlider(
   threshold: SensorThreshold,
   unit: String,
   onChange: (SensorThreshold) -> Unit,
+  onEdit: () -> Unit,
   modifier: Modifier = Modifier,
 ) {
   // The drag edits this local copy; onChange (DB write → whole screen recolours) fires once, on
@@ -67,11 +77,32 @@ fun ThresholdSlider(
   val labelStyle = MaterialTheme.typography.bodySmall
   val labelColor = MaterialTheme.colorScheme.onSurfaceVariant
   Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-    Text(
-      "${LocalStrings.current.colourThresholds}  ·  $unit",
-      style = MaterialTheme.typography.titleSmall,
-      color = MaterialTheme.colorScheme.onSurface,
-    )
+    Row(
+      Modifier.fillMaxWidth(),
+      horizontalArrangement = Arrangement.SpaceBetween,
+      verticalAlignment = Alignment.CenterVertically,
+    ) {
+      Text(
+        "${LocalStrings.current.colourThresholds}  ·  $unit",
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.onSurface,
+      )
+      // TextButton, not a bare clickable Row: keeps the 48 dp touch target the 24 dp design row lacks.
+      TextButton(onClick = onEdit, contentPadding = PaddingValues(horizontal = 8.dp)) {
+        Icon(
+          painterResource(Res.drawable.ic_tune),
+          contentDescription = null, // the "Edit" text labels the button
+          modifier = Modifier.size(18.dp),
+          tint = MaterialTheme.colorScheme.onPrimaryContainer,
+        )
+        Spacer(Modifier.width(6.dp))
+        Text(
+          LocalStrings.current.thresholdsEdit,
+          style = MaterialTheme.typography.labelLarge,
+          color = MaterialTheme.colorScheme.onPrimaryContainer,
+        )
+      }
+    }
     BoxWithConstraints(
       Modifier.fillMaxWidth().height(SliderHeight).pointerInput(threshold) {
         fun valueAt(x: Float) = threshold.veryLow + (x / size.width * span).roundToInt()

@@ -34,7 +34,7 @@ class FakeThresholdsRepository(
   private val defaults: List<SensorThreshold>,
   private val aliases: Map<String, String> = emptyMap(),
 ) : ThresholdsRepository {
-  private val overrides = MutableStateFlow(emptyList<SensorThreshold>())
+  val overrides = MutableStateFlow(emptyList<SensorThreshold>())
 
   override fun observe(): Flow<Thresholds> = overrides.map { Thresholds(defaults, aliases, it) }
   override suspend fun save(threshold: SensorThreshold) =

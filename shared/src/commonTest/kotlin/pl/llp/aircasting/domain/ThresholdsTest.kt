@@ -32,6 +32,13 @@ class ThresholdsTest {
   }
 
   @Test
+  fun the_default_ignores_the_users_override() {
+    val thresholds = Thresholds(listOf(pm25), aliases, overrides = listOf(pm25.copy(low = 20)))
+
+    assertEquals(pm25, thresholds.defaultFor("AirBeamMini-PM2.5"))
+  }
+
+  @Test
   fun an_unknown_sensor_has_no_threshold() =
     assertNull(Thresholds(listOf(pm1), aliases).forSensor("AirBeam3-CO2"))
 }

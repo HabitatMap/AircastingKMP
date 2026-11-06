@@ -154,6 +154,31 @@ class StationDetailsViewModelTest {
     assertEquals(5, content(vm).threshold?.low)
     assertEquals(5, thresholds.observe().first().forSensor("AirBeam-PM1")?.low)
   }
+
+  @Test
+  fun the_selected_streams_default_is_exposed_alongside_the_users_edit() = runTest {
+    val thresholds = FakeThresholdsRepository(listOf(PM1_T))
+    val vm = subscribe(StationDetailsViewModel("u1", FakeStationDetailsRepository(Result.success(STATION)), thresholds))
+    advanceUntilIdle()
+
+    vm.saveThreshold(PM1_T.copy(low = 5)); advanceUntilIdle()
+
+    assertEquals(5, content(vm).threshold?.low)
+    assertEquals(PM1_T, content(vm).defaultThreshold)
+  }
+
+  @Test
+  fun saving_the_default_values_drops_the_override() = runTest {
+    val thresholds = FakeThresholdsRepository(listOf(PM1_T))
+    val vm = subscribe(StationDetailsViewModel("u1", FakeStationDetailsRepository(Result.success(STATION)), thresholds))
+    advanceUntilIdle()
+    vm.saveThreshold(PM1_T.copy(low = 5)); advanceUntilIdle()
+
+    vm.saveThreshold(PM1_T); advanceUntilIdle()
+
+    assertEquals(PM1_T, content(vm).threshold)
+    assertEquals(emptyList(), thresholds.overrides.value)
+  }
 }
 
 // Two streams of one measurement type: why selection is by stream id, not MeasurementType.

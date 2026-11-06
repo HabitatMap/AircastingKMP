@@ -32,6 +32,7 @@ import com.patrykandpatrick.vico.compose.cartesian.data.CartesianValueFormatter
 import com.patrykandpatrick.vico.compose.cartesian.data.lineModel
 import com.patrykandpatrick.vico.compose.cartesian.decoration.Decoration
 import com.patrykandpatrick.vico.compose.cartesian.decoration.HorizontalBox
+import com.patrykandpatrick.vico.compose.cartesian.layer.CartesianLayerDimensions
 import com.patrykandpatrick.vico.compose.cartesian.layer.LineCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLine
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
@@ -118,6 +119,7 @@ fun MeasurementChart(
       visibleRange
   }
   val firstX = points.first().x
+  val timeLabels = remember { TimeAxisLabels() }
   val labelColor = colors.onSurfaceVariant
   val system = LocalViewConfiguration.current
   val panSlop = with(LocalDensity.current) { PanSlop.toPx() }
@@ -157,13 +159,8 @@ fun MeasurementChart(
           tick = null,
           guideline = null,
           label = rememberAxisLabelComponent(style = MaterialTheme.typography.labelSmall.copy(color = labelColor)),
-          valueFormatter = remember { TimeFormatter },
-          // A label per full hour; Vico skips some (every 2 h, 3 h…) when they'd overlap.
-          itemPlacer = remember(firstX) {
-            HorizontalAxis.ItemPlacer.aligned(
-              spacing = { 3_600 },
-              offset = { secondsToNextHour(firstX) })
-          },
+          valueFormatter = timeLabels,
+          itemPlacer = timeLabels,
         ),
         marker = rememberDefaultCartesianMarker(
           label = rememberTextComponent(
@@ -249,9 +246,61 @@ private class UnderLayers(private val delegate: Decoration) : Decoration {
   override fun drawUnderLayers(context: CartesianDrawingContext) = delegate.drawOverLayers(context)
 }
 
-private object TimeFormatter : CartesianValueFormatter {
+/**
+ * Edge-first time labels (see [timeAxisLabels]): both the axis's item placer and its formatter,
+ * because an edge label sits half a label in from the edge yet shows the edge's time, so the
+ * formatter needs the placer's last layout to know what to print at that x.
+ *
+ * Reserves no layer padding (unlike Vico's aligned placer), so the line runs edge to edge.
+ */
+private class TimeAxisLabels : HorizontalAxis.ItemPlacer, CartesianValueFormatter {
+  /** From the latest [getLabelValues], which Vico calls just before formatting what it returns. */
+  private var shownTimes = emptyMap<Double, Double>()
+
+  override fun getLabelValues(
+    context: CartesianDrawingContext,
+    visibleXRange: ClosedFloatingPointRange<Double>,
+    fullXRange: ClosedFloatingPointRange<Double>,
+    maxLabelWidth: Float,
+  ): List<Double> {
+    val labelWidth = maxLabelWidth / context.layerDimensions.xSpacing * context.ranges.xStep
+    shownTimes = timeAxisLabels(visibleXRange, labelWidth)
+    return shownTimes.keys.toList()
+  }
+
   override fun format(context: CartesianMeasuringContext, value: Double, verticalAxisPosition: Axis.Position.Vertical?) =
-    hourMinuteUtc(value)
+    hourMinuteUtc(shownTimes[value] ?: value)
+
+  /** `00:00`, `01:01` … `09:09`: every digit in both last places, so the widest label whatever the font. */
+  private val measuredValues = List(10) { it * 3_660.0 }
+
+  override fun getWidthMeasurementLabelValues(
+    context: CartesianMeasuringContext,
+    layerDimensions: CartesianLayerDimensions,
+    fullXRange: ClosedFloatingPointRange<Double>,
+  ) = measuredValues
+
+  override fun getHeightMeasurementLabelValues(
+    context: CartesianMeasuringContext,
+    layerDimensions: CartesianLayerDimensions,
+    fullXRange: ClosedFloatingPointRange<Double>,
+    maxLabelWidth: Float,
+  ) = measuredValues
+
+  // No ticks, so no margin for them.
+  override fun getStartLayerMargin(
+    context: CartesianMeasuringContext,
+    layerDimensions: CartesianLayerDimensions,
+    tickThickness: Float,
+    maxLabelWidth: Float,
+  ) = 0f
+
+  override fun getEndLayerMargin(
+    context: CartesianMeasuringContext,
+    layerDimensions: CartesianLayerDimensions,
+    tickThickness: Float,
+    maxLabelWidth: Float,
+  ) = 0f
 }
 
 private val ElevationLight1 = listOf(
@@ -268,7 +317,7 @@ private class MarkerFormatter(
   override fun format(context: CartesianDrawingContext, targets: List<CartesianMarker.Target>): CharSequence {
     val entry = (targets.first() as LineCartesianLayerMarkerTarget).points.first().entry
     return buildAnnotatedString {
-      append(hourMinuteUtc(entry.x))
+      append(hourMinuteSecondUtc(entry.x))
       append('\n')
       threshold?.let { withStyle(SpanStyle(color = aq.forLevel(it.levelFor(entry.y)))) { append("● ") } }
       withStyle(valueStyle) { append("${entry.y.roundToInt()}") }

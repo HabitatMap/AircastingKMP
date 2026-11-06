@@ -235,7 +235,30 @@ details header, so the details route only needs the `uuid`.
 - `time_zone` = station's IANA zone; `update_frequency` = display text (`1 minute` / `1 hour`).
 - `404` → `{ error_code: "not_found", message }`.
 - `stream_id` still keys the per-stream endpoints below (graph data).
-- Unused by the client so far: `is_active`, `time_zone`, `share_url`, `update_frequency`.
+- `time_zone` feeds the graph (below). Unused by the client so far: `is_active`, `share_url`,
+  `update_frequency`.
+
+### Explore station graph — `GET /api/v3/explore/stations/{uuid}/measurements` [A]
+
+*`[ALPHA]` in swagger; read and verified live on experimental 2026-11-05.* Public (`security: []`).
+The station details graph's data source — replaces the per-stream `Web app:` endpoints below for it.
+
+| Query | |
+|---|---|
+| `sensor_name` (req) | as `streams[].sensor_name` of the station detail, e.g. `Government-Ozone` |
+| `start_time`, `end_time` (opt, together) | epoch ms, **true UTC**; `end − start ≤ 12 h` (exactly 12 h is accepted) |
+
+- `200` → `[{ time, value }]`, **oldest first**, `time` = epoch ms **true UTC** (not local-as-UTC, unlike
+  `fixed_streams`/`station_streams`), `value` = raw float.
+- No window → last **6 h anchored on the station's last reading** (verified: newest `time` ==
+  `last_measurement.time` of the detail), so a quiet station still answers.
+- **Both bounds inclusive** (verified): a reading exactly on a shared boundary comes back in both
+  adjacent windows — end the older window 1 ms before the newer one starts.
+- `400 validation_error` — missing `sensor_name`, half a window, `end ≤ start`, window > 12 h
+  (`fields.end_time[].code = window_too_long`, `params.max_ms = 43200000`).
+- `404 not_found` — unknown/private station **or** no stream with that `sensor_name`.
+- Client: 24 h = two 12 h windows ending at the stream's `last_measurement.time`
+  (`NetworkStationMeasurementsRepository`).
 
 ### Explore session details — public stream endpoints
 

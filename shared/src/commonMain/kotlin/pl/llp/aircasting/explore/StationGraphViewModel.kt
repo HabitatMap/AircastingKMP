@@ -11,6 +11,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.TimeZone
+import pl.llp.aircasting.domain.StationStream
 import pl.llp.aircasting.ui.chart.ChartPoint
 
 sealed interface StationGraphState {
@@ -25,9 +27,11 @@ sealed interface StationGraphState {
  * chips back and forth doesn't refetch, and a failed graph never takes the header down with it.
  */
 class StationGraphViewModel(
-  private val streamId: Long,
+  private val uuid: String,
+  private val stream: StationStream,
+  private val timeZone: TimeZone,
   private val repository: StationMeasurementsRepository,
-  // Sorting 86 400 points takes long enough to drop frames on the main thread.
+  // Sorting and shifting a day of readings stays off the main thread.
   private val compute: CoroutineDispatcher = Dispatchers.Default,
 ) : ViewModel() {
   private val _state = MutableStateFlow<StationGraphState>(StationGraphState.Loading)
@@ -36,14 +40,18 @@ class StationGraphViewModel(
   init { load() }
 
   fun load() {
+    // Never reported: nothing to anchor the 24 h on, so nothing to fetch.
+    val newest = stream.measuredAt ?: run { _state.value = StationGraphState.Ready(emptyList()); return }
     _state.value = StationGraphState.Loading
     viewModelScope.launch {
       _state.value = try {
-        StationGraphState.Ready(withContext(compute) { last24h(repository.measurements(streamId)) })
+        StationGraphState.Ready(
+          withContext(compute) { last24h(repository.measurements(uuid, stream.sensorName, newest, timeZone)) },
+        )
       } catch (e: CancellationException) {
         throw e
       } catch (e: Exception) {
-        log.w(e) { "Stream $streamId graph load failed" }
+        log.w(e) { "Station $uuid ${stream.sensorName} graph load failed" }
         StationGraphState.Error
       }
     }

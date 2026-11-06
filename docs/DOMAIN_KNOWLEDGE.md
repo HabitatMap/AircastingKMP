@@ -441,16 +441,18 @@ Rewrite rules:
   station's wall clock, as legacy does.
 - **"N min ago" needs a real instant**, so it comes from the map's / `/explore/stations`'
   `last_measurement.time` (true UTC), never from the stream endpoints.
-- **48 h graph from `fixed_streams/{id}` / `station_streams/{id}`, not `*_measurements`.** Their
-  `last_2_days` is anchored server-side on the stream's newest real instant, so the client sends no
-  window. `fixed_measurements` / `station_measurements` take local-as-UTC bounds
-  (`StationMeasurements::IndexInteractor` converts them back with `from_local_as_utc`), so a true-UTC
-  `end_time = now` cuts the newest hours off stations east of UTC. Use those only for longer ranges.
+- **Graph data from `/api/v3/explore/stations/{uuid}/measurements`** (*2026-11-05*, supersedes the
+  `fixed_streams`/`station_streams` plan). It returns **true UTC**, so the client shifts each point
+  by the station's `time_zone` offset *at that instant* (`TimeZone.offsetAt`) into local-as-UTC — the
+  chart then keeps formatting x as UTC, per the rule above. Window bounds are true UTC too, so no
+  east-of-UTC cut-off. (`fixed_measurements` / `station_measurements` still take local-as-UTC bounds —
+  `StationMeasurements::IndexInteractor` / `from_local_as_utc` — if ever used for longer ranges.)
 - **The graph shows 24 h, anchored on the newest measurement, not on "now".** Legacy
   `SearchFollowViewModel.getStreamsWithMeasurementsFromResponse` keeps points `>= newest − 24 h`
   (`lastMeasurementTimeMinus24Hours`) from a count-limited fetch (`measurements_limit` =
-  `MEASUREMENTS_IN_HOUR * 24`). Same here: take the 48 h response and trim it client-side. A station
-  that went quiet still shows its last 24 h instead of an empty graph.
+  `MEASUREMENTS_IN_HOUR * 24`). Here: anchor = the stream's `last_measurement.time`; two 12 h windows
+  (endpoint max) back from it. A station that went quiet still shows its last 24 h; a stream that
+  never reported (`last_measurement: null`) shows an empty graph with no request.
 - Local-as-UTC is ambiguous at DST changes (an hour repeats in autumn, one is skipped in spring);
   the BE accepts this (`Utils.from_local_as_utc` comment). Expect a duplicate/missing hour on the axis.
 

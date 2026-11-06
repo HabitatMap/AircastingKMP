@@ -106,7 +106,7 @@ fun StationDetailsScreen(
               Stat(strings.stationMax24h, stream.max24h, stream.unitSymbol, state.levelOf(stream.max24h))
             }
             // Figma draws the graph edge to edge, through the screen padding.
-            StationGraph(stream, state.threshold, Modifier.bleed(ScreenPadding))
+            StationGraph(details, stream, state.threshold, Modifier.bleed(ScreenPadding))
           }
         }
       }

@@ -5,6 +5,7 @@ import pl.llp.aircasting.domain.GeoLocation
 import pl.llp.aircasting.i18n.Strings
 import pl.llp.aircasting.recording.Placement
 import pl.llp.aircasting.recording.WifiCredentials
+import kotlin.math.roundToLong
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
@@ -67,11 +68,22 @@ data class SessionSummary(
   val name: String,
   val tags: List<String>,
   val interval: String,
+  /** Fixed only: where the AirBeam stands. */
+  val placement: String?,
 )
+
 fun Strings.summarize(form: NewSessionForm) = SessionSummary(
   type = form.method?.let { copyFor(it).name }.orEmpty(),
   name = form.name,
   tags = form.tags,
   // Fixed has no picker: the AirBeam is configured at 60 s (DOMAIN_KNOWLEDGE.md).
   interval = label(if (form.method == RecordingMethod.AirBeamFixed) SamplingInterval.OneMinute else form.interval),
+  placement = if (form.method != RecordingMethod.AirBeamFixed) null else when (val placement = form.placement) {
+    Placement.Indoor -> placementIndoor
+    is Placement.Outdoor -> "$placementOutdoor (${placement.location.latitude.short()}, ${placement.location.longitude.short()})"
+    null -> null
+  },
 )
+
+/** Four decimals ≈ 11 m. Common Kotlin has no String.format, so round and let toString print it. */
+private fun Double.short() = ((this * 10_000).roundToLong() / 10_000.0).toString()

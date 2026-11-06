@@ -16,6 +16,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import pl.llp.aircasting.i18n.LocalStrings
 import pl.llp.aircasting.ui.wizard.WizardButton
@@ -25,6 +29,7 @@ import pl.llp.aircasting.ui.wizard.WizardScaffold
 fun SessionConfirmScreen(
   state: NewSessionState,
   preparing: PrepareStep?,
+  failure: String?,
   onBack: () -> Unit,
   onCancel: () -> Unit,
   onStart: () -> Unit,
@@ -36,6 +41,17 @@ fun SessionConfirmScreen(
     onBack = onBack,
     onCancel = onCancel,
     footer = {
+      if (failure != null) {
+        Text(
+          failure,
+          modifier = Modifier
+            .padding(bottom = 12.dp)
+            .semantics { liveRegion = LiveRegionMode.Polite },
+          style = MaterialTheme.typography.bodyMedium,
+          color = MaterialTheme.colorScheme.error,
+          textAlign = TextAlign.Center,
+        )
+      }
       val label = when (preparing) {
         null -> strings.startRecording
         PrepareStep.Locating -> strings.preparingLocating
@@ -79,6 +95,10 @@ fun SessionConfirmScreen(
           }
           SummaryDivider()
           SummaryRow(strings.summaryIntervalLabel) { SummaryValue(summary.interval) }
+          summary.placement?.let { placement ->
+            SummaryDivider()
+            SummaryRow(strings.summaryPlacementLabel) { SummaryValue(placement) }
+          }
         }
       }
     }

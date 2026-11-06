@@ -212,11 +212,12 @@ Paths below are under legacy `app/src/main/java/pl/llp/aircasting/`.
   the device-name id. Streams: `AirBeamMini-PM1` and `AirBeamMini-PM2.5`, both in `µg/m³`.
   - The 32-hex `session_token` becomes 16 bytes in the config.
   - The `sensor_type_id`s become the pm1/pm2.5 indices. The fallbacks are 0 and 1.
-  - *Rewrite (2026-10-27):* v3 answers with **canonical** names (`AirBeam-PM1`,
-    `AirBeam-PM2.5`; see API_V3.md), so the legacy lookup by `AirBeamMini-PM1` would miss
-    and fall back. The rewrite looks the indices up by canonical name and has **no fallback**:
-    built-in ids are 1–99, so 0/1 would label the device's frames as the wrong sensor. A missing
-    id fails the start before the device is touched (`FixedSessionStarter`).
+  - *Rewrite (2026-11-04, seen on hardware):* the live v3 backend answers with the names we sent
+    (`AirBeamMini-PM1` → 1, `AirBeamMini-PM2.5` → 2), as legacy expects. API_V3.md documents
+    canonical names (`AirBeam-PM1`, `AirBeam-PM2.5`) instead.
+  - `FixedSessionStarter` therefore tries the Mini names first, then the canonical ones.
+  - There is still **no 0/1 fallback**: built-in ids are 1–99, so 0/1 would label the device's
+    frames as the wrong sensor. A missing id fails the start before the device is touched.
   - Legacy sends `DiscardSession 0x11` and waits for `Ready` before the fixed `0x13`
     (`AirBeamMiniV2Configurator.configure`). This wipes any unsynced session on the device. That
     is accepted, because the rewrite skips the "sync first" dialog (decision 2026-10-26).

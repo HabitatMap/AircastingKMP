@@ -359,4 +359,12 @@ interface Strings {
   val myLocation: String
 
   val wifiShowNearby: String
+
+  val summaryPlacementLabel: String
+  val startFailedSignedOut: String
+  val startFailedServer: String
+  val startFailedWifi: String
+  val startFailedUpload: String
+  val startFailedNotConnected: String
+  val startFailedGeneric: String
 }

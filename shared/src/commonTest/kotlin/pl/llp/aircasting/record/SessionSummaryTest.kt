@@ -1,5 +1,6 @@
 package pl.llp.aircasting.record
 
+import pl.llp.aircasting.domain.GeoLocation
 import pl.llp.aircasting.i18n.AppStrings
 import pl.llp.aircasting.i18n.EnStrings
 import kotlin.test.Test
@@ -36,5 +37,24 @@ class SessionSummaryTest {
     val form = NewSessionForm(method = RecordingMethod.AirBeamFixed, interval = SamplingInterval.OneSecond)
 
     assertEquals("1 min", EnStrings.summarize(form).interval)
+  }
+  @Test
+  fun `a fixed session says where it stands`() {
+    val indoor = NewSessionForm(method = RecordingMethod.AirBeamFixed)
+    assertEquals("Indoor", EnStrings.summarize(indoor).placement)
+
+    val outdoor = indoor.copy(indoor = false, outdoorLocation = GeoLocation(50.061234, 19.937891))
+    assertEquals("Outdoor (50.0612, 19.9379)", EnStrings.summarize(outdoor).placement)
+  }
+
+  @Test
+  fun `a mobile session has no placement row`() {
+    val form = NewSessionForm(method = RecordingMethod.AirBeamMobile, indoor = false, outdoorLocation = GeoLocation(
+      50.0,
+      19.0
+    )
+    )
+
+    assertNull(EnStrings.summarize(form).placement)
   }
 }

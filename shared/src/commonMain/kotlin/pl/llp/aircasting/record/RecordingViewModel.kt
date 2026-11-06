@@ -116,4 +116,8 @@ class RecordingViewModel(
   fun stop() {
     viewModelScope.launch { engine.stop() }
   }
+
+  fun clearFailure() {
+    if (_startState.value !is StartState.Preparing) _startState.value = StartState.Idle
+  }
 }

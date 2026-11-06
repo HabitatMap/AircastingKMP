@@ -374,4 +374,11 @@ object FrStrings : Strings {
   override val locationSearchHint = "Rechercher une adresse"
   override val confirmLocation = "Confirmer l'emplacement"
   override val myLocation = "Ma position"
+  override val summaryPlacementLabel = "EMPLACEMENT"
+  override val startFailedSignedOut = "Connectez-vous pour démarrer une session fixe."
+  override val startFailedServer = "AirCasting n'a pas pu créer la session. Vérifiez votre connexion Internet et réessayez."
+  override val startFailedWifi = "L'AirBeam n'a pas pu rejoindre le réseau Wi-Fi. Revenez en arrière et vérifiez son nom et son mot de passe."
+  override val startFailedUpload = "L'AirBeam a rejoint le réseau Wi-Fi mais n'a pas pu envoyer sa première mesure. Vérifiez que le réseau a accès à Internet, puis réessayez."
+  override val startFailedNotConnected = "Connexion à l'AirBeam perdue. Vérifiez qu'il est allumé et à proximité, puis réessayez."
+  override val startFailedGeneric = "L'AirBeam n'a pas pu démarrer la session. Réessayez."
 }

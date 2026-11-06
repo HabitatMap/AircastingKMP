@@ -299,6 +299,27 @@ class RecordingViewModelTest {
     assertEquals(emptyList(), link.connects)
     assertTrue(registered.isEmpty())
   }
+  /** Back from Confirm: an old failure mustn't greet the user after they've fixed the details. */
+  @Test
+  fun leaving_confirm_forgets_a_failed_start() = runTest {
+    link.configureResult = ConfigResult.WifiPassFailure
+    vm.start(fixedForm)
+    runCurrent()
+
+    vm.clearFailure()
+
+    assertEquals(StartState.Idle, vm.startState.value)
+  }
+
+  /** A Mini V2 start can take 30 s; stepping back mustn't make the app forget it's still going. */
+  @Test
+  fun leaving_confirm_mid_start_keeps_the_start_going() = runTest {
+    vm.start(fixedForm) // Preparing is set synchronously; the launched work hasn't run yet
+
+    vm.clearFailure()
+
+    assertEquals(StartState.Preparing(PrepareStep.Configuring), vm.startState.value)
+  }
 }
 
 /** [live] stands for the running GPS session's fix; null until it has one. */

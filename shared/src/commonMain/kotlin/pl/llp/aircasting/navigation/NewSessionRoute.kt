@@ -26,6 +26,7 @@ import pl.llp.aircasting.record.SessionDetailsScreen
 import pl.llp.aircasting.record.StartState
 import pl.llp.aircasting.record.deviceStepUi
 import pl.llp.aircasting.record.rememberWifiNetworks
+import pl.llp.aircasting.record.startFailure
 import pl.llp.aircasting.scan.ScanUiState
 import pl.llp.aircasting.scan.ScanViewModel
 import pl.llp.aircasting.scan.rememberBluetoothPermission
@@ -69,7 +70,8 @@ fun NewSessionDestination(onExit: () -> Unit) {
     NewSessionStep.Confirm -> SessionConfirmScreen(
       state = state,
       preparing = (startState as? StartState.Preparing)?.step,
-      onBack = back,
+      failure = LocalStrings.current.startFailure(startState),
+      onBack = { recorder.clearFailure(); back() },
       onCancel = onExit,
       onStart = { recorder.start(state.form) },
     )

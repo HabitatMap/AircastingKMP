@@ -346,6 +346,13 @@ object EnStrings : Strings {
   override val locationSearchHint = "Search for an address"
   override val confirmLocation = "Confirm location"
   override val myLocation = "My location"
+  override val summaryPlacementLabel = "PLACEMENT"
+  override val startFailedSignedOut = "Sign in to start a fixed session."
+  override val startFailedServer = "AirCasting couldn\u2019t create the session. Check your internet connection and try again."
+  override val startFailedWifi = "The AirBeam couldn\u2019t join the Wi-Fi network. Go back and check its name and password."
+  override val startFailedUpload = "The AirBeam joined the Wi-Fi network but couldn\u2019t send its first measurement. Check that the network has internet access, then try again."
+  override val startFailedNotConnected = "Lost the connection to the AirBeam. Make sure it\u2019s on and nearby, then try again."
+  override val startFailedGeneric = "The AirBeam couldn\u2019t start the session. Try again."
 }
 
 /** Every available locale, keyed by BCP-47 tag. Lyricist selects one by the system locale at runtime. */

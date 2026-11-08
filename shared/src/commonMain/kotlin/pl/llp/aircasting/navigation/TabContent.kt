@@ -15,6 +15,8 @@ import pl.llp.aircasting.home.HomeScreen
 import pl.llp.aircasting.home.HomeViewModel
 import pl.llp.aircasting.i18n.LocalStrings
 import org.koin.compose.viewmodel.koinViewModel
+import pl.llp.aircasting.active.ActiveScreen
+import pl.llp.aircasting.active.ActiveViewModel
 import pl.llp.aircasting.domain.ExploreFilters
 import pl.llp.aircasting.domain.MeasurementType
 import pl.llp.aircasting.explore.ExploreScreen
@@ -36,8 +38,22 @@ fun TabContent(
       onRecoverData = { /* TODO: recover & sync flow */ },
     )
     AppTab.Explore -> ExploreRoute(onOpenStation)
+    AppTab.Active -> ActiveRoute()
     else -> Placeholder(LocalStrings.current.label(tab))
   }
+}
+
+@Composable
+private fun ActiveRoute() {
+  val vm = koinViewModel<ActiveViewModel>()
+  val state by vm.state.collectAsStateWithLifecycle()
+  ActiveScreen(
+    state = state,
+    onSelectStream = vm::selectStream,
+    onFinish = vm::requestFinish,
+    onConfirmFinish = vm::confirmFinish,
+    onDismissFinish = vm::dismissFinish,
+  )
 }
 
 @Composable

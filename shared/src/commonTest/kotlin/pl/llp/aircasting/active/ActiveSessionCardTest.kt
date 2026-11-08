@@ -63,7 +63,7 @@ class ActiveSessionCardTest {
   }
 
   @Test
-  fun `streams follow the design order - PMs first, then temperature and humidity`() {
+  fun `streams follow the design order - PMs first then temperature and humidity`() {
     // StreamCatalog (and legacy) list F and RH first; Figma 461:2780 puts them last.
     val ab3 = listOf("AirBeam3-F", "AirBeam3-RH", "AirBeam3-PM1", "AirBeam3-PM2.5", "AirBeam3-PM10").map { reading(it) }
 

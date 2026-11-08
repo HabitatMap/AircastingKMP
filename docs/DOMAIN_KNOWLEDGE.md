@@ -158,6 +158,113 @@ Orchestration classes (all **CHANGE-LIKELY** at the EventBus edges, logic **KEEP
 | Location | live GPS per measurement | fixed lat/lng once |
 | `followedAt` | not set | set (auto-followed) |
 
+### Starting a fixed session — per-device rules (legacy, researched 2026-10-26)
+
+Paths below are under legacy `app/src/main/java/pl/llp/aircasting/`.
+
+**Wizard order.** Details → *Choose location* (**outdoor only**) → Confirm. Indoor skips the map.
+(`NewSessionController.onSessionDetailsContinueClicked`)
+- Indoor is the default placement.
+- Indoor sends the placeholder `(200, 200)` plus `time_zone`.
+- Outdoor uses the map's camera target. The map starts at the current location, or New York
+  `(40.7128, -74.0060)` when there is none, at zoom 13, with Places autocomplete.
+  (`SessionBuilder`, `Session.Location`, `ChooseLocationViewMvcImpl`)
+- In the rewrite (2026-10-29), choosing Outdoor drops the pin on the phone's latest fix, or on
+  New York without one (`NewSessionViewModel.setIndoor`). A pin already moved is kept.
+- The pin is drawn at the map's centre. Each time the camera settles, the pin becomes the
+  camera target the map SDK reports (`MapViewport.centre`), which is what legacy read on Continue.
+- The map opens at zoom 10, not 13, because it reuses the shared `ExploreMap`.
+
+**Streaming method.** (`FixedSessionDetailsViewMvcImpl:68-97`)
+- AirBeam2 and AirBeam3 get a WiFi/Cellular toggle, with WiFi as the default.
+- Any Mini (V1 or V2) gets WiFi only, and the toggle is hidden.
+
+**Wi-Fi credentials.** (`FixedSessionDetailsViewMvcImpl:265-276`, `FixedSessionDetailsController`, `Network.kt`)
+- Both SSID and password are required, so open networks are rejected.
+- The SSID only came from a scan list. There was no manual entry.
+  - *Rewrite (2026-11-06):* Android keeps this. The SSID comes only from the scan list, which
+    rescans every 30 s (the 4-per-2-min throttle).
+  - A network stays listed for as long as the Details screen is open. Rows keep their place,
+    and new networks join at the end.
+  - Hidden networks can't be picked, as in legacy.
+  - iOS can't scan, so it keeps a typed field and also offers the current network.
+- The scan keeps 2.4 GHz networks only (`frequency` in whole GHz ≤ 2) and drops empty SSIDs.
+- Legacy dedupe was broken: `distinct()` on a non-data class. Dedupe by SSID in the rewrite.
+- *Rewrite:* iOS cannot list nearby networks (no public API). Only the current SSID can be
+  read (`NEHotspotNetwork.fetchCurrent`), so manual SSID entry is required there.
+
+**Interval.**
+- Legacy fixed sessions always sent 60 s: `FIXED_SESSION_DEFAULT_INTERVAL_SECONDS`, with no UI.
+- Only Mini V2 actually uses the value. It goes into bytes [17..18] of the 134-byte `0x13`
+  config (`AirBeamMiniV2Configurator:862-885`).
+- AB2, AB3 and Mini V1 ignore it.
+- *Rewrite decision (2026-10-26):* fixed sessions have **no interval picker**. Every fixed
+  session uses a hard-coded 60 s.
+
+**Tags.**
+- Legacy: a plain text field split on spaces, with no suggestions.
+- *Rewrite:* tags are chips (Figma 321-14808).
+- A tag can't contain a space. `tag_list` is space-separated (legacy `TAGS_SEPARATOR = " "`
+  in `Session.kt`), so a "multi word" tag would come back from the backend as several tags.
+  In the chip field, typing a space or a comma ends the current tag and turns it into a chip
+  (`NewSessionViewModel.editTagDraft`). The word still being typed counts as a tag, so Next
+  never drops it.
+- `POST /api/v3/fixed_sessions` has **no `tag_list`**, so tags must be set with a
+  `PATCH /api/v3/fixed_sessions/{uuid}` after the create.
+
+**Backend create happens before BLE config.** (`RecordingHandler:66-76`, `FixedSessionUploader`)
+- **Mini V2:** `POST /api/v3/fixed_sessions`, flat body. `time_zone` is the phone's default
+  TZ. `contribute` is always `true`. Device: `model "AirBeamMini"`, with `mac_address` set to
+  the device-name id. Streams: `AirBeamMini-PM1` and `AirBeamMini-PM2.5`, both in `µg/m³`.
+  - The 32-hex `session_token` becomes 16 bytes in the config.
+  - The `sensor_type_id`s become the pm1/pm2.5 indices. The fallbacks are 0 and 1.
+  - *Rewrite (2026-11-04, seen on hardware):* the live v3 backend answers with the names we sent
+    (`AirBeamMini-PM1` → 1, `AirBeamMini-PM2.5` → 2), as legacy expects. API_V3.md documents
+    canonical names (`AirBeam-PM1`, `AirBeam-PM2.5`) instead.
+  - `FixedSessionStarter` therefore tries the Mini names first, then the canonical ones.
+  - There is still **no 0/1 fallback**: built-in ids are 1–99, so 0/1 would label the device's
+    frames as the wrong sensor. A missing id fails the start before the device is touched.
+  - Legacy sends `DiscardSession 0x11` and waits for `Ready` before the fixed `0x13`
+    (`AirBeamMiniV2Configurator.configure`). This wipes any unsynced session on the device. That
+    is accepted, because the rewrite skips the "sync first" dialog (decision 2026-10-26).
+- **AB2, AB3, Mini V1:** deprecated `POST /api/realtime/sessions.json` (basic auth, gzipped
+  `SessionParams`, includes `tag_list`). The device gets the *user* auth token, not a session
+  token.
+- *Rewrite decision (2026-10-26):* **every device creates its fixed session with
+  `POST /api/v3/fixed_sessions`**. The deprecated realtime endpoint is not used.
+- *V1 devices in the rewrite (2026-11-06):*
+  - **Token.** v3 takes any `model` and any known AirBeam `sensor_name`, so AB2, AB3 and Mini V1
+    register with their own `streamsFor` names. The device still gets the **user** token (legacy
+    `SyncableAirBeamConfigurator.authRequest` → `mSettings.getAuthToken()`), not the
+    `session_token`. V1 firmware uploads to `/api/realtime/measurements` with basic auth as the
+    user.
+  - **Unverified.** Those uploads should land in the v3-created session, because the realtime
+    endpoint wants "an existing fixed session owned by the authenticated user". This needs a
+    hardware check.
+  - **PM ids.** V1 frames name their sensor, so V1 needs no `sensor_type_id`s.
+  - **Zone offset.** The Wi-Fi config's zone offset is legacy `TimezoneHelper.getTimezoneOffsetInHours`:
+    `rawOffset`, i.e. the standard offset **without DST**, in whole hours, truncated toward zero.
+    kotlinx-datetime has no `rawOffset`, so the rewrite takes the smaller of the offsets on
+    1 January and 1 July (`TimeZone.standardOffsetHours`).
+  - **Cellular** goes to AB2 and AB3 only. Any other device is refused before anything is registered.
+
+**Cellular** (*rewrite decision, 2026-10-26*): offered for AB2 and AB3 only. Mini V1 and
+Mini V2 are Wi-Fi only.
+
+**What counts as a successful start.**
+- **Mini V2** (`AirBeamMiniV2Configurator:423-465,765-838`):
+  - Legacy first sends `DiscardSession 0x11` and waits for `Ready`, then sends `0x13`.
+  - `Ack 0x20` → keep waiting.
+  - `Nack 0x05` → invalid Wi-Fi credentials.
+  - `Nack 0x02` → first measurement POST failed.
+  - **First `Ready 0x22` = the first measurement reached the backend = success.**
+  - Later `Ready`s are per-measurement heartbeats and must be ignored.
+  - Legacy waited forever. *Rewrite decision (2026-10-26):* if no first `Ready` arrives
+    within **30 s**, the start has failed.
+  - On success: drop BLE and return Home.
+- **AB2, AB3, Mini V1:** fire-and-forget writes with no acks. Success means the writes went
+  out.
+
 ---
 
 ## 3. Measurement Data Flow

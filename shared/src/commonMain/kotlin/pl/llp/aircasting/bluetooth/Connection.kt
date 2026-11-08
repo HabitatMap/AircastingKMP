@@ -72,6 +72,8 @@ sealed interface ConfigResult {
   data object WifiPassFailure: ConfigResult
   data object BadConfigFailure: ConfigResult
   data object NotSyncedFailure: ConfigResult
+  /** Mini V2 fixed: the device never confirmed its first measurement POST (Nack 0x02 or no Ready in time). */
+  data object FirstMeasurementFailure: ConfigResult
   /** Nothing to configure: no ready link at the time of the call. */
   data object NotConnected: ConfigResult
 }

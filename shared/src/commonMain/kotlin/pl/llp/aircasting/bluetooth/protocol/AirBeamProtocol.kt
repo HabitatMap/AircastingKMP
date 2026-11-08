@@ -425,31 +425,28 @@ private fun ByteArray.toLittleEndianUInt(offset: Int): Long =
 private fun ByteArray.toLittleEndianUShort(offset: Int): Int =
   (this[offset].toInt() and 0xFF) or ((this[offset + 1].toInt() and 0xFF) shl 8)
 
+/**
+ * Firmware decodes with `Uuid::from_slice_le` (mixed-endian): the first three groups
+ * (4 + 2 + 2 bytes) are byte-reversed, the last 8 bytes stay as written.
+ * Legacy: AirBeamMiniV2Configurator.uuidToLeBytes.
+ */
 private fun uuidStringTo16BytesLittleEndian(uuidStr: String): ByteArray {
   val hex = uuidStr.replace("-", "")
   require(hex.length == 32) { "Invalid UUID string length: $uuidStr" }
-  val bytes = ByteArray(16) { i ->
-    hex.substring(i * 2, i * 2 + 2).toInt(16).toByte()
-  }
-  bytes.reverse()
-  return bytes
+  val b = ByteArray(16) { i -> hex.substring(i * 2, i * 2 + 2).toInt(16).toByte() }
+  return byteArrayOf(b[3], b[2], b[1], b[0], b[5], b[4], b[7], b[6]) + b.copyOfRange(8, 16)
 }
 
 private fun Uuid.to16BytesLittleEndian(): ByteArray =
   uuidStringTo16BytesLittleEndian(this.toString())
 
+/**
+ * session_token is a u128 the backend prints as hex (not zero-padded); the firmware reads it
+ * with u128::from_le_bytes, so write it least-significant byte first.
+ */
 private fun parseAuthTokenTo16Bytes(tokenHex: String): ByteArray {
-  val hex = tokenHex.replace("-", "")
-  if (hex.length == 32) {
-    return ByteArray(16) { i ->
-      hex.substring(i * 2, i * 2 + 2).toInt(16).toByte()
-    }
-  }
-  val bytes = tokenHex.encodeToByteArray()
-  val result = ByteArray(16)
-  val len = minOf(bytes.size, 16)
-  bytes.copyInto(result, destinationOffset = 0, startIndex = 0, endIndex = len)
-  return result
+  require(tokenHex.length == 32) { "session_token must be 32 hex digits, was ${tokenHex.length}" }
+  return tokenHex.chunked(2).map { it.toInt(16).toByte() }.toByteArray().reversedArray()
 }
 
 private fun Double.toAirbeamPayload(): String {

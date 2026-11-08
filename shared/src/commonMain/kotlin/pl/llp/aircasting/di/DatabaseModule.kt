@@ -1,6 +1,8 @@
 package pl.llp.aircasting.di
 
 import org.koin.dsl.module
+import pl.llp.aircasting.active.ActiveSessionsRepository
+import pl.llp.aircasting.data.local.LocalActiveSessionsRepository
 import pl.llp.aircasting.data.local.LocalMeasurementRepository
 import pl.llp.aircasting.data.local.LocalMeasurementStreamRepository
 import pl.llp.aircasting.data.local.LocalSessionRepository
@@ -24,6 +26,7 @@ val databaseModule = module {
 
   single<ThresholdsRepository> { LocalThresholdsRepository(get()) }
   single<SessionRepository> { LocalSessionRepository(get()) }
+  single<ActiveSessionsRepository> { LocalActiveSessionsRepository(get()) }
   single<MeasurementStreamRepository> { LocalMeasurementStreamRepository(get()) }
   single<MeasurementRepository> { LocalMeasurementRepository(get(), get()) }
   single<UploadOutbox> { LocalUploadOutbox(get()) }

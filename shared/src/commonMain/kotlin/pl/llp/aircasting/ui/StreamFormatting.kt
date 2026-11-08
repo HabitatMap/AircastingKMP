@@ -1,4 +1,4 @@
-package pl.llp.aircasting.explore
+package pl.llp.aircasting.ui
 
 /** Chip text from a stream's sensor name: `AirBeam-PM2.5` → `PM 2.5` (design), `Government-NO2` → `NO2`. */
 internal fun streamChipLabel(sensorName: String): String =

@@ -105,13 +105,24 @@ class RecordingEngine(
     return result
   }
 
-  /** Ends the session; the upload loop drains it and calls `/finish`. */
-  suspend fun stop() = writes.withLock {
-    val session = active.getAndUpdate { null } ?: return@withLock
-    link.disconnect()
-    sessions.finish(session.uuid, clock.now())
-    host.stop()
+  /** Ends the session on the link; the upload loop drains it and calls `/finish`. */
+  suspend fun stop() {
+    finish(active.value?.uuid ?: return)
   }
+
+  /**
+   * Ends [uuid]. If it's the session on the link, the link goes too; a standalone session
+   * (the AirBeam left recording on its own) is only closed — whatever is recording now carries on.
+   */
+  suspend fun finish(uuid: String): Unit = writes.withLock {
+    if (active.value?.uuid == uuid) {
+      active.value = null
+      link.disconnect()
+      host.stop()
+    }
+    sessions.finish(uuid, clock.now())
+  }
+
   /** Drops the link but not the session: the AirBeam keeps recording on its own. */
   suspend fun goStandalone() = writes.withLock {
     val session = active.getAndUpdate { null } ?: return@withLock

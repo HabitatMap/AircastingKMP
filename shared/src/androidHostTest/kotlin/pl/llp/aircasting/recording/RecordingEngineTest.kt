@@ -179,6 +179,43 @@ class RecordingEngineTest {
     assertEquals(1, link.disconnects)
     assertFalse(host.running)
   }
+
+  @Test
+  fun finishing_the_session_on_the_link_stops_it() = runTest {
+    engine.start(miniV2, details)
+    val uuid = link.configured.single().uuid.toString()
+    time += 5.minutes
+
+    engine.finish(uuid)
+
+    val finished = sessions.find(uuid)!!
+    assertEquals(SessionStatus.FINISHED, finished.status)
+    assertEquals(time, finished.endTime)
+    assertEquals(1, link.disconnects)
+    assertFalse(host.running)
+    assertFalse(engine.recording.first())
+  }
+
+  /** Active tab "Finish and discard": the AirBeam went standalone, so there's no link to drop. */
+  @Test
+  fun finishing_a_standalone_session_leaves_the_one_recording_alone() = runTest {
+    engine.start(miniV2, details)
+    val standalone = link.configured.single().uuid.toString()
+    engine.goStandalone()
+    engine.start(miniV2, details)
+    val recording = link.configured.last().uuid.toString()
+    time += 5.minutes
+
+    engine.finish(standalone)
+
+    assertEquals(SessionStatus.FINISHED, sessions.find(standalone)!!.status)
+    assertEquals(time, sessions.find(standalone)!!.endTime)
+    assertEquals(SessionStatus.RECORDING, sessions.find(recording)!!.status)
+    assertEquals(1, link.disconnects) // the goStandalone one only
+    assertTrue(host.running)
+    assertTrue(engine.recording.first())
+  }
+
   /** The AirBeam keeps recording on its own; the session stays open for a later sync. */
   @Test
   fun standalone_disconnects_but_keeps_the_session_open() = runTest {

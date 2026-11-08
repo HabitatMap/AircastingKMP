@@ -1,0 +1,7 @@
+<!-- Material Symbols "bluetooth_disabled", exported from Figma 1116:18398 (Active card "Connection lost" badge). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="12dp" android:height="12dp"
+    android:viewportWidth="12" android:viewportHeight="12">
+    <path android:fillColor="#000000"
+        android:pathData="M9.9 11.3001L7.8 9.20012L6 11.0001H5.5V7.20012L3.2 9.50012L2.5 8.80012L4.95 6.35012L0.700001 2.10012L1.4 1.40012L10.6 10.6001L9.9 11.3001ZM6.5 9.07512L7.075 8.50012L6.5 7.92512V9.07512ZM7.05 5.65012L6.35 4.95012L7.45 3.85012L6.5 2.92512V5.10012L5.5 4.10012V1.00012H6L8.85 3.85012L7.05 5.65012Z"/>
+</vector>

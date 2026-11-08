@@ -1,9 +1,9 @@
-package pl.llp.aircasting.explore
+package pl.llp.aircasting.ui
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class StationDetailsFormattingTest {
+class StreamFormattingTest {
 
   @Test
   fun pm_chip_labels_get_a_space_before_the_size() {

@@ -1,6 +1,5 @@
 package pl.llp.aircasting.explore
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,12 +9,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -25,9 +21,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.Dp
@@ -40,10 +33,13 @@ import pl.llp.aircasting.i18n.LocalStrings
 import pl.llp.aircasting.i18n.Strings
 import pl.llp.aircasting.settings.SettingsScaffold
 import pl.llp.aircasting.ui.ageLabel
+import pl.llp.aircasting.ui.deviceDisplayName
+import pl.llp.aircasting.ui.streamChipLabel
 import pl.llp.aircasting.ui.components.DotSeparatedRow
 import pl.llp.aircasting.ui.components.ErrorState
 import pl.llp.aircasting.ui.components.LevelBadge
 import pl.llp.aircasting.ui.components.LevelDot
+import pl.llp.aircasting.ui.components.StreamChip
 import pl.llp.aircasting.ui.components.TintedTag
 import kotlin.time.Clock
 
@@ -145,24 +141,6 @@ private fun Modifier.bleed(padding: Dp): Modifier = layout { measurable, constra
 private fun DataSource.tag(strings: Strings): String = when (this) {
   DataSource.AirBeam -> strings.exploreSourceAirBeam.uppercase() // "AIRBEAM FIXED"
   DataSource.Government -> strings.govMonitor
-}
-
-/**
- * Figma stream "Tag": 28dp pill, 1dp border, brand-accent border + tint when selected.
- * Not SelectableChip — that's the 44dp, 10dp-corner option tile.
- */
-@Composable
-private fun StreamChip(label: String, selected: Boolean, onClick: () -> Unit) {
-  val colors = MaterialTheme.colorScheme
-  Surface(
-    modifier = Modifier.clip(CircleShape).selectable(selected = selected, role = Role.RadioButton, onClick = onClick),
-    shape = CircleShape,
-    color = if (selected) colors.primaryContainer.copy(alpha = 0.08f) else Color.Transparent,
-    contentColor = if (selected) colors.onPrimaryContainer else colors.onSurfaceVariant,
-    border = BorderStroke(1.dp, if (selected) colors.primaryContainer else colors.outlineVariant),
-  ) {
-    Text(label, Modifier.padding(start = 12.dp, end = 10.dp, top = 6.dp, bottom = 6.dp), style = MaterialTheme.typography.labelSmall)
-  }
 }
 
 @Composable

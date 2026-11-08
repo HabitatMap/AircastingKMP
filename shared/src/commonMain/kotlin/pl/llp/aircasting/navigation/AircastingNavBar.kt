@@ -3,14 +3,13 @@ package pl.llp.aircasting.navigation
 import aircasting.shared.generated.resources.Res
 import aircasting.shared.generated.resources.ic_add_circle
 import aircasting.shared.generated.resources.ic_add_circle_filled
-import aircasting.shared.generated.resources.ic_favorite
-import aircasting.shared.generated.resources.ic_favorite_filled
 import aircasting.shared.generated.resources.ic_folder
 import aircasting.shared.generated.resources.ic_folder_filled
 import aircasting.shared.generated.resources.ic_home
 import aircasting.shared.generated.resources.ic_home_filled
 import aircasting.shared.generated.resources.ic_map
 import aircasting.shared.generated.resources.ic_map_filled
+import aircasting.shared.generated.resources.ic_sensors
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -58,6 +57,6 @@ private fun AppTab.icon(selected: Boolean): DrawableResource = when (this) {
   AppTab.Home -> if (selected) Res.drawable.ic_home_filled else Res.drawable.ic_home
   AppTab.Explore -> if (selected) Res.drawable.ic_map_filled else Res.drawable.ic_map
   AppTab.Record -> if (selected) Res.drawable.ic_add_circle_filled else Res.drawable.ic_add_circle
-  AppTab.Favorites -> if (selected) Res.drawable.ic_favorite_filled else Res.drawable.ic_favorite
+  AppTab.Active -> Res.drawable.ic_sensors // Material Symbols has no filled "sensors"
   AppTab.MyData -> if (selected) Res.drawable.ic_folder_filled else Res.drawable.ic_folder
 }

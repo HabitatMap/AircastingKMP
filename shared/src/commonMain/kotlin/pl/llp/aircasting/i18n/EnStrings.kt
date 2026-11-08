@@ -286,7 +286,7 @@ object EnStrings : Strings {
   override val tabHome = "Home"
   override val tabExplore = "Explore"
   override val tabRecord = "Record"
-  override val tabFavorites = "Favorites"
+  override val tabActive = "Active"
   override val tabMyData = "My data"
 
   override val exploreSearchHint = "Search by name or location"
@@ -356,6 +356,24 @@ object EnStrings : Strings {
   override val wifiNearbyHeader = "Nearby networks"
   override val wifiPermissionHint = "AirCasting needs location access to list the Wi-Fi networks around you."
   override val wifiSearching = "Looking for 2.4 GHz networks\u2026"
+  override val activeMobileSessions = "Mobile sessions"
+  override val activeEmpty = "No active sessions. Start one from Record."
+  override val activeTagAirBeamMobile = "AIRBEAM MOBILE"
+  override val activeConnectionLost = "Connection lost"
+  override val activeFinishRecording = "Finish recording"
+  override val activeSeeDetails = "See details"
+  override val activeFinishAndSync = "Finish & sync now"
+  override val activeFinishAndDiscard = "Finish and discard this data"
+  override val activeNoDataTitle = "No data yet"
+  override val activeNoDataBody = "We're gathering data from your AirBeam."
+  override val activeLookingTitle = "Looking for your AirBeam\u2026"
+  override val activeLookingBody = "Your AirBeam is still recording and saving data to its own memory. Reconnect to see your measurements here, or wait. It'll sync automatically once it's back in range."
+  override fun activeFinishTitle(sessionName: String) = "Finish recording $sessionName?"
+  override val activeFinishBody = "This will stop the session and move it to Past Sessions in My Data."
+  override val activeKeepRecording = "Keep recording"
+  override val activeFinishSession = "Finish session"
+  override val streamTemperature = "Temp."
+  override val streamHumidity = "Hum."
 }
 
 /** Every available locale, keyed by BCP-47 tag. Lyricist selects one by the system locale at runtime. */

@@ -13,6 +13,7 @@ import org.koin.core.module.dsl.viewModel
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.KoinAppDeclaration
 import org.koin.dsl.module
+import pl.llp.aircasting.active.ActiveViewModel
 import pl.llp.aircasting.auth.AuthRepository
 import pl.llp.aircasting.auth.AuthViewModel
 import pl.llp.aircasting.auth.ForgotPasswordViewModel
@@ -98,6 +99,7 @@ val recordModule = module {
       register = get<FixedSessionRegistrar>()::register,
     )
   }
+  viewModel { ActiveViewModel(get(), get(), finish = get<RecordingEngine>()::finish) }
   viewModelOf(::NewSessionViewModel)
   viewModelOf(::PinPickerViewModel)
   viewModelOf(::RecordingViewModel)

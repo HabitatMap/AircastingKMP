@@ -273,7 +273,7 @@ interface Strings {
   val tabHome: String
   val tabExplore: String
   val tabRecord: String
-  val tabFavorites: String
+  val tabActive: String
   val tabMyData: String
 
   // Error state
@@ -370,4 +370,24 @@ interface Strings {
   val wifiNearbyHeader: String
   val wifiPermissionHint: String
   val wifiSearching: String
+
+  // Active tab
+  val activeMobileSessions: String
+  val activeEmpty: String
+  val activeTagAirBeamMobile: String
+  val activeConnectionLost: String
+  val activeFinishRecording: String
+  val activeSeeDetails: String
+  val activeFinishAndSync: String
+  val activeFinishAndDiscard: String
+  val activeNoDataTitle: String
+  val activeNoDataBody: String
+  val activeLookingTitle: String
+  val activeLookingBody: String
+  fun activeFinishTitle(sessionName: String): String
+  val activeFinishBody: String
+  val activeKeepRecording: String
+  val activeFinishSession: String
+  val streamTemperature: String
+  val streamHumidity: String
 }

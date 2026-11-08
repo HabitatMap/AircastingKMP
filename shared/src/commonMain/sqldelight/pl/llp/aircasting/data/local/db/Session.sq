@@ -67,3 +67,19 @@ FROM sessions
 WHERE type = 'MOBILE'
   AND end_time IS NOT NULL
   AND is_finished_on_server = 0;
+
+selectActiveMobile:
+SELECT *
+FROM sessions
+WHERE type = 'MOBILE' AND end_time IS NULL
+ORDER BY start_time DESC;
+
+selectActiveMobileLatestReadings:
+SELECT st.session_uuid, st.sensor_name, st.unit_symbol, m.value, m.time
+FROM measurement_streams st
+JOIN sessions se ON se.uuid = st.session_uuid
+LEFT JOIN measurements m
+  ON m.stream_id = st.id
+ AND m.time = (SELECT MAX(time) FROM measurements WHERE stream_id = st.id)
+WHERE se.type = 'MOBILE' AND se.end_time IS NULL
+ORDER BY st.id;

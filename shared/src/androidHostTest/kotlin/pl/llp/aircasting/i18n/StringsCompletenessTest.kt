@@ -46,6 +46,9 @@ class StringsCompletenessTest {
     "newSessionDeviceAirBeamHeader",
     "exploreFilterSource",
     "exploreOzone",
+    "activeTagAirBeamMobile",
+    "streamTemperature",
+    "streamHumidity",
   ) + onboardingPlaceholders
 
   /**

@@ -273,7 +273,7 @@ interface Strings {
   val tabHome: String
   val tabExplore: String
   val tabRecord: String
-  val tabFavorites: String
+  val tabActive: String
   val tabMyData: String
 
   // Error state

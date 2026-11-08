@@ -286,7 +286,7 @@ object EnStrings : Strings {
   override val tabHome = "Home"
   override val tabExplore = "Explore"
   override val tabRecord = "Record"
-  override val tabFavorites = "Favorites"
+  override val tabActive = "Active"
   override val tabMyData = "My data"
 
   override val exploreSearchHint = "Search by name or location"

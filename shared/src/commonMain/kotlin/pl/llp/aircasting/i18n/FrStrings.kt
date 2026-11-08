@@ -314,7 +314,7 @@ object FrStrings : Strings {
   override val tabHome = "Accueil"
   override val tabExplore = "Explorer"
   override val tabRecord = "Enregistrer"
-  override val tabFavorites = "Favoris"
+  override val tabActive = "Actives"
   override val tabMyData = "Mes données"
   override val exploreSearchHint = "Rechercher par nom ou lieu"
   override val exploreFilters = "Filtres"

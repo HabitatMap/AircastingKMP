@@ -9,10 +9,10 @@ class AppTabTest {
 
   @Test
   fun `tabs are in design order`() {
-    // Figma 131:10841 — Home, Explore, Record, Favorites, My data (left → right).
+    // Figma 131:10841 — Home, Explore, Record, Active, My data (left → right); Active replaced Favorites (Figma 461:2780).
     // Enum order IS the bar order on both platforms, so it is a design contract worth pinning.
     assertEquals(
-      listOf(AppTab.Home, AppTab.Explore, AppTab.Record, AppTab.Favorites, AppTab.MyData),
+      listOf(AppTab.Home, AppTab.Explore, AppTab.Record, AppTab.Active, AppTab.MyData),
       AppTab.entries,
     )
   }

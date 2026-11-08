@@ -76,7 +76,7 @@ class LocalSessionRepository(
     queries.selectAwaitingFinish().asFlow().mapToList(ioDispatcher)
 }
 
-private fun Sessions.toDomain() = Session(
+internal fun Sessions.toDomain() = Session(
   uuid = uuid,
   type = type,
   status = status,

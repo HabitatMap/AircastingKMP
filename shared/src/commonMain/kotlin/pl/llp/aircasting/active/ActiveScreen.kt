@@ -71,37 +71,44 @@ fun ActiveScreen(
   onFinish: (uuid: String) -> Unit,
   onConfirmFinish: () -> Unit,
   onDismissFinish: () -> Unit,
+  onStartMobileSession: () -> Unit,
 ) {
   val strings = LocalStrings.current
-  if (state.mobile.isEmpty()) {
-    // Not designed yet: a plain line instead of a blank tab.
-    Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
-      Text(strings.activeEmpty, style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
-    }
-    return
-  }
-
   val clock = koinInject<Clock>()
   // Re-read on every state: a recording session re-emits each second, so "x min ago" stays fresh.
   val now = remember(state) { clock.now() }
   var mobileExpanded by rememberSaveable { mutableStateOf(true) }
-
   LazyColumn(
     Modifier.fillMaxSize(),
     contentPadding = PaddingValues(horizontal = 24.dp, vertical = 48.dp),
     verticalArrangement = Arrangement.spacedBy(8.dp),
   ) {
     item {
-      SectionHeader(strings.activeMobileSessions, state.mobile.size, mobileExpanded) { mobileExpanded = !mobileExpanded }
+      SectionHeader(
+        strings.activeMobileSessions,
+        state.mobile.size,
+        mobileExpanded
+      ) { mobileExpanded = !mobileExpanded }
     }
     if (mobileExpanded) {
-      items(state.mobile, key = { it.uuid }) { card ->
-        MobileSessionCard(
-          card,
-          now,
-          onSelectStream = { onSelectStream(card.uuid, it) },
-          onFinish = { onFinish(card.uuid) },
-        )
+      if (state.mobile.isEmpty()) {
+        item(key = "mobile-empty") {
+          EmptySectionCard(
+            strings.activeNoMobileTitle,
+            strings.activeNoMobileBody,
+            strings.activeStartMobile,
+            onStartMobileSession
+          )
+        }
+      } else {
+        items(state.mobile, key = { it.uuid }) { card ->
+          MobileSessionCard(
+            card,
+            now,
+            onSelectStream = { onSelectStream(card.uuid, it) },
+            onFinish = { onFinish(card.uuid) },
+          )
+        }
       }
     }
   }
@@ -120,13 +127,17 @@ private fun SectionHeader(title: String, count: Int, expanded: Boolean, onToggle
   ) {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
       Text(title, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+      val empty = count == 0
       Text(
         count.toString(),
         Modifier.clip(CircleShape)
-          .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.08f))
+          .background(
+            if (empty) MaterialTheme.colorScheme.surfaceContainerHigh
+            else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.08f),
+          )
           .padding(horizontal = 8.dp, vertical = 2.dp),
         style = MaterialTheme.typography.labelLargeEmphasized,
-        color = MaterialTheme.colorScheme.onPrimaryContainer,
+        color = if (empty) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onPrimaryContainer,
       )
     }
     Icon(
@@ -281,6 +292,24 @@ private fun Waiting(title: String, body: String, spinner: Dp) {
       Text(title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground, textAlign = TextAlign.Center)
       Text(body, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
     }
+  }
+}
+
+@Composable
+private fun EmptySectionCard(title: String, body: String, action: String, onAction: () -> Unit) {
+  val colors = MaterialTheme.colorScheme
+  Column(
+    Modifier.fillMaxWidth()
+      .clip(RoundedCornerShape(16.dp))
+      .background(colors.surfaceContainerLowest)
+      .padding(horizontal = 24.dp, vertical = 16.dp),
+    verticalArrangement = Arrangement.spacedBy(16.dp),
+  ) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+      Text(title, style = MaterialTheme.typography.titleMedium, color = colors.onBackground)
+      Text(body, style = MaterialTheme.typography.bodySmall, color = colors.onSurface)
+    }
+    CardButton(action, onAction, colors.primary, colors.onSurface, Modifier.fillMaxWidth())
   }
 }
 

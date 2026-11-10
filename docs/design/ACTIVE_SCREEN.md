@@ -14,6 +14,8 @@
 | Card — "No data yet" | `1009:28154` | https://www.figma.com/design/8AQfUtkIu9qgd4CAVNPbXB/Air-Casting-app-re-design?node-id=1009-28154 |
 | Finish confirmation dialog | `1136:18936` | https://www.figma.com/design/8AQfUtkIu9qgd4CAVNPbXB/Air-Casting-app-re-design?node-id=1136-18936 |
 | Tab icon `sensors` | `1001:26037` | committed as `composeResources/drawable/ic_sensors.xml` |
+| Empty tab (all three sections empty) | `1137:27447` | https://www.figma.com/design/8AQfUtkIu9qgd4CAVNPbXB/Air-Casting-app-re-design?node-id=1137-27447 |
+
 
 ## What the tab shows
 
@@ -63,9 +65,14 @@ and does nothing until sync exists.
 - **Level / colour** — the selected stream's latest value through `Thresholds.forSensor()`
   (aliases resolve `AirBeamMini-PM2.5` → `AirBeam-PM2.5`).
 
+## Empty state
+
+Each section keeps its header (count `0`, grey `surfaceContainerHigh` badge) and shows one card:
+title, one line, outlined **Start … session** button. Mobile's button opens the new-session flow
+(`NewSessionRoute`) at the method step. Fixed / Phone Microphone empty cards wait with their sections.
+
 ## Open (parked) questions
 
 - Fixed: when is a session "Offline"? Network-only vs local cache?
 - Fixed "Reconnect": hidden, disabled or no-op?
-- Empty tab design.
 - Process death leaves a `RECORDING` row with nothing feeding it — check legacy handling.

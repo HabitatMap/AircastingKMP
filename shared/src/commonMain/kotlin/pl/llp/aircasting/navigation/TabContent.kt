@@ -38,13 +38,13 @@ fun TabContent(
       onRecoverData = { /* TODO: recover & sync flow */ },
     )
     AppTab.Explore -> ExploreRoute(onOpenStation)
-    AppTab.Active -> ActiveRoute()
+    AppTab.Active -> ActiveRoute(onStartNewSession)
     else -> Placeholder(LocalStrings.current.label(tab))
   }
 }
 
 @Composable
-private fun ActiveRoute() {
+private fun ActiveRoute(onStartNewSession: () -> Unit) {
   val vm = koinViewModel<ActiveViewModel>()
   val state by vm.state.collectAsStateWithLifecycle()
   ActiveScreen(
@@ -53,6 +53,7 @@ private fun ActiveRoute() {
     onFinish = vm::requestFinish,
     onConfirmFinish = vm::confirmFinish,
     onDismissFinish = vm::dismissFinish,
+    onStartMobileSession = onStartNewSession,
   )
 }
 

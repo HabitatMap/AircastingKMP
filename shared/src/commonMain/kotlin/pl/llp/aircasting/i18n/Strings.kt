@@ -373,7 +373,9 @@ interface Strings {
 
   // Active tab
   val activeMobileSessions: String
-  val activeEmpty: String
+  val activeNoMobileTitle: String
+  val activeNoMobileBody: String
+  val activeStartMobile: String
   val activeTagAirBeamMobile: String
   val activeConnectionLost: String
   val activeFinishRecording: String

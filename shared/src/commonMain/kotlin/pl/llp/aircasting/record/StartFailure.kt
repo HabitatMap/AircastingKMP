@@ -13,5 +13,6 @@ fun Strings.startFailure(state: StartState): String? = when (state) {
     ConfigResult.NotConnected -> startFailedNotConnected
     else -> startFailedGeneric
   }
+  StartState.MicBusy -> startFailedMicBusy
   StartState.Idle, StartState.Started, is StartState.Preparing -> null
 }

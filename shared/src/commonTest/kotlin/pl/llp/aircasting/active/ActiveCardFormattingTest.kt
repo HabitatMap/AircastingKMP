@@ -38,6 +38,11 @@ class ActiveCardFormattingTest {
     assertEquals(listOf("AirBeam Mini"), card(lastSeen = null).meta(now, EnStrings))
   }
 
+  @Test
+  fun the_phone_microphone_chip_reads_as_its_unit() {
+    assertEquals("dB", chipLabel("Phone Microphone", EnStrings))
+  }
+
   private fun card(lastSeen: Instant?) = ActiveSessionCard(
     uuid = "s1",
     name = "Living room",

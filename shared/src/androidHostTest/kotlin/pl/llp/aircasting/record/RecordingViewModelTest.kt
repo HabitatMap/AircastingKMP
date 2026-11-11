@@ -3,6 +3,7 @@ package pl.llp.aircasting.record
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -28,12 +29,14 @@ import pl.llp.aircasting.domain.GeoLocation
 
 import pl.llp.aircasting.recording.BackgroundSessionHost
 import pl.llp.aircasting.recording.FixedSessionStarter
+import pl.llp.aircasting.recording.MicrophoneRecorder
 import pl.llp.aircasting.recording.NewFixedSession
 import pl.llp.aircasting.recording.PhoneLocation
 import pl.llp.aircasting.recording.Placement
 import pl.llp.aircasting.recording.RecordingEngine
 import pl.llp.aircasting.recording.RegisteredFixedSession
 import pl.llp.aircasting.recording.WifiCredentials
+import pl.llp.aircasting.settings.mic.MicrophoneLevelSource
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -76,8 +79,6 @@ class RecordingViewModelTest {
     registered += session
     registration
   }
-  // Lazy: built after `setMain`, or `viewModelScope` binds to the real Main and never runs.
-  private val vm by lazy { RecordingViewModel(link, engine, location, fixedStarter) }
   private val miniV2 = DiscoveredAirBeam(DeviceId("AA:BB:CC:DD:EE:FF"), "AirBeamMini-1234", AirBeamDevice.Mini.V2)
   private val otherMini = DiscoveredAirBeam(DeviceId("11:22:33:44:55:66"), "AirBeamMini-9999", AirBeamDevice.Mini.V2)
   private val form = NewSessionForm(
@@ -86,6 +87,47 @@ class RecordingViewModelTest {
     committedTags = listOf("bike", "commute"),
     device = miniV2,
   )
+
+  private val mic = MicrophoneRecorder(
+    levels = object : MicrophoneLevelSource {
+      override fun levels() = emptyFlow<Double>()
+    },
+    calibrationOffset = { 100 },
+    sessions = sessions,
+    streams = LocalMeasurementStreamRepository(db.measurementStreamQueries, Dispatchers.Unconfined),
+    measurements = LocalMeasurementRepository(
+      db.measurementQueries,
+      db.pendingUploadQueries,
+      Dispatchers.Unconfined
+    ),
+    location = location,
+    host = NoHost,
+    clock = Clock.System,
+    timeZone = TimeZone.UTC,
+  )
+  private val vm by lazy { RecordingViewModel(link, engine, location, fixedStarter, mic) }
+  private val micForm = NewSessionForm(method = RecordingMethod.PhoneMicrophone, name = "Street noise")
+
+  @Test
+  fun start_records_a_phone_microphone_session_without_any_airbeam() = runTest {
+    vm.start(micForm)
+    runCurrent()
+
+    assertEquals(StartState.Started, vm.startState.value)
+    assertEquals(emptyList(), link.connects)
+    assertEquals("Builtin", sessions.observeAll().first().single().deviceId)
+  }
+
+  @Test
+  fun a_second_microphone_session_is_refused() = runTest {
+    vm.start(micForm)
+    runCurrent()
+    vm.start(micForm)
+    runCurrent()
+
+    assertEquals(StartState.MicBusy, vm.startState.value)
+  }
+
   @Test
   fun start_records_the_form_on_the_connected_airbeam() = runTest {
     link.state.value = LinkState.Connected(miniV2)
@@ -228,15 +270,15 @@ class RecordingViewModelTest {
     assertNotNull(sessions.find(link.configured.single().uuid.toString())?.endTime)
     assertTrue(!engine.recording.first())
   }
-  /** The engine records mobile AirBeam sessions only; the mic must not become one. */
+  /** The mic records through MicrophoneRecorder; it must never configure the AirBeam on the link. */
   @Test
-  fun other_methods_do_not_start_a_mobile_session() = runTest {
+  fun a_microphone_session_leaves_the_connected_airbeam_alone() = runTest {
     link.state.value = LinkState.Connected(miniV2)
 
     vm.start(form.copy(method = RecordingMethod.PhoneMicrophone))
     runCurrent()
 
-    assertEquals(StartState.Failed(ConfigResult.BadConfigFailure), vm.startState.value)
+    assertEquals(StartState.Started, vm.startState.value)
     assertEquals(emptyList(), link.configured)
   }
   private val fixedForm = form.copy(method = RecordingMethod.AirBeamFixed, wifi = WifiCredentials(

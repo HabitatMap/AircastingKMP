@@ -22,8 +22,11 @@
 Only the user's **own, running** sessions, in three collapsible sections with a count:
 **Mobile sessions**, **Fixed sessions**, **Phone Microphone**. Not favourites, not dormant.
 
-**Scope now: Mobile only.** Fixed (needs `GET /api/v3/fixed_sessions` — nothing stored locally
+**Scope now: Mobile and Phone Microphone.** Fixed (needs `GET /api/v3/fixed_sessions` — nothing stored locally
 for fixed, see `FixedSessionStarter`) and Phone Microphone (no mic recording yet) are parked.
+
+Phone Microphone — a MOBILE session with device_id = "Builtin" (legacy MicrophoneDeviceItem.DEFAULT_ID); ActiveViewModel splits these out of observeMobile(). Same card, tag PHONE MICROPHONE, one dB chip. Never DISCONNECTED. Empty card (Figma 1137:27447) opens the new-session flow.
+
 
 ## Card anatomy (all sections share it)
 

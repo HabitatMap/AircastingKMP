@@ -806,7 +806,9 @@ first offline launch). Server floats are rounded to the integer columns.
   EXIF rotate/compress. Model/repo/API **KEEP**; capture **PLATFORM**.
 - **Microphone dB sensor:** phone mic as a sensor — 44.1kHz PCM → dB via `SignalPower` +
   `CalibrationHelper`, emits `NewMeasurementEvent` 1/s, thresholds 20/60/70/80/100. Math
-  **KEEP**; `AudioRecord`/foreground service **PLATFORM** (iOS AVAudioEngine).
+-  Rewrite (decided 2026-11-10): MicrophoneRecorder — stream Phone Microphone / dB, device_id "Builtin", device.model "Phone Microphone" (v3 requires one; legacy sent none). One reading per wall-clock second: the first block of each new second (legacy MicrophoneReader.isSecondTheSame), dbFs + offset (equals legacy CalibrationHelper). One mic session at a time (legacy isMicrophoneSessionAlreadyRecording). Android: its own microphone|location foreground service.
+
+**KEEP**; `AudioRecord`/foreground service **PLATFORM** (iOS AVAudioEngine).
 
 ---
 

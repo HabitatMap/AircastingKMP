@@ -39,6 +39,13 @@ class SessionSummaryTest {
 
     assertEquals("1 min", EnStrings.summarize(form).interval)
   }
+  /** The picker is hidden for the mic, but the form keeps whatever AirBeam mobile left in it. */
+  @Test
+  fun `a microphone session always samples every second whatever the picker held`() {
+    val form = NewSessionForm(method = RecordingMethod.PhoneMicrophone, interval = SamplingInterval.FiveMinutes)
+
+    assertEquals("1 s", EnStrings.summarize(form).interval)
+  }
   @Test
   fun `a fixed session says where it stands`() {
     val indoor = NewSessionForm(method = RecordingMethod.AirBeamFixed)

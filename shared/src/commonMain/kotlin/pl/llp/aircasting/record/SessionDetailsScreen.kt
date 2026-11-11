@@ -206,8 +206,9 @@ fun SessionDetailsScreen(
           placeholder = strings.wifiPasswordPlaceholder,
           hint = strings.wifiPasswordHint,
         )
-      } else {
-        // Fixed sessions always sample every 60 s (DOMAIN_KNOWLEDGE.md), so only mobile picks.
+      } else if (form.method == RecordingMethod.AirBeamMobile) {
+        // Fixed samples every 60 s (DOMAIN_KNOWLEDGE.md), the mic every second (legacy
+        // MicrophoneReader), so only an AirBeam mobile session picks.
         Spacer(Modifier.height(24.dp))
         SectionHeader(strings.samplingIntervalHeader)
         Spacer(Modifier.height(8.dp))

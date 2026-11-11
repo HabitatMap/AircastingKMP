@@ -7,10 +7,10 @@ import pl.llp.aircasting.ui.streamChipLabel
 import kotlin.math.round
 import kotlin.time.Instant
 
-/** Figma 461:2780 names temperature and humidity in words; every other chip reads as in Explore. */
 internal fun chipLabel(sensorName: String, strings: Strings): String = when (sensorName.substringAfterLast('-')) {
   "F" -> strings.streamTemperature
   "RH" -> strings.streamHumidity
+  "Phone Microphone" -> "dB"
   else -> streamChipLabel(sensorName)
 }
 

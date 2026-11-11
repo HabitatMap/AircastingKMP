@@ -367,6 +367,7 @@ interface Strings {
   val startFailedUpload: String
   val startFailedNotConnected: String
   val startFailedGeneric: String
+  val startFailedMicBusy: String
   val wifiNearbyHeader: String
   val wifiPermissionHint: String
   val wifiSearching: String
@@ -390,6 +391,12 @@ interface Strings {
   val activeFinishBody: String
   val activeKeepRecording: String
   val activeFinishSession: String
+  val activePhoneMicrophone: String
+  val activeNoMicTitle: String
+  val activeNoMicBody: String
+  val activeStartMic: String
+  val activeTagPhoneMic: String
+  val activeNoMicDataBody: String
   val streamTemperature: String
   val streamHumidity: String
 }

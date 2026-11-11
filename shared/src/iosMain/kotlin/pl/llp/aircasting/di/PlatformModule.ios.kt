@@ -53,6 +53,13 @@ actual fun platformModule() = module {
       NSBundle.mainBundle.objectForInfoDictionaryKey("CFBundleShortVersionString") as? String ?: "",
     )
   }
+  // TODO: the mic stops when the app goes to the background until UIBackgroundModes has `audio`.
+  single<BackgroundSessionHost>(MicrophoneHost) {
+    object : BackgroundSessionHost {
+      override fun start() {}
+      override fun stop() {}
+    }
+  }
 }
 
 actual fun platformHttpEngine(): HttpClientEngine {

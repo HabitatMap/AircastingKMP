@@ -168,4 +168,4 @@ class RecordingEngine(
 }
 
 /** Legacy `Session.Location.DEFAULT_LOCATION`: before the phone's first fix of the session. */
-private val DEFAULT_LOCATION = GeoLocation(40.7128, -74.0060)
+internal val DEFAULT_LOCATION = GeoLocation(40.7128, -74.0060)

@@ -16,6 +16,7 @@ import pl.llp.aircasting.bluetooth.DiscoveredAirBeam
 import pl.llp.aircasting.bluetooth.LinkState
 import pl.llp.aircasting.recording.FixedSessionStarter
 import pl.llp.aircasting.recording.FixedStartResult
+import pl.llp.aircasting.recording.MicrophoneRecorder
 import pl.llp.aircasting.recording.NewSessionDetails
 import pl.llp.aircasting.recording.PhoneLocation
 import pl.llp.aircasting.recording.RecordingEngine
@@ -33,6 +34,9 @@ sealed interface StartState {
   data object Started : StartState
   data class Failed(val result: ConfigResult) : StartState
 
+  /** Mic only: one mic session at a time (legacy). */
+  data object MicBusy : StartState
+
   /** Fixed only: the backend must create the session, and that needs an account. */
   data object SignedOut : StartState
 
@@ -48,6 +52,7 @@ class RecordingViewModel(
   private val engine: RecordingEngine,
   private val location: PhoneLocation,
   private val fixedStarter: FixedSessionStarter,
+  private val mic: MicrophoneRecorder,
 ) : ViewModel() {
   private val log = Logger.withTag("RecordingViewModel")
 
@@ -64,7 +69,11 @@ class RecordingViewModel(
     _startState.value =
       StartState.Preparing(if (fixed) PrepareStep.Configuring else PrepareStep.Locating)
     viewModelScope.launch {
-      _startState.value = if (fixed) startFixed(form) else startMobile(form)
+      _startState.value = when (form.method) {
+        RecordingMethod.AirBeamFixed -> startFixed(form)
+        RecordingMethod.PhoneMicrophone -> startMic(form)
+        else -> startMobile(form)
+      }
     }
   }
 
@@ -80,6 +89,12 @@ class RecordingViewModel(
       }
     }
     return if (result == ConfigResult.Success) StartState.Started else StartState.Failed(result)
+  }
+
+  /** Like AirBeam mobile, readings are stamped with the phone's fix, so wait for one first. */
+  private suspend fun startMic(form: NewSessionForm): StartState {
+    locate()
+    return if (mic.start(NewSessionDetails(form.name, form.tags))) StartState.Started else StartState.MicBusy
   }
 
   /** Mini V2 waits up to 30 s for its first upload, so this stays on Configuring that long. */

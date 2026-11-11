@@ -76,8 +76,14 @@ fun Strings.summarize(form: NewSessionForm) = SessionSummary(
   type = form.method?.let { copyFor(it).name }.orEmpty(),
   name = form.name,
   tags = form.tags,
-  // Fixed has no picker: the AirBeam is configured at 60 s (DOMAIN_KNOWLEDGE.md).
-  interval = label(if (form.method == RecordingMethod.AirBeamFixed) SamplingInterval.OneMinute else form.interval),
+  // Only AirBeam mobile has a picker: fixed is configured at 60 s (DOMAIN_KNOWLEDGE.md), the mic reads every second.
+  interval = label(
+    when (form.method) {
+      RecordingMethod.AirBeamFixed -> SamplingInterval.OneMinute
+      RecordingMethod.PhoneMicrophone -> SamplingInterval.OneSecond
+      else -> form.interval
+    }
+  ),
   placement = if (form.method != RecordingMethod.AirBeamFixed) null else when (val placement = form.placement) {
     Placement.Indoor -> placementIndoor
     is Placement.Outdoor -> "$placementOutdoor (${placement.location.latitude.short()}, ${placement.location.longitude.short()})"

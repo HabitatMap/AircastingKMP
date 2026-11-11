@@ -374,6 +374,14 @@ object EnStrings : Strings {
   override val activeFinishBody = "This will stop the session and move it to Past Sessions in My Data."
   override val activeKeepRecording = "Keep recording"
   override val activeFinishSession = "Finish session"
+  override val activePhoneMicrophone = "Phone Microphone"
+  override val activeNoMicTitle = "No sound sessions running"
+  override val activeNoMicBody = "Start one to track noise levels around you."
+  override val activeStartMic = "Start sound session"
+  override val activeTagPhoneMic = "PHONE MICROPHONE"
+  override val activeNoMicDataBody = "We're listening through your phone's microphone."
+  override val startFailedMicBusy = "A phone microphone session is already recording. Finish it before starting another."
+
   override val streamTemperature = "Temp."
   override val streamHumidity = "Hum."
 }

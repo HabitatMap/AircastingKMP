@@ -3,7 +3,9 @@ package pl.llp.aircasting.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.serialization.Serializable
@@ -30,6 +32,7 @@ import pl.llp.aircasting.record.startFailure
 import pl.llp.aircasting.scan.ScanUiState
 import pl.llp.aircasting.scan.ScanViewModel
 import pl.llp.aircasting.scan.rememberBluetoothPermission
+import pl.llp.aircasting.settings.mic.rememberMicrophonePermission
 
 @Serializable
 data object NewSessionRoute
@@ -67,14 +70,33 @@ fun NewSessionDestination(onExit: () -> Unit) {
       onCancel = onExit,
       onNext = vm::next,
     )
-    NewSessionStep.Confirm -> SessionConfirmScreen(
-      state = state,
-      preparing = (startState as? StartState.Preparing)?.step,
-      failure = LocalStrings.current.startFailure(startState),
-      onBack = { recorder.clearFailure(); back() },
-      onCancel = onExit,
-      onStart = { recorder.start(state.form) },
-    )
+    NewSessionStep.Confirm -> {
+      val micPermission = rememberMicrophonePermission()
+      val needsMic = state.form.method == RecordingMethod.PhoneMicrophone
+      // Start tapped before the grant: carry on by itself once the user allows it.
+      var startOnGrant by remember { mutableStateOf(false) }
+      LaunchedEffect(startOnGrant, micPermission.isGranted) {
+        if (startOnGrant && micPermission.isGranted) {
+          startOnGrant = false
+          recorder.start(state.form)
+        }
+      }
+      SessionConfirmScreen(
+        state = state,
+        preparing = (startState as? StartState.Preparing)?.step,
+        failure = LocalStrings.current.startFailure(startState),
+        onBack = { recorder.clearFailure(); back() },
+        onCancel = onExit,
+        onStart = {
+          if (needsMic && !micPermission.isGranted) {
+            startOnGrant = true
+            micPermission.request()
+          } else {
+            recorder.start(state.form)
+          }
+        },
+      )
+    }
     NewSessionStep.Location -> {
       val picker = koinViewModel<PinPickerViewModel>()
       val pickerState by picker.state.collectAsStateWithLifecycle()

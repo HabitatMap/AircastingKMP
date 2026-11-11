@@ -101,6 +101,27 @@ class ActiveViewModelTest {
     assertNull(vm.state.value.confirmingFinish)
   }
 
+  @Test
+  fun phone_microphone_sessions_get_their_own_section_and_can_be_finished() = runTest {
+    repo.mobile.value = listOf(mini("a"), mic("m"))
+    val vm = subscribedViewModel()
+    advanceUntilIdle()
+
+    assertEquals(listOf("a"), vm.state.value.mobile.map { it.uuid })
+    assertEquals(listOf("m"), vm.state.value.microphone.map { it.uuid })
+
+    vm.requestFinish("m")
+    advanceUntilIdle()
+    assertEquals("m", vm.state.value.confirmingFinish?.uuid)
+  }
+
+  private fun mic(uuid: String) = mini(uuid).let {
+    it.copy(
+      session = it.session.copy(deviceId = "Builtin", deviceModel = "Phone Microphone"),
+      readings = listOf(LatestReading("Phone Microphone", "dB")),
+    )
+  }
+
   private fun mini(uuid: String, pm25: Double? = null) = ActiveMobileSession(
     session = Session(
       uuid = uuid,

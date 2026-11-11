@@ -10,10 +10,12 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import pl.llp.aircasting.domain.ThresholdsRepository
+import pl.llp.aircasting.recording.PhoneMicDeviceId
 
 data class ActiveUiState(
   val mobile: List<ActiveSessionCard> = emptyList(),
-  /** The card whose finish awaits confirmation (Figma 1136:18936); null = no dialog. */
+  /** Phone-mic sessions: also MOBILE rows, told apart by [PhoneMicDeviceId]. */
+  val microphone: List<ActiveSessionCard> = emptyList(),
   val confirmingFinish: ActiveSessionCard? = null,
 )
 
@@ -31,10 +33,19 @@ class ActiveViewModel(
     thresholds.observe(),
     selectedSensors,
     confirming,
-  ) { mobile, levels, selected, confirmingUuid ->
-    val cards = mobile.map { activeSessionCard(it.session, it.readings, levels, selected[it.session.uuid]) }
-    ActiveUiState(mobile = cards, confirmingFinish = cards.firstOrNull { it.uuid == confirmingUuid })
+  ) { all, levels, selected, confirmingUuid ->
+    fun List<ActiveMobileSession>.cards() =
+      map { activeSessionCard(it.session, it.readings, levels, selected[it.session.uuid]) }
+    val (mic, airBeam) = all.partition { it.session.deviceId == PhoneMicDeviceId }
+    val mobile = airBeam.cards()
+    val microphone = mic.cards()
+    ActiveUiState(
+      mobile = mobile,
+      microphone = microphone,
+      confirmingFinish = (mobile + microphone).firstOrNull { it.uuid == confirmingUuid },
+    )
   }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ActiveUiState())
+
 
   fun selectStream(uuid: String, sensorName: String) = selectedSensors.update { it + (uuid to sensorName) }
 

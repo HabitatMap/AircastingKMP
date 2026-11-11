@@ -54,6 +54,7 @@ private fun ActiveRoute(onStartNewSession: () -> Unit) {
     onConfirmFinish = vm::confirmFinish,
     onDismissFinish = vm::dismissFinish,
     onStartMobileSession = onStartNewSession,
+    onStartMicSession = onStartNewSession,
   )
 }
 

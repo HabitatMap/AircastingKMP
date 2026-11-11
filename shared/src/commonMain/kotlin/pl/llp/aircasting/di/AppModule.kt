@@ -11,6 +11,7 @@ import org.koin.core.Koin
 import org.koin.core.context.startKoin
 import org.koin.core.module.dsl.viewModel
 import org.koin.core.module.dsl.viewModelOf
+import org.koin.core.qualifier.named
 import org.koin.dsl.KoinAppDeclaration
 import org.koin.dsl.module
 import pl.llp.aircasting.active.ActiveViewModel
@@ -60,6 +61,7 @@ import pl.llp.aircasting.record.PinPickerViewModel
 import pl.llp.aircasting.record.RecordingViewModel
 import pl.llp.aircasting.recording.FixedSessionRegistrar
 import pl.llp.aircasting.recording.FixedSessionStarter
+import pl.llp.aircasting.recording.MicrophoneRecorder
 import pl.llp.aircasting.recording.RecordingEngine
 import pl.llp.aircasting.recording.standardOffsetHours
 import pl.llp.aircasting.scan.ScanViewModel
@@ -75,6 +77,9 @@ import pl.llp.aircasting.settings.help.NetworkHelpRepository
 import pl.llp.aircasting.settings.server.CustomDataServerViewModel
 import kotlin.time.Clock
 
+/** The mic's own background host: on Android a separate foreground service of type `microphone`. */
+val MicrophoneHost = named("microphone")
+
 val recordModule = module {
   single {
     RecordingEngine(
@@ -88,6 +93,25 @@ val recordModule = module {
       TimeZone.currentSystemDefault()
     )
   }
+  single {
+    val settings = get<AppSettingsRepository>()
+    MicrophoneRecorder(
+      levels = get(),
+      calibrationOffset = { settings.preferences.value.microphoneCalibrationOffset },
+      sessions = get(),
+      streams = get(),
+      measurements = get(),
+      location = get(),
+      host = get(MicrophoneHost),
+      clock = get(),
+      timeZone = TimeZone.currentSystemDefault(),
+    )
+  }
+  viewModel {
+    val mic = get<MicrophoneRecorder>()
+    val engine = get<RecordingEngine>()
+    ActiveViewModel(get(), get(), finish = { uuid -> if (!mic.finish(uuid)) engine.finish(uuid) })
+  }
   single { FixedSessionRegistrar(get(), get(), TimeZone.currentSystemDefault()) }
   single {
     FixedSessionStarter(
@@ -99,7 +123,6 @@ val recordModule = module {
       register = get<FixedSessionRegistrar>()::register,
     )
   }
-  viewModel { ActiveViewModel(get(), get(), finish = get<RecordingEngine>()::finish) }
   viewModelOf(::NewSessionViewModel)
   viewModelOf(::PinPickerViewModel)
   viewModelOf(::RecordingViewModel)
@@ -200,7 +223,11 @@ fun initKoin(extra: KoinAppDeclaration = {}) = startKoin {
 
 private fun startRecordingEngine(koin: Koin) {
   val engine = koin.get<RecordingEngine>()
-  CoroutineScope(SupervisorJob() + Dispatchers.Default).launch { engine.run() }
+  val mic = koin.get<MicrophoneRecorder>()
+  CoroutineScope(SupervisorJob() + Dispatchers.Default).launch {
+    launch { engine.run() }
+    launch { mic.run() }
+  }
 }
 
 

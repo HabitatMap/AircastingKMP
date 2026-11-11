@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -72,44 +73,60 @@ fun ActiveScreen(
   onConfirmFinish: () -> Unit,
   onDismissFinish: () -> Unit,
   onStartMobileSession: () -> Unit,
+  onStartMicSession: () -> Unit,
 ) {
   val strings = LocalStrings.current
   val clock = koinInject<Clock>()
   // Re-read on every state: a recording session re-emits each second, so "x min ago" stays fresh.
   val now = remember(state) { clock.now() }
   var mobileExpanded by rememberSaveable { mutableStateOf(true) }
+  var micExpanded by rememberSaveable { mutableStateOf(true) }
   LazyColumn(
     Modifier.fillMaxSize(),
     contentPadding = PaddingValues(horizontal = 24.dp, vertical = 48.dp),
     verticalArrangement = Arrangement.spacedBy(8.dp),
   ) {
-    item {
-      SectionHeader(
-        strings.activeMobileSessions,
-        state.mobile.size,
-        mobileExpanded
-      ) { mobileExpanded = !mobileExpanded }
+    sessionSection(
+      key = "mobile",
+      title = strings.activeMobileSessions,
+      cards = state.mobile,
+      expanded = mobileExpanded,
+      onToggle = { mobileExpanded = !mobileExpanded },
+      empty = {
+        EmptySectionCard(
+          strings.activeNoMobileTitle,
+          strings.activeNoMobileBody,
+          strings.activeStartMobile,
+          onStartMobileSession
+        )
+      },
+    ) { card ->
+      MobileSessionCard(
+        card, now, strings.activeTagAirBeamMobile, strings.activeNoDataBody,
+        onSelectStream = { onSelectStream(card.uuid, it) },
+        onFinish = { onFinish(card.uuid) },
+      )
     }
-    if (mobileExpanded) {
-      if (state.mobile.isEmpty()) {
-        item(key = "mobile-empty") {
-          EmptySectionCard(
-            strings.activeNoMobileTitle,
-            strings.activeNoMobileBody,
-            strings.activeStartMobile,
-            onStartMobileSession
-          )
-        }
-      } else {
-        items(state.mobile, key = { it.uuid }) { card ->
-          MobileSessionCard(
-            card,
-            now,
-            onSelectStream = { onSelectStream(card.uuid, it) },
-            onFinish = { onFinish(card.uuid) },
-          )
-        }
-      }
+    sessionSection(
+      key = "mic",
+      title = strings.activePhoneMicrophone,
+      cards = state.microphone,
+      expanded = micExpanded,
+      onToggle = { micExpanded = !micExpanded },
+      empty = {
+        EmptySectionCard(
+          strings.activeNoMicTitle,
+          strings.activeNoMicBody,
+          strings.activeStartMic,
+          onStartMicSession
+        )
+      },
+    ) { card ->
+      MobileSessionCard(
+        card, now, strings.activeTagPhoneMic, strings.activeNoMicDataBody,
+        onSelectStream = { onSelectStream(card.uuid, it) },
+        onFinish = { onFinish(card.uuid) },
+      )
     }
   }
 
@@ -118,15 +135,40 @@ fun ActiveScreen(
   }
 }
 
+/** Header with count, then the cards — or the empty card when there are none (Figma 1137:27447). */
+private fun LazyListScope.sessionSection(
+  key: String,
+  title: String,
+  cards: List<ActiveSessionCard>,
+  expanded: Boolean,
+  onToggle: () -> Unit,
+  empty: @Composable () -> Unit,
+  card: @Composable (ActiveSessionCard) -> Unit,
+) {
+  item(key = "$key-header") { SectionHeader(title, cards.size, expanded, onToggle) }
+  if (!expanded) return
+  if (cards.isEmpty()) item(key = "$key-empty") { empty() }
+  else items(cards, key = { it.uuid }) { card(it) }
+}
+
 @Composable
 private fun SectionHeader(title: String, count: Int, expanded: Boolean, onToggle: () -> Unit) {
   Row(
-    Modifier.fillMaxWidth().height(48.dp).clickable(onClick = onToggle),
+    Modifier.fillMaxWidth()
+      .height(48.dp)
+      .clickable(onClick = onToggle),
     horizontalArrangement = Arrangement.SpaceBetween,
     verticalAlignment = Alignment.CenterVertically,
   ) {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-      Text(title, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    Row(
+      horizontalArrangement = Arrangement.spacedBy(8.dp),
+      verticalAlignment = Alignment.CenterVertically
+    ) {
+      Text(
+        title,
+        style = MaterialTheme.typography.titleLarge,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+      )
       val empty = count == 0
       Text(
         count.toString(),
@@ -144,7 +186,8 @@ private fun SectionHeader(title: String, count: Int, expanded: Boolean, onToggle
       painterResource(Res.drawable.ic_arrow_forward_ios),
       contentDescription = null,
       // The asset points right: up when open, down when folded.
-      Modifier.size(20.dp).rotate(if (expanded) -90f else 90f),
+      Modifier.size(20.dp)
+        .rotate(if (expanded) -90f else 90f),
       tint = MaterialTheme.colorScheme.primary,
     )
   }
@@ -155,6 +198,8 @@ private fun SectionHeader(title: String, count: Int, expanded: Boolean, onToggle
 private fun MobileSessionCard(
   card: ActiveSessionCard,
   now: Instant,
+  tag: String,
+  noDataBody: String,
   onSelectStream: (sensorName: String) -> Unit,
   onFinish: () -> Unit,
 ) {
@@ -166,25 +211,33 @@ private fun MobileSessionCard(
       .padding(16.dp),
     verticalArrangement = Arrangement.spacedBy(16.dp),
   ) {
-    CardHeader(card, now)
+    CardHeader(card, now, tag)
     when (card.state) {
       CardState.Live -> StreamPicker(card, onSelectStream)
       CardState.NoDataYet -> {
         StreamPicker(card, onSelectStream)
-        Waiting(strings.activeNoDataTitle, strings.activeNoDataBody, spinner = 72.dp)
+        Waiting(strings.activeNoDataTitle, noDataBody, spinner = 72.dp)
       }
-      CardState.ConnectionLost -> Waiting(strings.activeLookingTitle, strings.activeLookingBody, spinner = 32.dp)
+
+      CardState.ConnectionLost -> Waiting(
+        strings.activeLookingTitle,
+        strings.activeLookingBody,
+        spinner = 32.dp
+      )
     }
     Footer(card.state, onFinish)
   }
 }
 
 @Composable
-private fun CardHeader(card: ActiveSessionCard, now: Instant) {
+private fun CardHeader(card: ActiveSessionCard, now: Instant, tag: String) {
   val strings = LocalStrings.current
   Column(Modifier.padding(bottom = 12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-      TintedTag(strings.activeTagAirBeamMobile)
+    Row(
+      horizontalArrangement = Arrangement.spacedBy(8.dp),
+      verticalAlignment = Alignment.CenterVertically
+    ) {
+      TintedTag(tag)
       when (card.state) {
         CardState.Live -> card.selected?.level?.let { LevelBadge(it) }
         CardState.NoDataYet -> Unit // Figma 1009:28154: nothing to grade yet
@@ -193,11 +246,22 @@ private fun CardHeader(card: ActiveSessionCard, now: Instant) {
     }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
       Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(card.name, style = MaterialTheme.typography.titleSmallEmphasized, color = MaterialTheme.colorScheme.onSurface)
-        DotSeparatedRow(card.meta(now, strings), MaterialTheme.typography.bodySmall, MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+          card.name,
+          style = MaterialTheme.typography.titleSmallEmphasized,
+          color = MaterialTheme.colorScheme.onSurface
+        )
+        DotSeparatedRow(
+          card.meta(now, strings),
+          MaterialTheme.typography.bodySmall,
+          MaterialTheme.colorScheme.onSurfaceVariant
+        )
       }
       if (card.tags.isNotEmpty()) {
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        FlowRow(
+          horizontalArrangement = Arrangement.spacedBy(4.dp),
+          verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
           card.tags.forEach { UserTag(it) }
         }
       }
@@ -210,12 +274,23 @@ private fun CardHeader(card: ActiveSessionCard, now: Instant) {
 private fun ConnectionLostBadge() {
   val red = LocalAqColors.current.unhealthy
   Row(
-    Modifier.clip(RoundedCornerShape(100.dp)).background(red.copy(alpha = 0.12f)).padding(horizontal = 8.dp, vertical = 2.dp),
+    Modifier.clip(RoundedCornerShape(100.dp))
+      .background(red.copy(alpha = 0.12f))
+      .padding(horizontal = 8.dp, vertical = 2.dp),
     horizontalArrangement = Arrangement.spacedBy(4.dp),
     verticalAlignment = Alignment.CenterVertically,
   ) {
-    Icon(painterResource(Res.drawable.ic_bluetooth_disabled), contentDescription = null, Modifier.size(12.dp), tint = red)
-    Text(LocalStrings.current.activeConnectionLost, style = MaterialTheme.typography.labelSmall, color = red)
+    Icon(
+      painterResource(Res.drawable.ic_bluetooth_disabled),
+      contentDescription = null,
+      Modifier.size(12.dp),
+      tint = red
+    )
+    Text(
+      LocalStrings.current.activeConnectionLost,
+      style = MaterialTheme.typography.labelSmall,
+      color = red
+    )
   }
 }
 
@@ -224,7 +299,8 @@ private fun ConnectionLostBadge() {
 private fun UserTag(tag: String) {
   Text(
     tag,
-    Modifier.border(0.65.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape).padding(horizontal = 8.dp, vertical = 2.dp),
+    Modifier.border(0.65.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
+      .padding(horizontal = 8.dp, vertical = 2.dp),
     style = MaterialTheme.typography.labelSmall,
     color = MaterialTheme.colorScheme.onSurfaceVariant,
   )
@@ -235,7 +311,10 @@ private fun UserTag(tag: String) {
 private fun StreamPicker(card: ActiveSessionCard, onSelectStream: (String) -> Unit) {
   val strings = LocalStrings.current
   Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Row(
+      Modifier.horizontalScroll(rememberScrollState()),
+      horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
       card.streams.forEach { stream ->
         StreamChip(
           chipLabel(stream.sensorName, strings),
@@ -253,7 +332,11 @@ private fun StreamPicker(card: ActiveSessionCard, onSelectStream: (String) -> Un
       ) {
         // No level → grey dot, as Figma 1009:28154 draws it.
         stream.level?.let { LevelDot(it) }
-          ?: Box(Modifier.size(10.dp).clip(CircleShape).background(MaterialTheme.colorScheme.outlineVariant))
+          ?: Box(
+            Modifier.size(10.dp)
+              .clip(CircleShape)
+              .background(MaterialTheme.colorScheme.outlineVariant)
+          )
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
           Text(
             valueText(stream.value),
@@ -289,8 +372,18 @@ private fun Waiting(title: String, body: String, spinner: Dp) {
       horizontalAlignment = Alignment.CenterHorizontally,
       verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-      Text(title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground, textAlign = TextAlign.Center)
-      Text(body, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+      Text(
+        title,
+        style = MaterialTheme.typography.titleMedium,
+        color = MaterialTheme.colorScheme.onBackground,
+        textAlign = TextAlign.Center
+      )
+      Text(
+        body,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        textAlign = TextAlign.Center
+      )
     }
   }
 }
@@ -317,19 +410,46 @@ private fun EmptySectionCard(title: String, body: String, action: String, onActi
 private fun Footer(state: CardState, onFinish: () -> Unit) {
   val strings = LocalStrings.current
   val colors = MaterialTheme.colorScheme
-  Column(verticalArrangement = Arrangement.spacedBy(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+  Column(
+    verticalArrangement = Arrangement.spacedBy(12.dp),
+    horizontalAlignment = Alignment.CenterHorizontally
+  ) {
     HorizontalDivider(color = colors.surfaceContainerHighest)
     if (state == CardState.ConnectionLost) {
       // No SD sync yet: the button is there, and does nothing (decided 2026-11-08).
-      CardButton(strings.activeFinishAndSync, onClick = {}, colors.error, colors.error, Modifier.fillMaxWidth(), Res.drawable.ic_stop_circle)
+      CardButton(
+        strings.activeFinishAndSync,
+        onClick = {},
+        colors.error,
+        colors.error,
+        Modifier.fillMaxWidth(),
+        Res.drawable.ic_stop_circle
+      )
       TextButton(onClick = onFinish) {
-        Text(strings.activeFinishAndDiscard, style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant)
+        Text(
+          strings.activeFinishAndDiscard,
+          style = MaterialTheme.typography.labelLarge,
+          color = colors.onSurfaceVariant
+        )
       }
     } else {
       Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        CardButton(strings.activeFinishRecording, onFinish, colors.error, colors.error, Modifier.weight(1f), Res.drawable.ic_stop_circle)
+        CardButton(
+          strings.activeFinishRecording,
+          onFinish,
+          colors.error,
+          colors.error,
+          Modifier.weight(1f),
+          Res.drawable.ic_stop_circle
+        )
         // Session details screen comes later.
-        CardButton(strings.activeSeeDetails, onClick = {}, colors.primary, colors.onSurface, Modifier.weight(1f))
+        CardButton(
+          strings.activeSeeDetails,
+          onClick = {},
+          colors.primary,
+          colors.onSurface,
+          Modifier.weight(1f)
+        )
       }
     }
   }
@@ -363,6 +483,7 @@ private fun CardButton(
     Text(label, style = MaterialTheme.typography.labelLarge, maxLines = 1)
   }
 }
+
 @Composable
 private fun FinishDialog(sessionName: String, onConfirm: () -> Unit, onDismiss: () -> Unit) {
   val strings = LocalStrings.current

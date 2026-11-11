@@ -402,6 +402,13 @@ object FrStrings : Strings {
   override val activeFinishBody = "La session sera arrêtée et déplacée dans Sessions passées, dans Mes données."
   override val activeKeepRecording = "Continuer l'enregistrement"
   override val activeFinishSession = "Terminer la session"
+  override val activePhoneMicrophone = "Microphone du téléphone"
+  override val activeNoMicTitle = "Aucune session sonore en cours"
+  override val activeNoMicBody = "Lancez-en une pour suivre le niveau de bruit autour de vous."
+  override val activeStartMic = "Démarrer une session sonore"
+  override val activeTagPhoneMic = "MICROPHONE DU TÉLÉPHONE"
+  override val activeNoMicDataBody = "Nous écoutons via le microphone de votre téléphone."
+  override val startFailedMicBusy = "Une session microphone est déjà en cours. Terminez-la avant d'en démarrer une autre."
   override val streamTemperature = "Temp."
   override val streamHumidity = "Hum."
 }

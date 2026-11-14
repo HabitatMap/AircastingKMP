@@ -144,7 +144,7 @@ fun MeasurementChart(
               fill = LineCartesianLayer.LineFill.single(
                 Fill(if (threshold != null) Color.White else MaterialTheme.colorScheme.onSurface),
               ),
-              stroke = LineCartesianLayer.LineStroke.Continuous(thickness = 2.dp),
+              stroke = LineCartesianLayer.LineStroke.Continuous(thickness = 4.dp),
               interpolator = LineCartesianLayer.Interpolator.Sharp,
             ),
           ),

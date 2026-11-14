@@ -73,7 +73,7 @@ class StationGraphViewModelTest {
 }
 
 private val MEASURED_AT = Instant.fromEpochMilliseconds(1793282400000)
-private val STREAM = StationStream(7, "AirBeam-PM2.5", "µg/m³", value = 12, min24h = 5, max24h = 20, measuredAt = MEASURED_AT)
+private val STREAM = StationStream(7, "AirBeam-PM2.5", "µg/m³", value = 12, min = 5, max = 20, measuredAt = MEASURED_AT)
 private val NEWEST = ChartPoint(200_000.0, 12.0)
 private val OLDEST_KEPT = ChartPoint(200_000.0 - 86_400, 8.0)
 private val TOO_OLD = ChartPoint(200_000.0 - 86_401, 99.0)

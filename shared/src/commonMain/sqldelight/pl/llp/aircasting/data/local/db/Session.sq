@@ -83,3 +83,27 @@ LEFT JOIN measurements m
  AND m.time = (SELECT MAX(time) FROM measurements WHERE stream_id = st.id)
 WHERE se.type = 'MOBILE' AND se.end_time IS NULL
 ORDER BY st.id;
+
+selectSessionStreamStats:
+  SELECT st.id, st.sensor_name, st.unit_symbol,
+         latest.value AS now_value, latest.time AS now_time,
+         agg.min_value, agg.avg_value, agg.max_value
+  FROM measurement_streams st
+  LEFT JOIN measurements latest
+    ON latest.stream_id = st.id
+   AND latest.time = (SELECT MAX(time) FROM measurements WHERE stream_id = st.id)
+  LEFT JOIN (
+    SELECT stream_id, MIN(value) AS min_value, AVG(value) AS avg_value, MAX(value) AS max_value
+    FROM measurements
+    WHERE stream_id IN (SELECT id FROM measurement_streams WHERE session_uuid = :uuid)
+    GROUP BY stream_id
+  ) agg ON agg.stream_id = st.id
+  WHERE st.session_uuid = :uuid
+  ORDER BY st.id;
+
+selectSessionStreamPoints:
+  SELECT m.time, m.value
+  FROM measurements m
+  JOIN measurement_streams st ON st.id = m.stream_id
+  WHERE st.session_uuid = :uuid AND st.sensor_name = :sensorName
+  ORDER BY m.time;

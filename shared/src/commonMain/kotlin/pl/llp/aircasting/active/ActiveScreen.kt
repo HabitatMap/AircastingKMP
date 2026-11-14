@@ -74,6 +74,7 @@ fun ActiveScreen(
   onDismissFinish: () -> Unit,
   onStartMobileSession: () -> Unit,
   onStartMicSession: () -> Unit,
+  onSeeDetails: (uuid: String, sensorName: String?) -> Unit,
 ) {
   val strings = LocalStrings.current
   val clock = koinInject<Clock>()
@@ -105,6 +106,7 @@ fun ActiveScreen(
         card, now, strings.activeTagAirBeamMobile, strings.activeNoDataBody,
         onSelectStream = { onSelectStream(card.uuid, it) },
         onFinish = { onFinish(card.uuid) },
+        onSeeDetails = { onSeeDetails(card.uuid, card.selected?.sensorName) },
       )
     }
     sessionSection(
@@ -126,6 +128,7 @@ fun ActiveScreen(
         card, now, strings.activeTagPhoneMic, strings.activeNoMicDataBody,
         onSelectStream = { onSelectStream(card.uuid, it) },
         onFinish = { onFinish(card.uuid) },
+        onSeeDetails = { onSeeDetails(card.uuid, card.selected?.sensorName) },
       )
     }
   }
@@ -202,6 +205,7 @@ private fun MobileSessionCard(
   noDataBody: String,
   onSelectStream: (sensorName: String) -> Unit,
   onFinish: () -> Unit,
+  onSeeDetails: () -> Unit,
 ) {
   val strings = LocalStrings.current
   Column(
@@ -225,7 +229,7 @@ private fun MobileSessionCard(
         spinner = 32.dp
       )
     }
-    Footer(card.state, onFinish)
+    Footer(card.state, onFinish, onSeeDetails)
   }
 }
 
@@ -407,7 +411,7 @@ private fun EmptySectionCard(title: String, body: String, action: String, onActi
 }
 
 @Composable
-private fun Footer(state: CardState, onFinish: () -> Unit) {
+private fun Footer(state: CardState, onFinish: () -> Unit, onSeeDetails: () -> Unit) {
   val strings = LocalStrings.current
   val colors = MaterialTheme.colorScheme
   Column(
@@ -442,10 +446,9 @@ private fun Footer(state: CardState, onFinish: () -> Unit) {
           Modifier.weight(1f),
           Res.drawable.ic_stop_circle
         )
-        // Session details screen comes later.
         CardButton(
           strings.activeSeeDetails,
-          onClick = {},
+          onClick = onSeeDetails,
           colors.primary,
           colors.onSurface,
           Modifier.weight(1f)

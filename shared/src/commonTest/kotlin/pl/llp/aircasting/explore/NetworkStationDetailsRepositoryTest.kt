@@ -11,8 +11,10 @@ import kotlinx.datetime.TimeZone
 import pl.llp.aircasting.data.network.ExploreMapApi
 import pl.llp.aircasting.data.network.createAircastingHttpClient
 import pl.llp.aircasting.domain.DataSource
+import pl.llp.aircasting.domain.ExploreSource
 import pl.llp.aircasting.domain.StationDetails
 import pl.llp.aircasting.domain.StationStream
+import pl.llp.aircasting.domain.session.SessionType
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -36,11 +38,11 @@ class NetworkStationDetailsRepositoryTest {
 
     assertEquals(
       StationDetails(
-        uuid = "0b7e3f5a", source = DataSource.AirBeam, title = "Home AirBeam Garden", provider = "jane",
+        uuid = "0b7e3f5a", type = SessionType.FIXED, source = DataSource.AirBeam, title = "Home AirBeam Garden", provider = "jane",
         deviceModel = "AirBeamMini", timeZone = TimeZone.of("America/New_York"),
         streams = listOf(
-          StationStream(35404, "AirBeam-PM1", "µg/m³", value = 8, min24h = 3, max24h = 10, measuredAt = MEASURED_AT),
-          StationStream(35405, "AirBeam-PM2.5", "µg/m³", value = 12, min24h = 5, max24h = 20, measuredAt = MEASURED_AT),
+          StationStream(35404, "AirBeam-PM1", "µg/m³", value = 8, min = 3, max = 10, measuredAt = MEASURED_AT),
+          StationStream(35405, "AirBeam-PM2.5", "µg/m³", value = 12, min = 5, max = 20, measuredAt = MEASURED_AT),
         ),
       ),
       details,
@@ -64,8 +66,8 @@ class NetworkStationDetailsRepositoryTest {
 
     assertNull(pm1.value)
     assertNull(pm1.measuredAt)
-    assertNull(pm1.min24h)
-    assertNull(pm1.max24h)
+    assertNull(pm1.min)
+    assertNull(pm1.max)
   }
 
   private fun repository(json: String, onRequest: (HttpRequestData) -> Unit = {}): StationDetailsRepository {

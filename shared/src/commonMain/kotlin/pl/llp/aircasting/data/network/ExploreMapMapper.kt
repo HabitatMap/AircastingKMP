@@ -1,6 +1,6 @@
 package pl.llp.aircasting.data.network
 
-import pl.llp.aircasting.domain.DataSource
+import pl.llp.aircasting.domain.ExploreSource
 import pl.llp.aircasting.domain.GeoLocation
 import pl.llp.aircasting.domain.MapCluster
 import pl.llp.aircasting.domain.MapItem
@@ -17,7 +17,7 @@ private fun ExploreMapItemDto.toMapItem(): MapItem? {
   return when (this) {
     is ExploreMapClusterDto -> MapCluster(location, count)
     is ExploreMapStationDto -> {
-      val source = DataSource.entries.find { it.apiName == source } ?: return null
+      val source = ExploreSource.entries.find { it.apiName == source } ?: return null
       MapStation(uuid, source, title, provider, location, streams.mapNotNull { it.toMapStream() })
     }
   }

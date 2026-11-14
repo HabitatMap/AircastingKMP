@@ -478,6 +478,20 @@ Graph + map + measurement table + statistics + HLU threshold slider + notes. Obs
 session; loads full history for the selected stream, last-1 for others. Note markers on the
 graph/map.
 
+**Own mobile session details — stats and graph window** (*checked 2026-11-14*):
+- **Stats cover the whole session.** Legacy `StatisticsContainer` computes Avg / Peak over the
+  selected stream's measurements (`measurementsValuesForSpan`, all of them when no span is set);
+  Now = the newest reading. The redesign (Figma `859:7216`) shows **Now · Avg. · Min. · Max.**, so
+  Min is added on the same basis. Values rounded to whole numbers, like the server rounds Explore
+  station values. Rewrite: `selectSessionStreamStats` (`Session.sq`) → `LocalSessionDetailsRepository`.
+- **Graph = the whole session, not 24 h.** Legacy `GraphDataGenerator` takes all of the session's
+  measurements and averages them down to ~1000 entries. The rewrite passes every point; the chart
+  decimates the visible window (LTTB, `ChartWindow.kt`) instead of averaging. Contrast: Explore
+  stations show the 24 h ending at their newest point (`last24h`).
+- **Opens on the card's chip.** Legacy passes the selected sensor into session details; the rewrite's
+  `SessionDetailsRoute(uuid, sensorName)` carries the Active card's selected stream, falling back to
+  the first stream.
+
 ### Graph — **MPAndroidChart `v3.1.0`** (PLATFORM rendering)
 Mini card chart + full-screen detail graph with pinch-zoom/pan, colored **target zones**
 (threshold bands), note markers, midnight limit lines. Data shaping (`GraphDataGenerator`,

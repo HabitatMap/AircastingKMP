@@ -15,6 +15,8 @@ import org.koin.core.qualifier.named
 import org.koin.dsl.KoinAppDeclaration
 import org.koin.dsl.module
 import pl.llp.aircasting.active.ActiveViewModel
+import pl.llp.aircasting.active.SessionDetailsRepository
+import pl.llp.aircasting.active.SessionGraphViewModel
 import pl.llp.aircasting.auth.AuthRepository
 import pl.llp.aircasting.auth.AuthViewModel
 import pl.llp.aircasting.auth.ForgotPasswordViewModel
@@ -51,6 +53,7 @@ import pl.llp.aircasting.explore.StationDetailsRepository
 import pl.llp.aircasting.explore.StationDetailsViewModel
 import pl.llp.aircasting.explore.StationGraphViewModel
 import pl.llp.aircasting.explore.StationMeasurementsRepository
+import pl.llp.aircasting.explore.observe
 import pl.llp.aircasting.home.FakeHomeRepository
 import pl.llp.aircasting.home.HomeRepository
 import pl.llp.aircasting.home.HomeViewModel
@@ -79,6 +82,8 @@ import kotlin.time.Clock
 
 /** The mic's own background host: on Android a separate foreground service of type `microphone`. */
 val MicrophoneHost = named("microphone")
+/** StationDetailsViewModel fed by our own session's live DB flow, not Explore's network fetch. */
+val SessionDetailsQualifier = named("sessionDetails")
 
 val recordModule = module {
   single {
@@ -111,6 +116,12 @@ val recordModule = module {
     val mic = get<MicrophoneRecorder>()
     val engine = get<RecordingEngine>()
     ActiveViewModel(get(), get(), finish = { uuid -> if (!mic.finish(uuid)) engine.finish(uuid) })
+  }
+  viewModel(SessionDetailsQualifier) { (uuid: String, sensorName: String?) ->
+    StationDetailsViewModel(get<SessionDetailsRepository>().observe(uuid), get(), preferredSensor = sensorName)
+  }
+  viewModel { (uuid: String, sensorName: String, timeZone: TimeZone) ->
+    SessionGraphViewModel(uuid, sensorName, timeZone, get())
   }
   single { FixedSessionRegistrar(get(), get(), TimeZone.currentSystemDefault()) }
   single {
@@ -187,7 +198,7 @@ val exploreModule = module {
   single<ExploreMapRepository> { NetworkExploreMapRepository(get()) }
   viewModelOf(::ExploreViewModel)
   single<StationDetailsRepository> { NetworkStationDetailsRepository(get()) }
-  viewModel { (uuid: String) -> StationDetailsViewModel(uuid, get(), get()) }
+  viewModel { (uuid: String) -> StationDetailsViewModel(get<StationDetailsRepository>().observe(uuid), get()) }
   single<StationMeasurementsRepository> { NetworkStationMeasurementsRepository(get()) }
   viewModel { (uuid: String, stream: StationStream, timeZone: TimeZone) ->
     StationGraphViewModel(uuid, stream, timeZone, get())

@@ -1,6 +1,5 @@
 package pl.llp.aircasting.domain
 
-import kotlin.math.log2
 import kotlin.time.Instant
 
 /**
@@ -15,7 +14,7 @@ enum class MeasurementType(val apiName: String) {
   Humidity("Humidity"),
 }
 
-enum class DataSource(val apiName: String) {
+enum class ExploreSource(val apiName: String) {
   AirBeam("airbeam"),
   Government("government"),
 }
@@ -50,7 +49,7 @@ data class MapStream(
 /** One AirBeam fixed session or government station, with a stream per selected type it reports. */
 data class MapStation(
   val uuid: String,
-  val source: DataSource,
+  val source: ExploreSource,
   val title: String,
   val provider: String,
   override val location: GeoLocation,
@@ -69,7 +68,7 @@ fun MapStation.levelFor(type: MeasurementType, thresholds: Thresholds): Measurem
 
 /** The filter dialog's selection. Null [source] / empty [measurementTypes] = "Show all". */
 data class ExploreFilters(
-  val source: DataSource? = null,
+  val source: ExploreSource? = null,
   val measurementTypes: Set<MeasurementType> = emptySet(),
 ) {
   /** The one type stations are coloured by; null unless exactly one is selected (only then does the server send a value). */

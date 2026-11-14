@@ -124,12 +124,15 @@ fun MeasurementChart(
   val system = LocalViewConfiguration.current
   val panSlop = with(LocalDensity.current) { PanSlop.toPx() }
   val chartConfiguration = remember(system, panSlop) { ChartViewConfiguration(system, panSlop) }
-  val markerController = remember(panSlop, system.touchSlop) { ScrubUntilPanController(panSlop, system.touchSlop) }
+  val scrollState = rememberVicoScrollState(initialScroll = Scroll.Absolute.End)
+  val markerController = remember(panSlop, system.touchSlop, scrollState) {
+    ScrubUntilPanController(panSlop, system.touchSlop, canPan = { scrollState.maxValue >= 1f })
+  }
   val zoomState = rememberVicoZoomState(
     initialZoom = remember { Zoom.max(Zoom.x(INITIAL_VISIBLE_SECONDS), Zoom.Content) },
     minZoom = Zoom.Content,
-    // A series shorter than 15 min already fits at Content; Zoom.x alone would then sit below
-    // minZoom, which Vico rejects (IllegalArgumentException). max() keeps maxZoom ≥ minZoom.
+    // A series shorter than MIN_VISIBLE_SECONDS already fits at Content; Zoom.x alone would then sit
+    // below minZoom, which Vico rejects (IllegalArgumentException). max() keeps maxZoom ≥ minZoom.
     maxZoom = remember { Zoom.max(Zoom.x(MIN_VISIBLE_SECONDS), Zoom.Content) },
   )
   CompositionLocalProvider(LocalViewConfiguration provides chartConfiguration) {
@@ -141,7 +144,7 @@ fun MeasurementChart(
               fill = LineCartesianLayer.LineFill.single(
                 Fill(if (threshold != null) Color.White else MaterialTheme.colorScheme.onSurface),
               ),
-              stroke = LineCartesianLayer.LineStroke.Continuous(thickness = 2.dp),
+              stroke = LineCartesianLayer.LineStroke.Continuous(thickness = 4.dp),
               interpolator = LineCartesianLayer.Interpolator.Sharp,
             ),
           ),
@@ -206,7 +209,7 @@ fun MeasurementChart(
       ),
       modelProducer = modelProducer,
       modifier = modifier.pinchToZoom(zoomState),
-      scrollState = rememberVicoScrollState(initialScroll = Scroll.Absolute.End),
+      scrollState = scrollState,
       zoomState = zoomState,
       // Diff animations interpolate every point on each reload: a stall at these densities.
       animationSpec = null,

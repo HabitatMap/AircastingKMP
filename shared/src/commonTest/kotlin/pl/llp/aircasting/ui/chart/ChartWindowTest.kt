@@ -11,11 +11,11 @@ class ChartWindowTest {
 
   @Test
   fun reaching_max_zoom_reloads_a_window_decimated_for_a_wider_view() {
-    // Zooming in steadily from 8 h last reloads just under 30 min; the halving rule can't fire
-    // again because zoom stops at 15. Without this, max zoom stays decimated.
-    val loadedFor30Min = windowFor(0.0..1_800.0)
+    // Zooming in steadily last reloads just under twice the max zoom; the halving rule can't fire
+    // again because zoom stops at MIN_VISIBLE_SECONDS. Without this, max zoom stays decimated.
+    val loadedForTwiceMaxZoom = windowFor(0.0..(2 * MIN_VISIBLE_SECONDS))
 
-    assertTrue(needsReload(loaded = loadedFor30Min, visible = maxZoom))
+    assertTrue(needsReload(loaded = loadedForTwiceMaxZoom, visible = maxZoom))
   }
 
   @Test

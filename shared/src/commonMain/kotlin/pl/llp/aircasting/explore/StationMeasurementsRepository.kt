@@ -7,6 +7,7 @@ import kotlinx.datetime.offsetAt
 import pl.llp.aircasting.data.network.ExploreMapApi
 import pl.llp.aircasting.data.network.StationMeasurementDto
 import pl.llp.aircasting.ui.chart.ChartPoint
+import pl.llp.aircasting.ui.chart.wallClockPoint
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Instant
@@ -33,11 +34,5 @@ class NetworkStationMeasurementsRepository(private val api: ExploreMapApi) : Sta
   }
 }
 
-/**
- * The chart formats x as UTC (`ChartAxis`), so adding the station's offset *at that instant* makes
- * it read the station's clock — DST-correct per point, unlike one fixed offset for the whole day.
- */
-private fun StationMeasurementDto.toChartPoint(timeZone: TimeZone): ChartPoint {
-  val instant = Instant.fromEpochMilliseconds(time)
-  return ChartPoint(x = (instant.epochSeconds + timeZone.offsetAt(instant).totalSeconds).toDouble(), y = value)
-}
+private fun StationMeasurementDto.toChartPoint(timeZone: TimeZone): ChartPoint =
+  wallClockPoint(Instant.fromEpochMilliseconds(time), value, timeZone)

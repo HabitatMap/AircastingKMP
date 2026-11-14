@@ -32,14 +32,26 @@ fun StationGraph(
     parametersOf(station.uuid, stream, station.timeZone)
   }
   val state by vm.state.collectAsStateWithLifecycle()
+  GraphContent(state, onRetry = vm::load, stream, threshold, modifier)
+}
+
+/** Spinner, retry or chart for one stream: the same whichever ViewModel produced [state]. */
+@Composable
+internal fun GraphContent(
+  state: StationGraphState,
+  onRetry: () -> Unit,
+  stream: StationStream,
+  threshold: SensorThreshold?,
+  modifier: Modifier = Modifier,
+) {
   Box(modifier.fillMaxWidth().height(GraphHeight), contentAlignment = Alignment.Center) {
-    when (val graph = state) {
+    when (state) {
       StationGraphState.Loading -> CircularProgressIndicator()
-      StationGraphState.Error -> ErrorState(onRetry = vm::load)
+      StationGraphState.Error -> ErrorState(onRetry = onRetry)
       // key: a new stream starts from a fresh scroll/zoom, opened on its newest point.
-      is StationGraphState.Ready -> if (graph.points.isNotEmpty()) key(stream.id) {
+      is StationGraphState.Ready -> if (state.points.isNotEmpty()) key(stream.id) {
         // Height on the host itself: CartesianChartHost caps itself at 200 dp otherwise.
-        MeasurementChart(graph.points, threshold, stream.unitSymbol, Modifier.fillMaxWidth().height(GraphHeight))
+        MeasurementChart(state.points, threshold, stream.unitSymbol, Modifier.fillMaxWidth().height(GraphHeight))
       }
     }
   }

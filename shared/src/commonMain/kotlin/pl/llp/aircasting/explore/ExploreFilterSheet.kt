@@ -18,7 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
-import pl.llp.aircasting.domain.DataSource
+import pl.llp.aircasting.domain.ExploreSource
 import pl.llp.aircasting.domain.ExploreFilters
 import pl.llp.aircasting.domain.MeasurementType
 import pl.llp.aircasting.i18n.LocalStrings
@@ -41,11 +41,11 @@ fun ExploreFilterSheet(
     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(24.dp)) {
       FilterSection(strings.exploreFilterSource) {
         Option(strings.exploreShowAll, draft.source == null) { onEdit(draft.copy(source = null)) }
-        Option(strings.exploreOnlyAirBeam, draft.source == DataSource.AirBeam) {
-          onEdit(draft.copy(source = DataSource.AirBeam))
+        Option(strings.exploreOnlyAirBeam, draft.source == ExploreSource.AirBeam) {
+          onEdit(draft.copy(source = ExploreSource.AirBeam))
         }
-        Option(strings.exploreOnlyGovernment, draft.source == DataSource.Government) {
-          onEdit(draft.copy(source = DataSource.Government))
+        Option(strings.exploreOnlyGovernment, draft.source == ExploreSource.Government) {
+          onEdit(draft.copy(source = ExploreSource.Government))
         }
       }
       FilterSection(strings.exploreFilterParameter) {

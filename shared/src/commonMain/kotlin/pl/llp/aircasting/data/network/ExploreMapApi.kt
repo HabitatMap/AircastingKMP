@@ -4,7 +4,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
-import pl.llp.aircasting.domain.DataSource
+import pl.llp.aircasting.domain.ExploreSource
 import pl.llp.aircasting.domain.MapViewport
 import pl.llp.aircasting.domain.MeasurementType
 import kotlin.math.roundToInt
@@ -15,7 +15,7 @@ class ExploreMapApi(private val client: HttpClient) {
   /** Empty [sources] / [measurementTypes] = all, so the param is omitted. */
   suspend fun mapItems(
     viewport: MapViewport,
-    sources: Set<DataSource>,
+    sources: Set<ExploreSource>,
     measurementTypes: Set<MeasurementType>,
   ): ExploreMapResponseDto = client.get(ApiEndpoints.V3ExploreMap) {
     parameter("west", viewport.bounds.west)

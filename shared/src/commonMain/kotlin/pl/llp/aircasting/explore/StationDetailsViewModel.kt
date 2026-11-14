@@ -4,10 +4,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import co.touchlab.kermit.Logger
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -38,12 +43,15 @@ sealed interface StationDetailsState {
 }
 
 class StationDetailsViewModel(
-  private val uuid: String,
-  private val repository: StationDetailsRepository,
+  private val details: Flow<StationDetails?>,
   private val thresholds: ThresholdsRepository,
+  private val preferredSensor: String? = null,
 ) : ViewModel() {
-  /** What the network gave us + the chip; [state] adds the threshold on top. */
+  /** The latest emission + the chip; [state] adds the threshold on top. */
   private val loaded = MutableStateFlow<StationDetailsState>(StationDetailsState.Loading)
+
+  /** The current collection of [details]: a retry cancels it before starting a fresh one. */
+  private var collecting: Job? = null
 
   // Thresholds are a live DB flow: an edit elsewhere recolours this screen without refetching.
   val state: StateFlow<StationDetailsState> = combine(loaded, thresholds.observe()) { state, all ->
@@ -54,25 +62,35 @@ class StationDetailsViewModel(
   }
     .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), StationDetailsState.Loading)
 
-  // After `loaded` on purpose: property initialisers and init blocks run top to bottom.
-  // The uuid is fixed for this ViewModel's life, so load once here; rotation doesn't refetch.
+  // Last on purpose: property initialisers and init blocks run top to bottom, so `loaded` and
+  // `collecting` must exist first. Collect once here; rotation keeps the ViewModel, so no refetch.
   init { load() }
 
+  /** (Re)collects [details]. Cold one-shot flow → a refetch; live DB flow → a fresh subscription. */
   fun load() {
+    collecting?.cancel()
     loaded.value = StationDetailsState.Loading
-    viewModelScope.launch {
-      loaded.value = try {
-        val details = repository.station(uuid)
-        StationDetailsState.Content(details, details.streams.firstOrNull()?.id)
-      } catch (e: CancellationException) {
-        throw e
-      } catch (e: Exception) {
-        log.w(e) { "Station $uuid load failed" }
-        StationDetailsState.Error
+    collecting = details
+      .onEach { new -> loaded.update { it.with(new) } }
+      .catch { e ->
+        log.w(e) { "Details load failed" }
+        loaded.value = StationDetailsState.Error
       }
-    }
+      .launchIn(viewModelScope)
   }
 
+  /**
+   * Folds one emission into the current state. Only the first Content picks the chip
+   * (preferred → first); later emissions swap the values and keep the user's choice.
+   */
+  private fun StationDetailsState.with(new: StationDetails?): StationDetailsState = when {
+    new == null -> StationDetailsState.Error
+    this is StationDetailsState.Content -> copy(details = new)
+    else -> StationDetailsState.Content(
+      new,
+      selectedStreamId = (new.streams.find { it.sensorName == preferredSensor } ?: new.streams.firstOrNull())?.id,
+    )
+  }
   /**
    * Slider release or the sheet's Save. [threshold] comes from Thresholds.forSensor, so it is
    * canonically named and one save covers every model spelling. No state update here: the DB flow

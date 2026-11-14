@@ -1,6 +1,6 @@
 package pl.llp.aircasting.explore
 
-import pl.llp.aircasting.domain.DataSource
+import pl.llp.aircasting.domain.ExploreSource
 import pl.llp.aircasting.domain.ExploreFilters
 import pl.llp.aircasting.domain.GeoLocation
 import pl.llp.aircasting.domain.MapStation
@@ -40,7 +40,7 @@ fun ExploreMarker.Station.label(colourType: MeasurementType?): String {
   val stream = colourType?.let(station::streamFor)
   return if (stream != null) "${stream.value} ${stream.unitSymbol}"
   else when (station.source) {
-    DataSource.AirBeam -> "AIRBEAM"
-    DataSource.Government -> "GOV"
+    ExploreSource.AirBeam -> "AIRBEAM"
+    ExploreSource.Government -> "GOV"
   }
 }

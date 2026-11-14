@@ -82,5 +82,5 @@ private const val PM2_5 = "PM2.5"
 private val ChipOrder = listOf("PM1", PM2_5, "PM10", "F", "RH")
 
 /** Unknown sensors go last; sortedBy is stable, so they keep the order they came in. */
-private fun chipRank(sensorName: String): Int =
+internal fun chipRank(sensorName: String): Int =
   ChipOrder.indexOf(sensorName.detailedType).takeIf { it >= 0 } ?: ChipOrder.size

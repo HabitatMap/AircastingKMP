@@ -74,6 +74,27 @@ Each section keeps its header (count `0`, grey `surfaceContainerHigh` badge) and
 title, one line, outlined **Start … session** button. Mobile's button opens the new-session flow
 (`NewSessionRoute`) at the method step. Fixed / Phone Microphone empty cards wait with their sections.
 
+## Session details ("See details")
+
+Figma `859:7216` — https://www.figma.com/design/8AQfUtkIu9qgd4CAVNPbXB/Air-Casting-app-re-design?node-id=859-7216
+
+**Reuses the Explore station details screen** (`StationDetailsScreen` + `StationDetailsViewModel`)
+rather than a copy (*decided 2026-11-14*):
+- `StationDetails` carries `type: SessionType` (fixed/mobile) and `source: DataSource`
+  (AirBeam / Government / PhoneMic) — the tag is their combination (`AIRBEAM MOBILE`,
+  `PHONE MICROPHONE`, …), like legacy `Session.infoString`. Explore's own filter enum is
+  `ExploreSource`.
+- The ViewModel takes a `Flow<StationDetails?>`: Explore passes a one-shot network flow, our
+  session `SessionDetailsRepository.observe(uuid)` — a live DB flow, so values update every reading
+  while the chosen chip stays. `null` (session gone) → Error.
+- The graph is a slot: Explore → `StationGraph` (24 h, network), session → `SessionGraph`
+  (whole session, live DB). Both render through `GraphContent`.
+- Koin: the session's ViewModel is the `SessionDetailsQualifier` definition.
+
+Header shows user tags and Indoor/Outdoor; stats are **Now · Avg. · Min. · Max.** over the whole
+session (rule in `DOMAIN_KNOWLEDGE.md` → *Own mobile session details*). Not built yet, like on the
+station screen: Map tab, app-bar actions (favourite, alert, notes), location name.
+
 ## Open (parked) questions
 
 - Fixed: when is a session "Offline"? Network-only vs local cache?

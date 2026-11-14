@@ -31,12 +31,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import org.jetbrains.compose.resources.painterResource
-import pl.llp.aircasting.domain.DataSource
+import pl.llp.aircasting.domain.ExploreSource
 import pl.llp.aircasting.domain.ExploreFilters
 import pl.llp.aircasting.domain.MeasurementType
 import pl.llp.aircasting.i18n.LocalStrings
@@ -176,7 +175,7 @@ internal fun Strings.label(type: MeasurementType): String = when (type) {
   MeasurementType.Humidity -> exploreHumidity
 }
 
-private fun Strings.label(source: DataSource): String = when (source) {
-  DataSource.AirBeam -> exploreSourceAirBeam
-  DataSource.Government -> exploreSourceGovernment
+private fun Strings.label(source: ExploreSource): String = when (source) {
+  ExploreSource.AirBeam -> exploreSourceAirBeam
+  ExploreSource.Government -> exploreSourceGovernment
 }

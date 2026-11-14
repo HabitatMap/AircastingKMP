@@ -1,7 +1,6 @@
 package pl.llp.aircasting.data.network
 
-import kotlinx.serialization.decodeFromString
-import pl.llp.aircasting.domain.DataSource
+import pl.llp.aircasting.domain.ExploreSource
 import pl.llp.aircasting.domain.GeoLocation
 import pl.llp.aircasting.domain.MapCluster
 import pl.llp.aircasting.domain.MapStation
@@ -57,7 +56,7 @@ class ExploreMapMapperTest {
     assertEquals(
       listOf(
         MapStation(
-          uuid = "u1", source = DataSource.AirBeam, title = "Roof", provider = "jane",
+          uuid = "u1", source = ExploreSource.AirBeam, title = "Roof", provider = "jane",
           location = GeoLocation(40.1, -73.2),
           streams = listOf(
             MapStream(

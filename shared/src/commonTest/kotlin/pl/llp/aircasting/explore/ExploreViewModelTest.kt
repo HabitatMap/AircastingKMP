@@ -12,7 +12,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import pl.llp.aircasting.domain.DataSource
+import pl.llp.aircasting.domain.ExploreSource
 import pl.llp.aircasting.domain.ExploreFilters
 import pl.llp.aircasting.domain.GeoLocation
 import pl.llp.aircasting.domain.GeoSquare
@@ -100,7 +100,7 @@ class ExploreViewModelTest {
     vm.onCameraIdle(NYC)
     advanceUntilIdle()
 
-    val govOzone = ExploreFilters(DataSource.Government, setOf(MeasurementType.Ozone, MeasurementType.NitrogenDioxide))
+    val govOzone = ExploreFilters(ExploreSource.Government, setOf(MeasurementType.Ozone, MeasurementType.NitrogenDioxide))
     vm.applyFilters(govOzone)
     advanceUntilIdle()
 
@@ -249,7 +249,7 @@ class ExploreViewModelTest {
   @Test
   fun editing_the_draft_leaves_the_map_untouched() = runTest {
     val repo = FakeExploreMapRepository { _, filters ->
-      if (filters.source == DataSource.Government) listOf(GOV_12) else listOf(AIRBEAM_12)
+      if (filters.source == ExploreSource.Government) listOf(GOV_12) else listOf(AIRBEAM_12)
     }
     val vm = ExploreViewModel(repo, thresholds, NO_LOCATION, FakePlaceSearch())
     subscribe(vm)
@@ -257,7 +257,7 @@ class ExploreViewModelTest {
     advanceUntilIdle()
 
     vm.openFilters()
-    vm.editFilters(ExploreFilters(source = DataSource.Government))
+    vm.editFilters(ExploreFilters(source = ExploreSource.Government))
     advanceUntilIdle()
 
     assertEquals(ExploreFilters(), vm.state.value.filters)
@@ -333,7 +333,7 @@ class ExploreViewModelTest {
     val NEWARK = MapViewport(GeoSquare(north = 40.8, south = 40.7, east = -74.1, west = -74.2), zoom = 12.0, GeoLocation(40.75, -74.15))
     val PM_ONLY = ExploreFilters(measurementTypes = setOf(MeasurementType.ParticulateMatter))
 
-    fun station(source: DataSource, value: Int?) = MapStation(
+    fun station(source: ExploreSource, value: Int?) = MapStation(
       uuid = "u-$source", source = source, title = "Station", provider = "provider",
       location = GeoLocation(40.7, -74.0),
       streams = listOfNotNull(value?.let {
@@ -349,8 +349,8 @@ class ExploreViewModelTest {
       }),
     )
 
-    val AIRBEAM_12 = station(DataSource.AirBeam, 12)
-    val GOV_12 = station(DataSource.Government, 12)
+    val AIRBEAM_12 = station(ExploreSource.AirBeam, 12)
+    val GOV_12 = station(ExploreSource.Government, 12)
     val CLUSTER = MapCluster(GeoLocation(40.75, -73.98), count = 37)
   }
 }

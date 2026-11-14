@@ -69,10 +69,14 @@ fun AppNavHost(onRequestLocation: () -> Unit = {}) {
         onOpenSettings = { nav.navigateOnce(SettingsRoute.Root) },
         onStartNewSession = { nav.navigateOnce(NewSessionRoute) },
         onOpenStation = { uuid -> nav.navigateOnce(StationDetailsRoute(uuid)) },
+        onOpenSession = { uuid, sensorName -> nav.navigateOnce(SessionDetailsRoute(uuid, sensorName)) },
       )
     }
     composable<StationDetailsRoute> { entry ->
       StationDetailsDestination(entry.toRoute<StationDetailsRoute>().uuid, onBack = { nav.popBackStack() })
+    }
+    composable<SessionDetailsRoute> { entry ->
+      SessionDetailsDestination(entry.toRoute(), onBack = { nav.popBackStack() })
     }
     composable<NewSessionRoute> { NewSessionDestination(onExit = { nav.popBackStack() }) }
     composable<OnboardingRoute> { OnboardingDestination() }

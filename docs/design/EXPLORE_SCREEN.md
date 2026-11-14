@@ -81,10 +81,13 @@ Endpoints: `API_V3.md` → *Explore session details*.
   hourly). Axis labels come from local-as-UTC times, so format them as UTC and don't convert again.
   **Open (design):** the frame's x-axis spans only ~8 h (19:00–03:00). Is it a pannable 24 h, or
   does it show only the last ~8 h?
-  *Zoom:* pinch zooms in to at most 15 min, but never past the zoom where the whole series fits.
+  *Zoom:* pinch zooms in to at most 2 min, but never past the zoom where the whole series fits. 
+  *Tooltip:* follows the finger until the chart starts panning (48 dp sideways) or the page scrolls.
+   Fully zoomed out there is nothing to pan, so it follows the finger across the whole width
+   (`ScrubUntilPanController`, `canPan` = `VicoScrollState.maxValue ≥ 1 px`).
   A quiet station can send a series only seconds long, and that fits without any zoom. Vico throws
-  if `maxZoom < minZoom`, so `MeasurementChart` uses `maxZoom = Zoom.max(Zoom.x(15 min), Zoom.Content)`.
-  A series shorter than 15 min therefore can't be zoomed.
+  if `maxZoom < minZoom`, so `MeasurementChart` uses `maxZoom = Zoom.max(Zoom.x(2 min), Zoom.Content)`.
+  A series shorter than 2 min therefore can't be zoomed.
 - *Every stream of an AirBeam (PM1, PM10, and all types regardless of the active filter):* chain
   `fixed_streams/{id}` → `session_id` → deprecated `/api/fixed/sessions/{id}/streams.json`. This is
   what legacy does.

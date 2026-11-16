@@ -130,7 +130,7 @@ Chrome, top → bottom:
 |---|---|---|
 | **Show all** / several parameters | Blue halo + white pill with source badge: `GOV` (dot) or `AIRBEAM` (AirBeam icon). **No value, no colour.** | frame 1 |
 | **Exactly one parameter** (e.g. Particulate matter) | Halo + pill tinted by threshold level, pill shows value + unit: `6 µg/m³` (green), `12 µg/m³` (yellow), `23 µg/m³` (orange), `65 µg/m³` (red). AirBeam keeps its icon, gov a dot. | frames 2–3 |
-| Zoomed out (response contains ≥1 `cluster`) | **Every** item — clusters *and* lone stations — is a plain blue dot with a ring. No count, no value, never coloured. Decided in `ExploreViewModel.toMarkers`. | frame 4 |
+| Server `cluster` item | Plain blue dot with a ring. No count, no value, never coloured. Lone `station` items in the **same** response keep their pill per the rows above — the server clusters per grid cell, so a response mixes both (live: zoom 10 over NYC = 18 stations + 1 cluster). Decided in `ExploreViewModel.toMarkers`. *Changed 2026-11-16: used to turn every item into a dot once any cluster was present.* | frame 4 |
 
 Matches the API: the server sends `value` only when exactly one `measurement_type` is selected
 (`API_V3.md` → *Explore map*), and colour comes from the user's local thresholds

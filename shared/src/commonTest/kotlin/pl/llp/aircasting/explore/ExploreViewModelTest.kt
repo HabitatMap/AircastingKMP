@@ -128,8 +128,8 @@ class ExploreViewModelTest {
     )
   }
   @Test
-  fun a_clustered_response_draws_every_item_as_a_plain_dot() = runTest {
-    // Values and a single selected type would normally colour the stations — clustering wins.
+  fun a_mixed_response_keeps_lone_stations_as_stations_next_to_cluster_dots() = runTest {
+    // The server clusters per grid cell, so one response mixes clusters with lone stations (live at zoom 10).
     val repo = FakeExploreMapRepository { _, _ -> listOf(AIRBEAM_12, GOV_12, CLUSTER) }
     val vm = ExploreViewModel(repo, thresholds, NO_LOCATION, FakePlaceSearch())
     subscribe(vm)
@@ -140,8 +140,8 @@ class ExploreViewModelTest {
 
     assertEquals(
       listOf(
-        ExploreMarker.Dot(AIRBEAM_12.location),
-        ExploreMarker.Dot(GOV_12.location),
+        ExploreMarker.Station(AIRBEAM_12, MeasurementLevel.MEDIUM),
+        ExploreMarker.Station(GOV_12, MeasurementLevel.LOW),
         ExploreMarker.Dot(CLUSTER.location),
       ),
 

@@ -132,6 +132,28 @@ class RecordingEngineTest {
     assertFalse(host.running)
   }
 
+  /** Only Mini V2 takes an interval (0x13 bytes 17..18); legacy stored it on V2 sessions. */
+  @Test
+  fun a_mini_v2_records_at_the_picked_interval() = runTest {
+    engine.start(miniV2, details, interval = 5.seconds)
+
+    val config = link.configured.single() as SessionConfig.Mobile
+    assertEquals(5.seconds, config.interval)
+    assertEquals(5.seconds, sessions.find(config.uuid.toString())?.measurementInterval)
+  }
+
+  /** AB3 / Mini V1 ignore the interval and stream every second, so that's what the session says. */
+  @Test
+  fun a_v1_device_records_every_second_whatever_was_picked() = runTest {
+    val ab3 = DiscoveredAirBeam(DeviceId("11:22:33:44:55:66"), "AirBeam3-1234", AirBeamDevice.AirBeam3)
+
+    engine.start(ab3, details, interval = 5.seconds)
+
+    val config = link.configured.single() as SessionConfig.Mobile
+    assertEquals(1.seconds, config.interval)
+    assertEquals(1.seconds, sessions.find(config.uuid.toString())?.measurementInterval)
+  }
+
   /** Same model as V2: legacy's CSV `deviceName` and `SessionParams` both say "AirBeamMini". */
   @Test
   fun a_mini_v1_session_carries_its_model() = runTest {

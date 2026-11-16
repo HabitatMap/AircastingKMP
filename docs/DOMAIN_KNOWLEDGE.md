@@ -200,6 +200,11 @@ Paths below are under legacy `app/src/main/java/pl/llp/aircasting/`.
 - AB2, AB3 and Mini V1 ignore it.
 - *Rewrite decision (2026-10-26):* fixed sessions have **no interval picker**. Every fixed
   session uses a hard-coded 60 s.
+- *Mobile:* the wizard's picker (`SamplingInterval`) is sent only to a Mini V2, in bytes
+  [17..18] of the 20-byte mobile `0x13` (`RecordingEngine.start` → `SessionConfig.Mobile.interval`).
+  AB3 / Mini V1 ignore it and stream every second, so their sessions store `measurementInterval = 1 s`
+  whatever was picked — legacy likewise stored the interval only on V2 sessions
+  (`RecordingHandlerImpl.startRecording`).
 
 **Tags.**
 - Legacy: a plain text field split on spaces, with no suggestions.

@@ -28,6 +28,7 @@ import pl.llp.aircasting.domain.session.SessionRepository
 import pl.llp.aircasting.domain.session.SessionStatus
 import pl.llp.aircasting.domain.session.SessionType
 import kotlin.time.Clock
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
@@ -79,10 +80,18 @@ class RecordingEngine(
   }
 
   /** Configures the device first and writes nothing unless it answers [ConfigResult.Success]. */
-  suspend fun start(target: DiscoveredAirBeam, details: NewSessionDetails): ConfigResult {
+  suspend fun start(
+    target: DiscoveredAirBeam,
+    details: NewSessionDetails,
+    interval: Duration = 1.seconds,
+  ): ConfigResult {
     val specs = streamsFor(target.device)
     val uuid = Uuid.random()
-    val result = link.configure(SessionConfig.Mobile(uuid, location = location.latest() ?: DEFAULT_LOCATION))
+    // Only Mini V2 honours the interval; V1 devices stream every second, so record what they do.
+    val effectiveInterval = if (target.device == AirBeamDevice.Mini.V2) interval else 1.seconds
+    val result = link.configure(
+      SessionConfig.Mobile(uuid, location = location.latest() ?: DEFAULT_LOCATION, interval = effectiveInterval)
+    )
     if (result != ConfigResult.Success) return result
 
     val session = Session(
@@ -93,7 +102,7 @@ class RecordingEngine(
       tags = details.tags,
       startTime = clock.now(),
       timeZone = timeZone.id,
-      measurementInterval = 1.seconds, // what MiniV2.mobileSessionConfigCommand sends
+      measurementInterval = effectiveInterval,
       deviceId = target.id.value,
       deviceModel = target.device.model,
     )

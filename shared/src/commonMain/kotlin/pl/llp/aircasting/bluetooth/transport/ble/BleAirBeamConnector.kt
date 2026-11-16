@@ -262,7 +262,10 @@ private class BleConnection(
     // 2. Configure Session
     return when (config) {
       is SessionConfig.Mobile ->
-        sendV2AndAwait(AirBeamProtocol.MiniV2.mobileSessionConfigCommand(config.uuid), 10.seconds)
+        sendV2AndAwait(
+          AirBeamProtocol.MiniV2.mobileSessionConfigCommand(config.uuid, config.interval.inWholeSeconds.toInt()),
+          10.seconds,
+        )
       // Legacy AirBeamMiniV2Configurator.configure(): clear the saved session (the device answers
       // Ready) before a fixed 0x13. Wipes unsynced data — accepted, we skip the "sync first" dialog.
       // WiFi fails -> Nack(0x05); first measurement POSTed -> Ready; see awaitFixedStart.

@@ -35,6 +35,13 @@ class FakeAirBeamLink(var configureResult: ConfigResult = ConfigResult.Success) 
     return configureResult
   }
 
+  /** The link state at each [endSession]: shows whether it came before the disconnect. */
+  val sessionsEndedWhile = mutableListOf<LinkState>()
+
+  override suspend fun endSession() {
+    sessionsEndedWhile += state.value
+  }
+
   override suspend fun disconnect() {
     disconnects++
     state.value = LinkState.Idle

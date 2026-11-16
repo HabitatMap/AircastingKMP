@@ -219,6 +219,18 @@ private class BleConnection(
     }
   }
 
+  /**
+   * Legacy `StopRecordingEvent` -> `discardSession()`: a Mini V2 otherwise keeps recording and
+   * streams the backlog on the next connect. V1 devices stop with the link; nothing to send.
+   */
+  override suspend fun endSession() {
+    if (device != AirBeamDevice.Mini.V2) return
+    guarded {
+      sendV2Command(AirBeamProtocol.MiniV2.discardSessionCommand())
+      ConfigResult.Success
+    }
+  }
+
   override suspend fun disconnect() {
     _status.compareAndSet(ConnectionStatus.Ready, ConnectionStatus.Disconnected)
     peripheral.release()
@@ -262,7 +274,10 @@ private class BleConnection(
     // 2. Configure Session
     return when (config) {
       is SessionConfig.Mobile ->
-        sendV2AndAwait(AirBeamProtocol.MiniV2.mobileSessionConfigCommand(config.uuid), 10.seconds)
+        sendV2AndAwait(
+          AirBeamProtocol.MiniV2.mobileSessionConfigCommand(config.uuid, config.interval.inWholeSeconds.toInt()),
+          10.seconds,
+        )
       // Legacy AirBeamMiniV2Configurator.configure(): clear the saved session (the device answers
       // Ready) before a fixed 0x13. Wipes unsynced data — accepted, we skip the "sync first" dialog.
       // WiFi fails -> Nack(0x05); first measurement POSTed -> Ready; see awaitFixedStart.

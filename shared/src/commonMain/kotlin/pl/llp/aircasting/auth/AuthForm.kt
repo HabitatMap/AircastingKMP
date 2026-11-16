@@ -8,11 +8,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -25,6 +23,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import pl.llp.aircasting.i18n.LocalStrings
+import pl.llp.aircasting.ui.components.LoadingSpinner
 
 @Stable
 class AuthFormActions(
@@ -151,11 +150,7 @@ private fun SubmitButton(state: AuthFormState, onClick: () -> Unit) {
     ),
   ) {
     if (state.isSubmitting) {
-      CircularProgressIndicator(
-        modifier = Modifier.size(20.dp),
-        strokeWidth = 2.dp,
-        color = MaterialTheme.colorScheme.onPrimaryContainer,
-      )
+      LoadingSpinner(size = 20.dp)
     } else {
       Text(
         when (state.mode) {

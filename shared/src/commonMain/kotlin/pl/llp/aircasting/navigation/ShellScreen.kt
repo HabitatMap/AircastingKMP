@@ -8,14 +8,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 
 @Composable
 fun ShellScreen(
+  selected: AppTab,
+  onSelect: (AppTab) -> Unit,
   onRequestLocation: () -> Unit,
   onOpenSettings: () -> Unit,
   onStartNewSession: () -> Unit,
@@ -23,15 +21,13 @@ fun ShellScreen(
   onOpenSession: (uuid: String, sensorName: String?) -> Unit,
 ) {
   LaunchedEffect(Unit) { onRequestLocation() }
-
-  var selected by rememberSaveable { mutableStateOf(AppTab.Home) }
   val topSystemBarColor = when(selected) {
     AppTab.Explore -> MaterialTheme.colorScheme.surfaceContainerLowest
     else -> MaterialTheme.colorScheme.background
   }
   Scaffold(
     containerColor = topSystemBarColor,
-    bottomBar = { AircastingNavBar(selected, onSelect = { selected = it }) },
+    bottomBar = { AircastingNavBar(selected, onSelect = onSelect) },
   ) { padding ->
     // Consume what we pad, so tabs using statusBarsPadding() etc. don't apply the inset twice.
     Box(Modifier.padding(padding).consumeWindowInsets(padding)) {

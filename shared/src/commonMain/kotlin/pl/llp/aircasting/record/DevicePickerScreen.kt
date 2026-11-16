@@ -16,7 +16,6 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
@@ -31,6 +30,7 @@ import pl.llp.aircasting.bluetooth.DiscoveredAirBeam
 import pl.llp.aircasting.i18n.LocalStrings
 import pl.llp.aircasting.ui.wizard.WizardButton
 import pl.llp.aircasting.ui.wizard.WizardScaffold
+import pl.llp.aircasting.ui.components.LoadingSpinner
 
 @Composable
 fun DevicePickerScreen(
@@ -82,7 +82,7 @@ fun DevicePickerScreen(
           style = MaterialTheme.typography.labelLarge,
           color = MaterialTheme.colorScheme.outline,
         )
-        if (state.scanning) MiniSpinner()
+        if (state.scanning) LoadingSpinner(size = 14.dp)
       }
       Spacer(Modifier.height(16.dp))
       when {
@@ -104,17 +104,6 @@ fun DevicePickerScreen(
       }
     }
   }
-}
-
-/** Same colours as the custom-server `SpinnerBadge`, scaled to sit beside a label. */
-@Composable
-private fun MiniSpinner() {
-  CircularProgressIndicator(
-    modifier = Modifier.size(14.dp),
-    color = MaterialTheme.colorScheme.primaryContainer,
-    trackColor = MaterialTheme.colorScheme.inversePrimary,
-    strokeWidth = 2.dp,
-  )
 }
 
 @Composable

@@ -125,6 +125,18 @@ class AirBeamLinkTest {
   }
 
   @Test
+  fun endSession_reaches_the_connected_device() = runTest {
+    val link = link()
+    val connection = FakeConnection()
+    connector.willConnect(connection.connected())
+    link.connect(target)
+
+    link.endSession()
+
+    assertEquals(1, connection.sessionsEnded)
+  }
+
+  @Test
   fun a_drop_with_no_session_is_ConnectionLost() = runTest {
     val link = link()
     val connection = FakeConnection()

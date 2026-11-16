@@ -239,6 +239,9 @@ private class ClassicConnection(
     }
   }
 
+  /** AirBeam2 stops with the link; it has no session of its own to end. */
+  override suspend fun endSession() = Unit
+
   override suspend fun disconnect() {
     _status.compareAndSet(ConnectionStatus.Ready, ConnectionStatus.Disconnected)
     scope.cancel()

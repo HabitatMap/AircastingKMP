@@ -85,7 +85,7 @@ class RecordingViewModel(
         locate()
         _startState.value = StartState.Preparing(PrepareStep.Configuring)
         if (picked == null || !linkTo(picked)) ConfigResult.NotConnected
-        else engine.start(picked, NewSessionDetails(form.name, form.tags))
+        else engine.start(picked, NewSessionDetails(form.name, form.tags), form.interval.every)
       }
     }
     return if (result == ConfigResult.Success) StartState.Started else StartState.Failed(result)

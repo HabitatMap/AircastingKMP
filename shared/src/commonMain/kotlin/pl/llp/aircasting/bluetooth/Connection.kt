@@ -4,6 +4,8 @@ import pl.llp.aircasting.bluetooth.v2_firmware_specific.DeviceReportedState
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import pl.llp.aircasting.domain.GeoLocation
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
 interface AirBeamConnector {
@@ -44,6 +46,9 @@ interface AirBeamConnection {
    * again: Mini V2 still runs its session and would reject a new config.
    */
   suspend fun resumeMobileSession(config: SessionConfig.Mobile): ConfigResult
+
+  /** Stops the device's own session before a [disconnect] that finishes it (legacy `discardSession()`). */
+  suspend fun endSession()
 
   suspend fun disconnect()
 }
@@ -88,8 +93,10 @@ sealed interface SessionConfig {
     val authToken: String? = null,
     /** V1 devices only (AB3 streams slowly without one); Mini V2 ignores it. */
     val location: GeoLocation? = null,
+    /** Mini V2 only (0x13 bytes 17..18); V1 devices stream every second regardless. */
+    val interval: Duration = 1.seconds,
   ) : SessionConfig {
-    override fun toString() = "Mobile(uuid=$uuid)"
+    override fun toString() = "Mobile(uuid=$uuid, interval=$interval)"
   }
 
   data class FixedWiFi(

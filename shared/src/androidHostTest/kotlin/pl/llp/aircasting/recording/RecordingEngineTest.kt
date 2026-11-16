@@ -132,6 +132,28 @@ class RecordingEngineTest {
     assertFalse(host.running)
   }
 
+  /** Only Mini V2 takes an interval (0x13 bytes 17..18); legacy stored it on V2 sessions. */
+  @Test
+  fun a_mini_v2_records_at_the_picked_interval() = runTest {
+    engine.start(miniV2, details, interval = 5.seconds)
+
+    val config = link.configured.single() as SessionConfig.Mobile
+    assertEquals(5.seconds, config.interval)
+    assertEquals(5.seconds, sessions.find(config.uuid.toString())?.measurementInterval)
+  }
+
+  /** AB3 / Mini V1 ignore the interval and stream every second, so that's what the session says. */
+  @Test
+  fun a_v1_device_records_every_second_whatever_was_picked() = runTest {
+    val ab3 = DiscoveredAirBeam(DeviceId("11:22:33:44:55:66"), "AirBeam3-1234", AirBeamDevice.AirBeam3)
+
+    engine.start(ab3, details, interval = 5.seconds)
+
+    val config = link.configured.single() as SessionConfig.Mobile
+    assertEquals(1.seconds, config.interval)
+    assertEquals(1.seconds, sessions.find(config.uuid.toString())?.measurementInterval)
+  }
+
   /** Same model as V2: legacy's CSV `deviceName` and `SessionParams` both say "AirBeamMini". */
   @Test
   fun a_mini_v1_session_carries_its_model() = runTest {
@@ -194,6 +216,29 @@ class RecordingEngineTest {
     assertEquals(1, link.disconnects)
     assertFalse(host.running)
     assertFalse(engine.recording.first())
+  }
+
+  /**
+   * Legacy `StopRecordingEvent`: end the session on the device, then drop the link. Otherwise a
+   * Mini V2 keeps recording it and streams that backlog into the next session.
+   */
+  @Test
+  fun stop_ends_the_session_on_the_device_before_dropping_the_link() = runTest {
+    recording()
+
+    engine.stop()
+
+    assertEquals(listOf<LinkState>(LinkState.Connected(miniV2)), link.sessionsEndedWhile)
+  }
+
+  /** Standalone means the AirBeam carries on by itself, so its session must stay alive. */
+  @Test
+  fun going_standalone_leaves_the_session_running_on_the_device() = runTest {
+    recording()
+
+    engine.goStandalone()
+
+    assertEquals(emptyList(), link.sessionsEndedWhile)
   }
 
   /** Active tab "Finish and discard": the AirBeam went standalone, so there's no link to drop. */
@@ -325,6 +370,33 @@ class RecordingEngineTest {
     runCurrent()
 
     assertEquals(emptyList(), outbox.pending(uuid, limit = 10))
+  }
+
+  /**
+   * A Mini V2 still holding an earlier session (standalone, or finished while the link was down)
+   * streams that backlog after the new config. It predates this session, so it isn't ours.
+   */
+  @Test
+  fun a_reading_stamped_before_the_session_started_is_dropped() = runTest {
+    val uuid = recording()
+
+    link.send(pm25(1.0, time - 10.minutes))
+    link.send(pm25(2.0, time))
+    runCurrent()
+
+    assertEquals(listOf(2.0), outbox.pending(uuid, limit = 10).map { it.value })
+  }
+
+  /** V2 stamps whole seconds: a reading in the second the session started still belongs to it. */
+  @Test
+  fun a_device_reading_from_the_starting_second_is_kept() = runTest {
+    time = Instant.parse("2026-10-20T10:00:00.700Z")
+    val uuid = recording()
+
+    link.send(pm25(12.0, Instant.parse("2026-10-20T10:00:00Z")))
+    runCurrent()
+
+    assertEquals(listOf(12.0), outbox.pending(uuid, limit = 10).map { it.value })
   }
 
   /** It has no stream — and v3 could never take it — so it's dropped, not crashed on. */

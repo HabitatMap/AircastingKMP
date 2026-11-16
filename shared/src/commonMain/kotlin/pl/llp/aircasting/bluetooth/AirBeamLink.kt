@@ -51,6 +51,9 @@ interface AirBeamLink {
   /** A successful [SessionConfig.Mobile] arms reconnecting; anything else disarms it. */
   suspend fun configure(config: SessionConfig): ConfigResult
 
+  /** Ends the session on the device, when there is a ready link to say it over. Call before [disconnect]. */
+  suspend fun endSession()
+
   /** Ends the link and any reconnecting. Stop and standalone mode both land here. */
   suspend fun disconnect()
 }
@@ -98,6 +101,10 @@ class DefaultAirBeamLink(
     val result = connection.configure(config)
     if (result == ConfigResult.Success) mobileSession.value = config as? SessionConfig.Mobile
     return result
+  }
+
+  override suspend fun endSession() {
+    current.value?.takeIf { _state.value is LinkState.Connected }?.endSession()
   }
 
   override suspend fun disconnect() = commands.withLock {

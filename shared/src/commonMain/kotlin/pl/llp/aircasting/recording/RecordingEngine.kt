@@ -28,7 +28,9 @@ import pl.llp.aircasting.domain.session.SessionRepository
 import pl.llp.aircasting.domain.session.SessionStatus
 import pl.llp.aircasting.domain.session.SessionType
 import kotlin.time.Clock
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Instant
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -52,7 +54,8 @@ class RecordingEngine(
 ) {
   private val log = Logger.withTag("RecordingEngine")
 
-  private class Active(val uuid: String, val streamIds: Map<StreamSpec, Long>)
+  /** [since]: the start, floored to the whole second a device stamps; anything older isn't ours. */
+  private class Active(val uuid: String, val streamIds: Map<StreamSpec, Long>, val since: Instant)
 
   /** The session recording over the link right now; null when there is none. */
   private val active = MutableStateFlow<Active?>(null)
@@ -79,10 +82,21 @@ class RecordingEngine(
   }
 
   /** Configures the device first and writes nothing unless it answers [ConfigResult.Success]. */
-  suspend fun start(target: DiscoveredAirBeam, details: NewSessionDetails): ConfigResult {
+  suspend fun start(
+    target: DiscoveredAirBeam,
+    details: NewSessionDetails,
+    interval: Duration = 1.seconds,
+  ): ConfigResult {
     val specs = streamsFor(target.device)
     val uuid = Uuid.random()
-    val result = link.configure(SessionConfig.Mobile(uuid, location = location.latest() ?: DEFAULT_LOCATION))
+    // Before configure: the device stamps from the time sync it gets there, so its first readings
+    // may predate a start taken afterwards.
+    val startTime = clock.now()
+    // Only Mini V2 honours the interval; V1 devices stream every second, so record what they do.
+    val effectiveInterval = if (target.device == AirBeamDevice.Mini.V2) interval else 1.seconds
+    val result = link.configure(
+      SessionConfig.Mobile(uuid, location = location.latest() ?: DEFAULT_LOCATION, interval = effectiveInterval)
+    )
     if (result != ConfigResult.Success) return result
 
     val session = Session(
@@ -91,15 +105,15 @@ class RecordingEngine(
       status = SessionStatus.RECORDING,
       name = details.name,
       tags = details.tags,
-      startTime = clock.now(),
+      startTime = startTime,
       timeZone = timeZone.id,
-      measurementInterval = 1.seconds, // what MiniV2.mobileSessionConfigCommand sends
+      measurementInterval = effectiveInterval,
       deviceId = target.id.value,
       deviceModel = target.device.model,
     )
     sessions.insert(session)
     val streamIds = specs.associateWith { streams.findOrCreate(session.uuid, it.sensorName, it.unitSymbol) }
-    active.value = Active(session.uuid, streamIds)
+    active.value = Active(session.uuid, streamIds, since = Instant.fromEpochSeconds(startTime.epochSeconds))
     host.start()
     log.i { "Recording ${session.uuid} on ${target.name}" }
     return result
@@ -117,6 +131,7 @@ class RecordingEngine(
   suspend fun finish(uuid: String): Unit = writes.withLock {
     if (active.value?.uuid == uuid) {
       active.value = null
+      link.endSession()
       link.disconnect()
       host.stop()
     }
@@ -142,11 +157,16 @@ class RecordingEngine(
       log.w { "${session.uuid}: no stream for ${reading.sensorName} [${reading.unitSymbol}]; dropped" }
       return
     }
+    val time = reading.measuredAt ?: clock.now()
+    if (time < session.since) {
+      log.w { "${session.uuid}: reading from $time predates the session (device backlog); dropped" }
+      return
+    }
     measurements.insertRecorded(
       listOf(
         Measurement(
           streamId = streamId,
-          time = reading.measuredAt ?: clock.now(),
+          time = time,
           value = reading.value,
           location = location.latest() ?: DEFAULT_LOCATION,
         )

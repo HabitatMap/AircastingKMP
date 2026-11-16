@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -45,6 +44,7 @@ import pl.llp.aircasting.ui.components.TintedTag
 import pl.llp.aircasting.ui.deviceDisplayName
 import pl.llp.aircasting.ui.streamChipLabel
 import kotlin.time.Clock
+import pl.llp.aircasting.ui.components.LoadingSpinner
 
 /** Figma "Single station view" (693:1565), header + stats; graph/map/slider come later. */
 @Composable
@@ -61,7 +61,7 @@ fun StationDetailsScreen(
   SettingsScaffold(title = "", onBack = onBack) { padding ->
     Box(Modifier.fillMaxSize().padding(padding)) {
       when (state) {
-        StationDetailsState.Loading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
+        StationDetailsState.Loading -> LoadingSpinner(Modifier.align(Alignment.Center))
         StationDetailsState.Error -> ErrorState(onRetry, Modifier.align(Alignment.Center))
         is StationDetailsState.Content -> Column(
           Modifier.verticalScroll(rememberScrollState()).padding(horizontal = ScreenPadding),

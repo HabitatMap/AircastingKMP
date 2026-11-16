@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -37,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import pl.llp.aircasting.i18n.LocalStrings
+import pl.llp.aircasting.ui.components.LoadingSpinner
 
 @Composable
 fun IntroStep() {
@@ -214,11 +214,6 @@ fun StatusBadge(icon: DrawableResource, tint: Color, background: Color) {
 @Composable
 fun SpinnerBadge() {
   Box(Modifier.size(96.dp), contentAlignment = Alignment.Center) {
-    CircularProgressIndicator(
-      modifier = Modifier.size(44.dp),
-      color = MaterialTheme.colorScheme.primaryContainer,
-      trackColor = MaterialTheme.colorScheme.inversePrimary,
-      strokeWidth = 5.dp,
-    )
+    LoadingSpinner()
   }
 }

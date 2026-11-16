@@ -13,6 +13,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.IntOffset
 import androidx.lifecycle.Lifecycle
@@ -55,6 +56,8 @@ fun AppNavHost(onRequestLocation: () -> Unit = {}) {
     shownEntry = entry
     nav.navigate(entry.route) { popUpTo(0) { inclusive = true } }
   }
+  // Hoisted out of the shell so a started session can land the user on Active.
+  var tab by rememberSaveable { mutableStateOf(AppTab.Home) }
   NavHost(
     navController = nav,
     startDestination = startEntry.route,
@@ -65,6 +68,8 @@ fun AppNavHost(onRequestLocation: () -> Unit = {}) {
   ) {
     composable<ShellRoute> {
       ShellScreen(
+        selected = tab,
+        onSelect = { tab = it },
         onRequestLocation = onRequestLocation,
         onOpenSettings = { nav.navigateOnce(SettingsRoute.Root) },
         onStartNewSession = { nav.navigateOnce(NewSessionRoute) },
@@ -78,7 +83,15 @@ fun AppNavHost(onRequestLocation: () -> Unit = {}) {
     composable<SessionDetailsRoute> { entry ->
       SessionDetailsDestination(entry.toRoute(), onBack = { nav.popBackStack() })
     }
-    composable<NewSessionRoute> { NewSessionDestination(onExit = { nav.popBackStack() }) }
+    composable<NewSessionRoute> {
+      NewSessionDestination(
+        onExit = { nav.popBackStack() },
+        onStarted = {
+          tab = AppTab.Active
+          nav.popBackStack()
+        },
+      )
+    }
     composable<OnboardingRoute> { OnboardingDestination() }
     composable<AuthRoute> {
       AuthDestination(onForgotPassword = { nav.navigateOnce(ForgotPasswordRoute) })

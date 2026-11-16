@@ -140,6 +140,14 @@ Enums:
    `DISCONNECTED` or a finished session is the recording side's call.
 7. **Finish** — `StopRecordingEvent` → final averaging *(dropped in the rewrite — §7)*, delete active-session rows, status
    `FINISHED`, backend sync. All services/connectors self-tear-down.
+   Before disconnecting, legacy `AirBeamConnector` sends Mini V2 `DiscardSession (0x11)`
+   (`AirBeamMiniV2Configurator.discardSession`). Without it the device keeps recording the
+   finished session and streams that backlog over Sync on the next connect.
+   *Rewrite:* `RecordingEngine.finish` → `AirBeamLink.endSession()` → `disconnect()`;
+   going standalone skips `endSession`. Where 0x11 can't be sent (finish while reconnecting,
+   a standalone session), `RecordingEngine` also drops device-stamped readings older than
+   the session start (floored to the whole second). Found on hardware 2026-11-16: a new
+   session showed the previous one's readings on its graph.
 
 Orchestration classes (all **CHANGE-LIKELY** at the EventBus edges, logic **KEEP**):
 `SessionManager` (EventBus front door) → `RecordingHandlerImpl` (lifecycle) →
@@ -200,6 +208,11 @@ Paths below are under legacy `app/src/main/java/pl/llp/aircasting/`.
 - AB2, AB3 and Mini V1 ignore it.
 - *Rewrite decision (2026-10-26):* fixed sessions have **no interval picker**. Every fixed
   session uses a hard-coded 60 s.
+- *Mobile:* the wizard's picker (`SamplingInterval`) is sent only to a Mini V2, in bytes
+  [17..18] of the 20-byte mobile `0x13` (`RecordingEngine.start` → `SessionConfig.Mobile.interval`).
+  AB3 / Mini V1 ignore it and stream every second, so their sessions store `measurementInterval = 1 s`
+  whatever was picked — legacy likewise stored the interval only on V2 sessions
+  (`RecordingHandlerImpl.startRecording`).
 
 **Tags.**
 - Legacy: a plain text field split on spaces, with no suggestions.

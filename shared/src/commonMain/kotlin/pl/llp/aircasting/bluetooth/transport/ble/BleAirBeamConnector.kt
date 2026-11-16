@@ -219,6 +219,18 @@ private class BleConnection(
     }
   }
 
+  /**
+   * Legacy `StopRecordingEvent` -> `discardSession()`: a Mini V2 otherwise keeps recording and
+   * streams the backlog on the next connect. V1 devices stop with the link; nothing to send.
+   */
+  override suspend fun endSession() {
+    if (device != AirBeamDevice.Mini.V2) return
+    guarded {
+      sendV2Command(AirBeamProtocol.MiniV2.discardSessionCommand())
+      ConfigResult.Success
+    }
+  }
+
   override suspend fun disconnect() {
     _status.compareAndSet(ConnectionStatus.Ready, ConnectionStatus.Disconnected)
     peripheral.release()

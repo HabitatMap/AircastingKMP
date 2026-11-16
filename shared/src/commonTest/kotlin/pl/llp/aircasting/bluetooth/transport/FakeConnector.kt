@@ -71,6 +71,13 @@ class FakeConnection(
     return resumeResult
   }
 
+  var sessionsEnded = 0
+    private set
+
+  override suspend fun endSession() {
+    sessionsEnded++
+  }
+
   override suspend fun disconnect() {
     disconnects++
     status.compareAndSet(ConnectionStatus.Ready, ConnectionStatus.Disconnected)

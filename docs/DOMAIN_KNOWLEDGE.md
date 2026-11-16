@@ -140,6 +140,14 @@ Enums:
    `DISCONNECTED` or a finished session is the recording side's call.
 7. **Finish** — `StopRecordingEvent` → final averaging *(dropped in the rewrite — §7)*, delete active-session rows, status
    `FINISHED`, backend sync. All services/connectors self-tear-down.
+   Before disconnecting, legacy `AirBeamConnector` sends Mini V2 `DiscardSession (0x11)`
+   (`AirBeamMiniV2Configurator.discardSession`). Without it the device keeps recording the
+   finished session and streams that backlog over Sync on the next connect.
+   *Rewrite:* `RecordingEngine.finish` → `AirBeamLink.endSession()` → `disconnect()`;
+   going standalone skips `endSession`. Where 0x11 can't be sent (finish while reconnecting,
+   a standalone session), `RecordingEngine` also drops device-stamped readings older than
+   the session start (floored to the whole second). Found on hardware 2026-11-16: a new
+   session showed the previous one's readings on its graph.
 
 Orchestration classes (all **CHANGE-LIKELY** at the EventBus edges, logic **KEEP**):
 `SessionManager` (EventBus front door) → `RecordingHandlerImpl` (lifecycle) →

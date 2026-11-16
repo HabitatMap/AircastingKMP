@@ -47,6 +47,9 @@ interface AirBeamConnection {
    */
   suspend fun resumeMobileSession(config: SessionConfig.Mobile): ConfigResult
 
+  /** Stops the device's own session before a [disconnect] that finishes it (legacy `discardSession()`). */
+  suspend fun endSession()
+
   suspend fun disconnect()
 }
 

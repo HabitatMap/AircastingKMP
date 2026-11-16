@@ -218,6 +218,29 @@ class RecordingEngineTest {
     assertFalse(engine.recording.first())
   }
 
+  /**
+   * Legacy `StopRecordingEvent`: end the session on the device, then drop the link. Otherwise a
+   * Mini V2 keeps recording it and streams that backlog into the next session.
+   */
+  @Test
+  fun stop_ends_the_session_on_the_device_before_dropping_the_link() = runTest {
+    recording()
+
+    engine.stop()
+
+    assertEquals(listOf<LinkState>(LinkState.Connected(miniV2)), link.sessionsEndedWhile)
+  }
+
+  /** Standalone means the AirBeam carries on by itself, so its session must stay alive. */
+  @Test
+  fun going_standalone_leaves_the_session_running_on_the_device() = runTest {
+    recording()
+
+    engine.goStandalone()
+
+    assertEquals(emptyList(), link.sessionsEndedWhile)
+  }
+
   /** Active tab "Finish and discard": the AirBeam went standalone, so there's no link to drop. */
   @Test
   fun finishing_a_standalone_session_leaves_the_one_recording_alone() = runTest {
@@ -347,6 +370,33 @@ class RecordingEngineTest {
     runCurrent()
 
     assertEquals(emptyList(), outbox.pending(uuid, limit = 10))
+  }
+
+  /**
+   * A Mini V2 still holding an earlier session (standalone, or finished while the link was down)
+   * streams that backlog after the new config. It predates this session, so it isn't ours.
+   */
+  @Test
+  fun a_reading_stamped_before_the_session_started_is_dropped() = runTest {
+    val uuid = recording()
+
+    link.send(pm25(1.0, time - 10.minutes))
+    link.send(pm25(2.0, time))
+    runCurrent()
+
+    assertEquals(listOf(2.0), outbox.pending(uuid, limit = 10).map { it.value })
+  }
+
+  /** V2 stamps whole seconds: a reading in the second the session started still belongs to it. */
+  @Test
+  fun a_device_reading_from_the_starting_second_is_kept() = runTest {
+    time = Instant.parse("2026-10-20T10:00:00.700Z")
+    val uuid = recording()
+
+    link.send(pm25(12.0, Instant.parse("2026-10-20T10:00:00Z")))
+    runCurrent()
+
+    assertEquals(listOf(12.0), outbox.pending(uuid, limit = 10).map { it.value })
   }
 
   /** It has no stream — and v3 could never take it — so it's dropped, not crashed on. */

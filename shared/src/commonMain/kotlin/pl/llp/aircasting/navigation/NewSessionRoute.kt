@@ -38,12 +38,12 @@ import pl.llp.aircasting.settings.mic.rememberMicrophonePermission
 data object NewSessionRoute
 
 @Composable
-fun NewSessionDestination(onExit: () -> Unit) {
+fun NewSessionDestination(onExit: () -> Unit, onStarted: () -> Unit) {
   val vm = koinViewModel<NewSessionViewModel>()
   val recorder = koinViewModel<RecordingViewModel>()
   val state by vm.state.collectAsStateWithLifecycle()
   val startState by recorder.startState.collectAsStateWithLifecycle()
-  LaunchedEffect(startState) { if (startState == StartState.Started) onExit() }
+  LaunchedEffect(startState) { if (startState == StartState.Started) onStarted() }
   val back: () -> Unit = { if (state.step == NewSessionStep.Method) onExit() else vm.back() }
 
   when (state.step) {

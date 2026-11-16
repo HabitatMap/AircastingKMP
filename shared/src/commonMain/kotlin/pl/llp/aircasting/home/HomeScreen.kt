@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -19,6 +18,7 @@ import pl.llp.aircasting.home.components.AirQualityCard
 import pl.llp.aircasting.home.components.HomeTopBar
 import pl.llp.aircasting.home.components.NearbyStationsSection
 import pl.llp.aircasting.ui.components.ErrorState
+import pl.llp.aircasting.ui.components.LoadingSpinner
 
 @Composable
 fun HomeScreen(
@@ -31,7 +31,7 @@ fun HomeScreen(
     HomeTopBar(onOpenSettings)
     Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
       when (state) {
-        HomeScreenState.Loading -> CircularProgressIndicator()
+        HomeScreenState.Loading -> LoadingSpinner()
         HomeScreenState.Error -> ErrorState(onRetry)
         is HomeScreenState.Content -> HomeContent(state.ui, onRequestLocation)
       }

@@ -3,7 +3,6 @@ package pl.llp.aircasting.explore
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -18,6 +17,7 @@ import pl.llp.aircasting.domain.StationDetails
 import pl.llp.aircasting.domain.StationStream
 import pl.llp.aircasting.ui.chart.MeasurementChart
 import pl.llp.aircasting.ui.components.ErrorState
+import pl.llp.aircasting.ui.components.LoadingSpinner
 
 /** Fixed, so the screen doesn't jump between loading, error and chart. Figma: 406 dp plot + hour labels. */
 private val GraphHeight = 440.dp
@@ -46,7 +46,7 @@ internal fun GraphContent(
 ) {
   Box(modifier.fillMaxWidth().height(GraphHeight), contentAlignment = Alignment.Center) {
     when (state) {
-      StationGraphState.Loading -> CircularProgressIndicator()
+      StationGraphState.Loading -> LoadingSpinner()
       StationGraphState.Error -> ErrorState(onRetry = onRetry)
       // key: a new stream starts from a fresh scroll/zoom, opened on its newest point.
       is StationGraphState.Ready -> if (state.points.isNotEmpty()) key(stream.id) {

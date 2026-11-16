@@ -30,7 +30,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -64,6 +63,7 @@ import pl.llp.aircasting.ui.components.TintedTag
 import pl.llp.aircasting.ui.theme.LocalAqColors
 import kotlin.time.Clock
 import kotlin.time.Instant
+import pl.llp.aircasting.ui.components.LoadingSpinner
 
 @Composable
 fun ActiveScreen(
@@ -370,7 +370,7 @@ private fun Waiting(title: String, body: String, spinner: Dp) {
     horizontalAlignment = Alignment.CenterHorizontally,
     verticalArrangement = Arrangement.spacedBy(10.dp),
   ) {
-    CircularProgressIndicator(Modifier.size(spinner))
+    LoadingSpinner(size = spinner)
     Column(
       Modifier.padding(horizontal = 24.dp),
       horizontalAlignment = Alignment.CenterHorizontally,

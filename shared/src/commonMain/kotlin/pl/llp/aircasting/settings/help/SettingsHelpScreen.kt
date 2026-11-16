@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -21,6 +20,7 @@ import pl.llp.aircasting.navigation.title
 import pl.llp.aircasting.settings.SettingsLinkRow
 import pl.llp.aircasting.settings.SettingsScaffold
 import pl.llp.aircasting.settings.SettingsSection
+import pl.llp.aircasting.ui.components.LoadingSpinner
 
 @Composable
 fun SettingsHelpScreen(
@@ -33,7 +33,7 @@ fun SettingsHelpScreen(
   SettingsScaffold(title = strings.title(SettingsRoute.Help), onBack = onBack) { padding ->
     Box(Modifier.fillMaxSize().padding(padding)) {
       when (state) {
-        HelpScreenState.Loading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
+        HelpScreenState.Loading -> LoadingSpinner(Modifier.align(Alignment.Center))
         HelpScreenState.Error -> Column(
           Modifier.align(Alignment.Center),
           horizontalAlignment = Alignment.CenterHorizontally,

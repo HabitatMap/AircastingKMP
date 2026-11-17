@@ -103,7 +103,7 @@ actual fun ExploreMap(
 
 /** Once per process, before the first GMSMapView. Key comes from Info.plist (GMSApiKey ← Secrets.xcconfig). */
 @OptIn(ExperimentalForeignApi::class)
-private val apiKeyProvided: Boolean by lazy {
+internal val apiKeyProvided: Boolean by lazy {
   GMSServices.provideAPIKey(NSBundle.mainBundle.objectForInfoDictionaryKey("GMSApiKey") as? String ?: "")
 }
 

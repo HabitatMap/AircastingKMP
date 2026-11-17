@@ -12,6 +12,7 @@ import pl.llp.aircasting.data.network.ExploreMapApi
 import pl.llp.aircasting.data.network.createAircastingHttpClient
 import pl.llp.aircasting.domain.DataSource
 import pl.llp.aircasting.domain.ExploreSource
+import pl.llp.aircasting.domain.GeoLocation
 import pl.llp.aircasting.domain.StationDetails
 import pl.llp.aircasting.domain.StationStream
 import pl.llp.aircasting.domain.session.SessionType
@@ -38,11 +39,33 @@ class NetworkStationDetailsRepositoryTest {
 
     assertEquals(
       StationDetails(
-        uuid = "0b7e3f5a", type = SessionType.FIXED, source = DataSource.AirBeam, title = "Home AirBeam Garden", provider = "jane",
-        deviceModel = "AirBeamMini", timeZone = TimeZone.of("America/New_York"),
+        uuid = "0b7e3f5a",
+        type = SessionType.FIXED,
+        source = DataSource.AirBeam,
+        title = "Home AirBeam Garden",
+        provider = "jane",
+        deviceModel = "AirBeamMini",
+        timeZone = TimeZone.of("America/New_York"),
+        location = GeoLocation(40.1, -73.2),
         streams = listOf(
-          StationStream(35404, "AirBeam-PM1", "µg/m³", value = 8, min = 3, max = 10, measuredAt = MEASURED_AT),
-          StationStream(35405, "AirBeam-PM2.5", "µg/m³", value = 12, min = 5, max = 20, measuredAt = MEASURED_AT),
+          StationStream(
+            35404,
+            "AirBeam-PM1",
+            "µg/m³",
+            value = 8,
+            min = 3,
+            max = 10,
+            measuredAt = MEASURED_AT
+          ),
+          StationStream(
+            35405,
+            "AirBeam-PM2.5",
+            "µg/m³",
+            value = 12,
+            min = 5,
+            max = 20,
+            measuredAt = MEASURED_AT
+          ),
         ),
       ),
       details,
@@ -51,7 +74,8 @@ class NetworkStationDetailsRepositoryTest {
 
   @Test
   fun a_station_without_device_model_maps_to_null() = runTest {
-    val details = repository(AIRBEAM_JSON.replace(""""device_model":"AirBeamMini",""", "")).station("x")
+    val details =
+      repository(AIRBEAM_JSON.replace(""""device_model":"AirBeamMini",""", "")).station("x")
 
     assertNull(details.deviceModel)
   }
@@ -70,7 +94,10 @@ class NetworkStationDetailsRepositoryTest {
     assertNull(pm1.max)
   }
 
-  private fun repository(json: String, onRequest: (HttpRequestData) -> Unit = {}): StationDetailsRepository {
+  private fun repository(
+    json: String,
+    onRequest: (HttpRequestData) -> Unit = {}
+  ): StationDetailsRepository {
     val engine = MockEngine { request ->
       onRequest(request)
       respond(json, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))

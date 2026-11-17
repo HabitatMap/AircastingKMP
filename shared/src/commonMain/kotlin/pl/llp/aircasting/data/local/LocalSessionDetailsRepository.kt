@@ -14,8 +14,10 @@ import pl.llp.aircasting.active.chipRank
 import pl.llp.aircasting.data.local.db.SelectSessionStreamStats
 import pl.llp.aircasting.data.local.db.SessionQueries
 import pl.llp.aircasting.domain.DataSource
+import pl.llp.aircasting.domain.GeoLocation
 import pl.llp.aircasting.domain.StationDetails
 import pl.llp.aircasting.domain.StationStream
+import pl.llp.aircasting.domain.TrackPoint
 import pl.llp.aircasting.domain.session.Session
 import pl.llp.aircasting.recording.PhoneMicDeviceId
 import pl.llp.aircasting.ui.chart.ChartPoint
@@ -40,6 +42,14 @@ class LocalSessionDetailsRepository(
     queries.selectSessionStreamPoints(uuid, sensorName) { time, value -> wallClockPoint(time, value, timeZone) }
       .asFlow()
       .mapToList(ioDispatcher)
+
+  override fun observeTrack(uuid: String, sensorName: String): Flow<List<TrackPoint>> =
+    queries.selectSessionStreamTrack(uuid, sensorName) { latitude, longitude, value ->
+      // `!!` is safe: the WHERE already drops rows without a fix; SQLDelight just doesn't narrow the type.
+      TrackPoint(GeoLocation(latitude!!, longitude!!), value)
+    }
+      .asFlow()
+      .mapToList(ioDispatcher)
 }
 
 private fun Session.toDetails(stats: List<SelectSessionStreamStats>) = StationDetails(
@@ -54,6 +64,7 @@ private fun Session.toDetails(stats: List<SelectSessionStreamStats>) = StationDe
   streams = stats.map { it.toStream() }.sortedBy { chipRank(it.sensorName) },
   tags = tags,
   isIndoor = isIndoor,
+  location = location,
 )
 
 private fun SelectSessionStreamStats.toStream() = StationStream(

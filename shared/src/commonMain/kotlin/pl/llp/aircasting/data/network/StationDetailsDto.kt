@@ -15,6 +15,9 @@ data class StationDetailsDto(
   /** Null for gov, and for an AirBeam whose model the server doesn't recognise. */
   @SerialName("device_model") val deviceModel: String? = null,
   val streams: List<StationStreamDto>,
+  /** Nullable so a station without coordinates still opens, only without a map. */
+  val latitude: Double? = null,
+  val longitude: Double? = null,
 )
 
 /** One reading of `/explore/stations/{uuid}/measurements`. [time] = epoch ms, true UTC. */

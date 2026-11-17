@@ -491,6 +491,21 @@ Graph + map + measurement table + statistics + HLU threshold slider + notes. Obs
 session; loads full history for the selected stream, last-1 for others. Note markers on the
 graph/map.
 
+**Details map** (*decided 2026-11-17*, Figma `599:12567` / full screen `609:13153`):
+- **Mobile session = a path + a dot per reading**, coloured by level, newest on top. Legacy
+  `MapContainer.drawSession` draws a blue polyline through the stream's located measurements and
+  one marker for the latest; the redesign dots every reading. Rows without a location, and the
+  `Session.FAKE_LOCATION` placeholder `(200, 200)`, are skipped (`selectSessionStreamTrack`).
+- **Fixed station / fixed session = one dot** at the station's location (Explore `latitude`/
+  `longitude`, or the session row), coloured by the newest reading. No map when indoor.
+- **Camera fits the track's bounds, never past zoom 16** (legacy `animateCameraToMobileSession` +
+  `DEFAULT_ZOOM`); fixed = centred at 16. The rewrite fits once per view size (`map/FitCamera.kt`),
+  not on every new reading.
+- **Inline map is static, full screen is interactive** (session only; station maps stay fixed).
+- **Rendering** (spike `spike/map-dot-rendering`): every dot and the path are drawn by one shared
+  Compose Canvas over a plain Google map (`PlatformMap`, expect/actual), positioned by our own
+  Web-Mercator transform — native markers can't hold a full session.
+
 **Own mobile session details — stats and graph window** (*checked 2026-11-14*):
 - **Stats cover the whole session.** Legacy `StatisticsContainer` computes Avg / Peak over the
   selected stream's measurements (`measurementsValuesForSpan`, all of them when no span is set);

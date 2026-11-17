@@ -107,3 +107,14 @@ selectSessionStreamPoints:
   JOIN measurement_streams st ON st.id = m.stream_id
   WHERE st.session_uuid = :uuid AND st.sensor_name = :sensorName
   ORDER BY m.time;
+
+selectSessionStreamTrack:
+  SELECT m.latitude, m.longitude, m.value
+  FROM measurements m
+  JOIN measurement_streams st ON st.id = m.stream_id
+  WHERE st.session_uuid = :uuid AND st.sensor_name = :sensorName
+    AND m.latitude IS NOT NULL AND m.longitude IS NOT NULL
+    -- legacy Session.FAKE_LOCATION (200, 200): a location-less session's placeholder, never a real place.
+    -- De Morgan of NOT (lat = 200 AND lng = 200): SQLDelight's 3.18 grammar rejects a bare NOT (…).
+    AND (m.latitude != 200.0 OR m.longitude != 200.0)
+  ORDER BY m.time;

@@ -5,7 +5,9 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.TimeZone
 import pl.llp.aircasting.domain.DataSource
+import pl.llp.aircasting.domain.GeoLocation
 import pl.llp.aircasting.domain.StationStream
+import pl.llp.aircasting.domain.TrackPoint
 import pl.llp.aircasting.domain.session.Measurement
 import pl.llp.aircasting.domain.session.Session
 import pl.llp.aircasting.domain.session.SessionStatus
@@ -150,5 +152,32 @@ class SessionDetailsRepositoryTest {
       listOf(ChartPoint(x0, 5.0), ChartPoint(x0 + 1, 7.0)),
       repo.observePoints("s1", "AirBeamMini-PM2.5", warsaw).first(),
     )
+  }
+
+  @Test
+  fun `the track is the stream's located readings, oldest first, without the indoor placeholder`() = runTest {
+    sessions.insert(session())
+    val pm25 = streams.findOrCreate("s1", "AirBeamMini-PM2.5", "µg/m³")
+    val pm1 = streams.findOrCreate("s1", "AirBeamMini-PM1", "µg/m³")
+    measurements.insertAll(
+      listOf(
+        Measurement(pm25, t0 + 2.seconds, 6.0, GeoLocation(52.1, 21.1)),
+        Measurement(pm25, t0, 3.0, GeoLocation(52.0, 21.0)),
+        Measurement(pm25, t0 + 1.seconds, 9.0),                              // no fix
+        Measurement(pm25, t0 + 3.seconds, 7.0, GeoLocation(200.0, 200.0)),  // legacy FAKE_LOCATION
+        Measurement(pm1, t0, 1.0, GeoLocation(52.0, 21.0)),                  // another stream
+      ),
+    )
+    assertEquals(
+      listOf(TrackPoint(GeoLocation(52.0, 21.0), 3.0), TrackPoint(GeoLocation(52.1, 21.1), 6.0)),
+      repo.observeTrack("s1", "AirBeamMini-PM2.5").first(),
+    )
+  }
+
+  @Test
+  fun `a fixed session is placed where the session stands`() = runTest {
+    sessions.insert(session().copy(type = SessionType.FIXED, location = GeoLocation(52.0, 21.0)))
+
+    assertEquals(GeoLocation(52.0, 21.0), repo.observe("s1").first()?.location)
   }
 }

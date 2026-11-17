@@ -7,9 +7,12 @@ import kotlinx.serialization.Serializable
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 import pl.llp.aircasting.active.SessionGraph
+import pl.llp.aircasting.active.SessionMap
 import pl.llp.aircasting.di.SessionDetailsQualifier
+import pl.llp.aircasting.domain.session.SessionType
 import pl.llp.aircasting.explore.StationDetailsScreen
 import pl.llp.aircasting.explore.StationDetailsViewModel
+import pl.llp.aircasting.map.StationMap
 
 /**
  * One of our own sessions, read live from the local DB. [sensorName] = the chip selected on the
@@ -28,5 +31,9 @@ fun SessionDetailsDestination(route: SessionDetailsRoute, onBack: () -> Unit) {
     state, onBack = onBack, onRetry = vm::load, onSelectStream = vm::selectStream,
     onThresholdChange = vm::saveThreshold,
     graph = { details, stream, threshold, modifier -> SessionGraph(details, stream, threshold, modifier) },
+    map = { details, stream, threshold, fullScreen, modifier ->
+      if (details.type == SessionType.FIXED) StationMap(details, stream, threshold, modifier)
+      else SessionMap(details, stream, threshold, interactive = fullScreen, modifier)
+    },
   )
 }

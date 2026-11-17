@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.datetime.TimeZone
 import pl.llp.aircasting.domain.StationDetails
+import pl.llp.aircasting.domain.TrackPoint
 import pl.llp.aircasting.ui.chart.ChartPoint
 
 data class PointsRequest(val uuid: String, val sensorName: String, val timeZone: TimeZone)
@@ -14,6 +15,8 @@ class FakeSessionDetailsRepository(
   val details: MutableStateFlow<StationDetails?> = MutableStateFlow(null),
   val points: MutableStateFlow<List<ChartPoint>> = MutableStateFlow(emptyList()),
   var failPoints: Throwable? = null,
+  val track: MutableStateFlow<List<TrackPoint>> = MutableStateFlow(emptyList()),
+  var failTrack: Throwable? = null,
 ) : SessionDetailsRepository {
   val pointRequests = mutableListOf<PointsRequest>()
 
@@ -23,4 +26,7 @@ class FakeSessionDetailsRepository(
     pointRequests += PointsRequest(uuid, sensorName, timeZone)
     return failPoints?.let { e -> flow { throw e } } ?: points
   }
+
+  override fun observeTrack(uuid: String, sensorName: String): Flow<List<TrackPoint>> =
+    failTrack?.let { e -> flow { throw e } } ?: track
 }

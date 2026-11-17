@@ -109,7 +109,6 @@ class RecordingViewModelTest {
     clock = Clock.System,
     timeZone = TimeZone.UTC,
   )
-  private val vm by lazy { RecordingViewModel(link, engine, location, fixedStarter, mic) }
   private val micForm = NewSessionForm(method = RecordingMethod.PhoneMicrophone, name = "Street noise")
 
   @Test

@@ -309,6 +309,7 @@ object EnStrings : Strings {
   override val detailsMap: String = "Map"
   override val mapFullScreen: String = "Full screen map"
   override val mapExitFullScreen: String = "Exit full screen"
+  override val mapTooltipClose: String = "Close"
   override val stationMin24h: String = "MIN. 24H"
   override val stationMax24h: String = "MAX. 24H"
   override val stationOutdoor: String = "Outdoor"

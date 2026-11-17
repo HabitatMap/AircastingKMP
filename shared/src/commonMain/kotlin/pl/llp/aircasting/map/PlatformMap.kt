@@ -2,6 +2,7 @@ package pl.llp.aircasting.map
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import pl.llp.aircasting.domain.GeoLocation
 
 /**
  * A styled Google map (Maps SDK on Android, Maps iOS SDK on iOS — KMP_ARCHITECTURE.md §6) with no
@@ -13,5 +14,7 @@ import androidx.compose.ui.Modifier
 expect fun PlatformMap(
   camera: MapCamera,
   modifier: Modifier = Modifier,
+  /** A tap on the map itself, with the camera at that moment (for the tap radius in world units). */
+  onTap: (at: GeoLocation, camera: MapCamera) -> Unit,
   overlay: @Composable (camera: () -> MapCamera) -> Unit,
 )

@@ -44,9 +44,8 @@ class LocalSessionDetailsRepository(
       .mapToList(ioDispatcher)
 
   override fun observeTrack(uuid: String, sensorName: String): Flow<List<TrackPoint>> =
-    queries.selectSessionStreamTrack(uuid, sensorName) { latitude, longitude, value ->
-      // `!!` is safe: the WHERE already drops rows without a fix; SQLDelight just doesn't narrow the type.
-      TrackPoint(GeoLocation(latitude!!, longitude!!), value)
+    queries.selectSessionStreamTrack(uuid, sensorName) { latitude, longitude, value, time ->
+      TrackPoint(GeoLocation(latitude, longitude), value, time)
     }
       .asFlow()
       .mapToList(ioDispatcher)

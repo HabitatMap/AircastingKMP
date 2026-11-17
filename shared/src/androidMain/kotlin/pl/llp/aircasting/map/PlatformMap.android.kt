@@ -12,12 +12,14 @@ import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.rememberCameraPositionState
+import pl.llp.aircasting.domain.GeoLocation
 import pl.llp.aircasting.explore.mapStyle
 
 @Composable
 actual fun PlatformMap(
   camera: MapCamera,
   modifier: Modifier,
+  onTap: (at: GeoLocation, camera: MapCamera) -> Unit,
   overlay: @Composable (camera: () -> MapCamera) -> Unit,
 ) {
   val state = rememberCameraPositionState { position = camera.toPosition() }
@@ -39,10 +41,12 @@ actual fun PlatformMap(
         tiltGesturesEnabled = false,
         zoomControlsEnabled = false,
       ),
-    )
+      onMapClick = { onTap(GeoLocation(it.latitude, it.longitude), state.position.toMapCamera()) },
+      )
     // `position` is snapshot state that maps-compose updates on every camera frame.
-    overlay { state.position.let { MapCamera(it.target.latitude, it.target.longitude, it.zoom) } }
+    overlay { state.position.toMapCamera() }
   }
 }
 
 private fun MapCamera.toPosition() = CameraPosition.fromLatLngZoom(LatLng(centerLatitude, centerLongitude), zoom)
+private fun CameraPosition.toMapCamera() = MapCamera(target.latitude, target.longitude, zoom)

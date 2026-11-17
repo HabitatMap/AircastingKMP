@@ -109,7 +109,7 @@ selectSessionStreamPoints:
   ORDER BY m.time;
 
 selectSessionStreamTrack:
-  SELECT m.latitude, m.longitude, m.value
+  SELECT m.latitude, m.longitude, m.value, m.time
   FROM measurements m
   JOIN measurement_streams st ON st.id = m.stream_id
   WHERE st.session_uuid = :uuid AND st.sensor_name = :sensorName

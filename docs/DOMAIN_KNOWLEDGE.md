@@ -505,6 +505,11 @@ graph/map.
 - **Rendering** (spike `spike/map-dot-rendering`): every dot and the path are drawn by one shared
   Compose Canvas over a plain Google map (`PlatformMap`, expect/actual), positioned by our own
   Web-Mercator transform — native markers can't hold a full session.
+- **Tap a dot (full-screen session map) → tooltip** with the reading's time and value (Figma
+  `609:13295`). Time is `HH:mm:ss` on the session's wall clock, same formatter as the graph's
+  marker (Figma shows `HH:mm`, but 1-second mobile readings need the seconds). The map reports
+  the tap; `hitTest` picks the nearest dot within 16 dp, newest wins on a tie. Tapping the bubble
+  or empty map closes it.
 
 **Own mobile session details — stats and graph window** (*checked 2026-11-14*):
 - **Stats cover the whole session.** Legacy `StatisticsContainer` computes Avg / Peak over the

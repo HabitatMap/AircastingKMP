@@ -21,5 +21,5 @@ fun SessionMap(
     parametersOf(session.uuid, stream.sensorName)
   }
   val track by vm.track.collectAsStateWithLifecycle()
-  track?.let { TrackMap(it, threshold, interactive, modifier) }
+  track?.let { TrackMap(it, threshold, stream.unitSymbol, session.timeZone, interactive, modifier) }
 }

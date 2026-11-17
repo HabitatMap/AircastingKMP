@@ -169,7 +169,10 @@ class SessionDetailsRepositoryTest {
       ),
     )
     assertEquals(
-      listOf(TrackPoint(GeoLocation(52.0, 21.0), 3.0), TrackPoint(GeoLocation(52.1, 21.1), 6.0)),
+      listOf(
+        TrackPoint(GeoLocation(52.0, 21.0), 3.0, t0),
+        TrackPoint(GeoLocation(52.1, 21.1), 6.0, t0 + 2.seconds),
+      ),
       repo.observeTrack("s1", "AirBeamMini-PM2.5").first(),
     )
   }

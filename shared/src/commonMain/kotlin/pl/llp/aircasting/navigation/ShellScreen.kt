@@ -21,12 +21,8 @@ fun ShellScreen(
   onOpenSession: (uuid: String, sensorName: String?) -> Unit,
 ) {
   LaunchedEffect(Unit) { onRequestLocation() }
-  val topSystemBarColor = when(selected) {
-    AppTab.Explore -> MaterialTheme.colorScheme.surfaceContainerLowest
-    else -> MaterialTheme.colorScheme.background
-  }
   Scaffold(
-    containerColor = topSystemBarColor,
+    containerColor = MaterialTheme.colorScheme.background,
     bottomBar = { AircastingNavBar(selected, onSelect = onSelect) },
   ) { padding ->
     // Consume what we pad, so tabs using statusBarsPadding() etc. don't apply the inset twice.

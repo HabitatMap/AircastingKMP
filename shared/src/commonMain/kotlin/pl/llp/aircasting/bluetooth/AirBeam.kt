@@ -38,6 +38,10 @@ data class DiscoveredAirBeam(
   val device: AirBeamDevice,
 )
 
+/** AB2 and AB3 carry a modem; Minis are Wi-Fi only (DOMAIN_KNOWLEDGE.md "Cellular"). */
+val AirBeamDevice.supportsCellular: Boolean
+  get() = this == AirBeamDevice.AirBeam2 || this == AirBeamDevice.AirBeam3
+
 // Android gives a MAC address (String), iOS CoreBluetooth gives a per-app NSUUID
 @JvmInline
 value class DeviceId(val value: String)

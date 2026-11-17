@@ -399,4 +399,7 @@ interface Strings {
   val activeNoMicDataBody: String
   val streamTemperature: String
   val streamHumidity: String
+  val networkHeader: String
+  val networkWifi: String
+  val networkCellular: String
 }

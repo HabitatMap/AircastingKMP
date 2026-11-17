@@ -20,9 +20,11 @@ data class NewSessionState(
     get() = when (step) {
       NewSessionStep.Method -> form.method != null
       NewSessionStep.Device -> form.device != null
-      NewSessionStep.Details -> form.name.isNotBlank() && (form.method != RecordingMethod.AirBeamFixed || form.hasWifi)
       NewSessionStep.Location -> form.placement != null
       NewSessionStep.Confirm -> true
+      NewSessionStep.Details -> form.name.isNotBlank() &&
+        (form.method != RecordingMethod.AirBeamFixed || form.cellular || form.hasWifi)
+
     }
   /** Recent tags that complete the word being typed. */
   val matchingTags: List<String>
@@ -77,11 +79,15 @@ class NewSessionViewModel(private val location: PhoneLocation) : ViewModel() {
 
   fun editWifiPassword(password: String) = edit { it.copy(wifi = it.wifi.copy(password = password)) }
 
-  fun selectDevice(device: DiscoveredAirBeam) = edit { it.copy(device = device) }
-
   fun next() = _state.update { state -> if (!state.canContinue) state else state.moveBy(1) }
 
   fun back() = _state.update { it.moveBy(-1) }
+
+  fun setCellular(cellular: Boolean) = edit { it.copy(cellular = cellular && it.offersCellular) }
+
+  fun selectDevice(device: DiscoveredAirBeam) = edit {
+    it.copy(device = device).run { copy(cellular = cellular && offersCellular) }
+  }
 
   private fun NewSessionState.moveBy(offset: Int): NewSessionState {
     val steps = form.steps

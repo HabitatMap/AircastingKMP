@@ -49,6 +49,7 @@ class StringsCompletenessTest {
     "activeTagAirBeamMobile",
     "streamTemperature",
     "streamHumidity",
+    "networkWifi",
   ) + onboardingPlaceholders
 
   /**

@@ -331,6 +331,57 @@ class NewSessionViewModelTest {
     assertEquals(NewSessionStep.Confirm, vm.state.value.step)
   }
 
+  private val miniV2 =
+    DiscoveredAirBeam(DeviceId("id-mini"), "AirBeamMini-1234", AirBeamDevice.Mini.V2)
+
+  /** Walks to the Details step of a fixed session on [device]. */
+  private fun fixedDetailsOn(device: DiscoveredAirBeam) = NewSessionViewModel(location).apply {
+    select(RecordingMethod.AirBeamFixed)
+    next()
+    selectDevice(device)
+    next()
+    rename("Balcony")
+  }
+
+  @Test
+  fun `a fixed session uploads over wifi by default`() {
+    assertFalse(fixedDetailsOn(ab3).state.value.form.cellular)
+  }
+
+  @Test
+  fun `only ab2 and ab3 offer cellular`() {
+    assertTrue(fixedDetailsOn(ab3).state.value.form.offersCellular)
+    assertFalse(fixedDetailsOn(miniV2).state.value.form.offersCellular)
+  }
+
+  @Test
+  fun `cellular needs no wifi credentials to continue`() {
+    val vm = fixedDetailsOn(ab3)
+    assertFalse(vm.state.value.canContinue, "Wi-Fi without credentials must block Next")
+
+    vm.setCellular(true)
+
+    assertTrue(vm.state.value.canContinue)
+  }
+
+  @Test
+  fun `a mini cannot be switched to cellular`() {
+    val vm = fixedDetailsOn(miniV2)
+    vm.setCellular(true)
+    assertFalse(vm.state.value.form.cellular)
+  }
+
+  /** Back to the device step, picking a Mini: a leftover cellular choice would fail at Start. */
+  @Test
+  fun `switching to a mini falls back to wifi`() {
+    val vm = fixedDetailsOn(ab3)
+    vm.setCellular(true)
+
+    vm.selectDevice(miniV2)
+
+    assertFalse(vm.state.value.form.cellular)
+  }
+
   private val rooftop = GeoLocation(latitude = 50.06, longitude = 19.94)
 
   private fun fixedAtDetails() = NewSessionViewModel(location).apply {

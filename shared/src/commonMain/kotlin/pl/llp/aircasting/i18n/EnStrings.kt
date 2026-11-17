@@ -381,7 +381,9 @@ object EnStrings : Strings {
   override val activeTagPhoneMic = "PHONE MICROPHONE"
   override val activeNoMicDataBody = "We're listening through your phone's microphone."
   override val startFailedMicBusy = "A phone microphone session is already recording. Finish it before starting another."
-
+  override val networkHeader = "Network"
+  override val networkWifi = "Wi-Fi"
+  override val networkCellular = "Cellular"
   override val streamTemperature = "Temp."
   override val streamHumidity = "Hum."
 }

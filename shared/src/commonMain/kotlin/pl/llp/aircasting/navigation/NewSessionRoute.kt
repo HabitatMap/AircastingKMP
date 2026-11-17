@@ -66,6 +66,7 @@ fun NewSessionDestination(onExit: () -> Unit, onStarted: () -> Unit) {
       onWifiPassword = vm::editWifiPassword,
       wifiNetworks = if (state.form.method == RecordingMethod.AirBeamFixed) rememberWifiNetworks() else null,
       onInterval = vm::setInterval,
+      onCellular = vm::setCellular,
       onBack = back,
       onCancel = onExit,
       onNext = vm::next,
@@ -156,7 +157,10 @@ fun NewSessionDestination(onExit: () -> Unit, onStarted: () -> Unit) {
           onRescan = scanVm::rescan,
           onBack = back,
           onCancel = onExit,
-          onNext = vm::next,
+          onNext = {
+            state.form.device?.let(recorder::connect)
+            vm.next()
+          },
         )
       }
     }

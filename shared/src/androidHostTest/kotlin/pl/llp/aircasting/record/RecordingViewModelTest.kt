@@ -1,5 +1,8 @@
 package pl.llp.aircasting.record
 
+import androidx.lifecycle.ViewModelStore
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -41,6 +44,7 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import kotlin.time.Clock
@@ -362,6 +366,83 @@ class RecordingViewModelTest {
     vm.clearFailure()
 
     assertEquals(StartState.Preparing(PrepareStep.Configuring), vm.startState.value)
+  }
+  // Unconfined: the fake's disconnect doesn't suspend, so onCleared's launch runs at once.
+  private val vm by lazy {
+    RecordingViewModel(link, engine, location, fixedStarter, mic, appScope = CoroutineScope(Dispatchers.Unconfined))
+  }
+
+  /** What the navigation entry does when the wizard leaves the back stack. */
+  private fun RecordingViewModel.leaveWizard() =
+    ViewModelStore().apply { put("wizard", this@leaveWizard) }.clear()
+
+  @Test
+  fun connect_links_the_picked_airbeam_before_start() = runTest {
+    vm.connect(miniV2)
+    runCurrent()
+
+    assertEquals(listOf(miniV2), link.connects)
+    assertEquals(LinkState.Connected(miniV2), link.state.value)
+  }
+
+  /** A quick Start must join the attempt that Next began, not tear it down and redo the handshake. */
+  @Test
+  fun start_joins_the_wizard_connect_instead_of_restarting_it() = runTest {
+    val pending = CompletableDeferred<Unit>()
+    link.pendingConnect = pending
+    vm.connect(miniV2)
+    runCurrent()
+
+    vm.start(form)
+    runCurrent()
+    pending.complete(Unit)
+    runCurrent()
+
+    assertEquals(listOf(miniV2), link.connects)
+    assertEquals(StartState.Started, vm.startState.value)
+  }
+
+  @Test
+  fun leaving_the_wizard_drops_the_link_it_opened() = runTest {
+    vm.connect(miniV2)
+    runCurrent()
+
+    vm.leaveWizard()
+
+    assertEquals(1, link.disconnects)
+  }
+
+  @Test
+  fun leaving_after_a_mobile_start_keeps_recording_over_the_link() = runTest {
+    vm.connect(miniV2)
+    runCurrent()
+    vm.start(form)
+    runCurrent()
+
+    vm.leaveWizard()
+
+    assertEquals(0, link.disconnects)
+  }
+
+  /** Opening and cancelling the wizard mid-session must not cut the running session's AirBeam. */
+  @Test
+  fun leaving_without_connecting_leaves_an_existing_link_alone() = runTest {
+    link.state.value = LinkState.Connected(otherMini)
+
+    vm.leaveWizard()
+
+    assertEquals(0, link.disconnects)
+  }
+
+  @Test
+  fun fixed_start_over_cellular_configures_cellular() = runTest {
+    val ab3 = DiscoveredAirBeam(DeviceId("00:11:22:33:44:55"), "AirBeam3:246f28c47698", AirBeamDevice.AirBeam3)
+
+    vm.start(fixedForm.copy(device = ab3, cellular = true))
+    runCurrent()
+
+    assertEquals(StartState.Started, vm.startState.value)
+    assertIs<SessionConfig.FixedCellular>(link.configured.single())
   }
 }
 

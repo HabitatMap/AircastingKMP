@@ -3,10 +3,14 @@ package pl.llp.aircasting.record
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import co.touchlab.kermit.Logger
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
@@ -20,7 +24,6 @@ import pl.llp.aircasting.recording.MicrophoneRecorder
 import pl.llp.aircasting.recording.NewSessionDetails
 import pl.llp.aircasting.recording.PhoneLocation
 import pl.llp.aircasting.recording.RecordingEngine
-import pl.llp.aircasting.recording.Uplink
 import kotlin.time.Duration.Companion.seconds
 
 /** How long Start waits for a fix before recording without one (e.g. indoors). */
@@ -53,7 +56,27 @@ class RecordingViewModel(
   private val location: PhoneLocation,
   private val fixedStarter: FixedSessionStarter,
   private val mic: MicrophoneRecorder,
+  private val appScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
 ) : ViewModel() {
+
+  private var openedLink = false
+
+  fun connect(device: DiscoveredAirBeam) {
+    openedLink = true
+    viewModelScope.launch { linkTo(device) }
+  }
+
+  /** Joins an attempt already on its way to [device]; reuses a link already on it; else connects. */
+  private suspend fun linkTo(device: DiscoveredAirBeam): Boolean {
+    val current = link.state.first { !(it is LinkState.Connecting && it.target.id == device.id) }
+    if (current is LinkState.Connected && current.target.id == device.id) return true
+    return link.connect(device) is LinkState.Connected
+  }
+
+  override fun onCleared() {
+    if (openedLink) appScope.launch { link.disconnect() }
+  }
+
   private val log = Logger.withTag("RecordingViewModel")
 
   val recording: StateFlow<Boolean> =
@@ -88,13 +111,22 @@ class RecordingViewModel(
         else engine.start(picked, NewSessionDetails(form.name, form.tags), form.interval.every)
       }
     }
-    return if (result == ConfigResult.Success) StartState.Started else StartState.Failed(result)
+    return if (result == ConfigResult.Success) {
+      openedLink = false // the session records over this link now; leaving must not cut it
+      StartState.Started
+    } else StartState.Failed(result)
   }
 
   /** Like AirBeam mobile, readings are stamped with the phone's fix, so wait for one first. */
   private suspend fun startMic(form: NewSessionForm): StartState {
     locate()
-    return if (mic.start(NewSessionDetails(form.name, form.tags))) StartState.Started else StartState.MicBusy
+    return if (mic.start(
+        NewSessionDetails(
+          form.name,
+          form.tags
+        )
+      )
+    ) StartState.Started else StartState.MicBusy
   }
 
   /** Mini V2 waits up to 30 s for its first upload, so this stays on Configuring that long. */
@@ -104,7 +136,7 @@ class RecordingViewModel(
     if (picked == null || placement == null) return StartState.Failed(ConfigResult.BadConfigFailure)
     if (!linkTo(picked)) return StartState.Failed(ConfigResult.NotConnected)
     val details = NewSessionDetails(form.name, form.tags)
-    return when (val result = fixedStarter.start(picked, details, placement, Uplink.Wifi(form.wifi))) {
+    return when (val result = fixedStarter.start(picked, details, placement, form.uplink)) {
       FixedStartResult.Started -> StartState.Started
       FixedStartResult.SignedOut -> StartState.SignedOut
       FixedStartResult.ServerError -> StartState.ServerError
@@ -120,13 +152,6 @@ class RecordingViewModel(
     if (withTimeoutOrNull(LocatingTimeout) { location.awaitFix() } == null) {
       log.w { "No fix within $LocatingTimeout; recording from the last known location" }
     }
-  }
-
-  /** True once the link is on [device]: reuses a link already there, else connects (replacing any other). */
-  private suspend fun linkTo(device: DiscoveredAirBeam): Boolean {
-    val current = link.state.value
-    if (current is LinkState.Connected && current.target.id == device.id) return true
-    return link.connect(device) is LinkState.Connected
   }
 
   fun stop() {

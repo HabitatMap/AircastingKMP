@@ -1,5 +1,6 @@
 package pl.llp.aircasting.bluetooth
 
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,6 +13,19 @@ class FakeAirBeamLink(var configureResult: ConfigResult = ConfigResult.Success) 
   private val sent = Channel<SensorReading>(Channel.UNLIMITED)
   override val readings: Flow<SensorReading> = sent.receiveAsFlow()
 
+  /** When set, [connect] waits in [LinkState.Connecting] until it completes: an attempt still in flight. */
+  var pendingConnect: CompletableDeferred<Unit>? = null
+
+  override suspend fun connect(target: DiscoveredAirBeam): LinkState {
+    connects += target
+    pendingConnect?.let {
+      state.value = LinkState.Connecting(target)
+      it.await()
+    }
+    val settled = connectFailure?.let { LinkState.Failed(it) } ?: LinkState.Connected(target)
+    return settled.also { state.value = it }
+  }
+
   val configured = mutableListOf<SessionConfig>()
   var disconnects = 0
     private set
@@ -23,12 +37,6 @@ class FakeAirBeamLink(var configureResult: ConfigResult = ConfigResult.Success) 
   val connects = mutableListOf<DiscoveredAirBeam>()
   /** Makes every [connect] settle as [LinkState.Failed] with this reason. */
   var connectFailure: FailureReason? = null
-
-  override suspend fun connect(target: DiscoveredAirBeam): LinkState {
-    connects += target
-    val settled = connectFailure?.let { LinkState.Failed(it) } ?: LinkState.Connected(target)
-    return settled.also { state.value = it }
-  }
 
   override suspend fun configure(config: SessionConfig): ConfigResult {
     configured += config

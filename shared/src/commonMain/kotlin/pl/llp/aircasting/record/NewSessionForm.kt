@@ -1,9 +1,11 @@
 package pl.llp.aircasting.record
 
 import pl.llp.aircasting.bluetooth.DiscoveredAirBeam
+import pl.llp.aircasting.bluetooth.supportsCellular
 import pl.llp.aircasting.domain.GeoLocation
 import pl.llp.aircasting.i18n.Strings
 import pl.llp.aircasting.recording.Placement
+import pl.llp.aircasting.recording.Uplink
 import pl.llp.aircasting.recording.WifiCredentials
 import kotlin.math.roundToLong
 import kotlin.time.Duration
@@ -38,7 +40,15 @@ data class NewSessionForm(
   val outdoorLocation: GeoLocation? = null,
   /** Fixed only. Its toString() hides the password, so this form's does too. */
   val wifi: WifiCredentials = WifiCredentials("", ""),
+  /** Fixed, AB2/AB3 only. Wi-Fi by default, as in legacy FixedSessionDetailsViewMvcImpl. */
+  val cellular: Boolean = false,
 ) {
+  val offersCellular: Boolean
+    get() = method == RecordingMethod.AirBeamFixed && device?.device?.supportsCellular == true
+
+  val uplink: Uplink
+    get() = if (cellular) Uplink.Cellular else Uplink.Wifi(wifi)
+
   /** Chips plus the half-typed word, so Next never drops it. */
   val tags: List<String>
     get() = (committedTags + tagDraft).filter { it.isNotEmpty() }.distinct()

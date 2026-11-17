@@ -7,6 +7,7 @@ import pl.llp.aircasting.bluetooth.AirBeamLink
 import pl.llp.aircasting.bluetooth.ConfigResult
 import pl.llp.aircasting.bluetooth.DiscoveredAirBeam
 import pl.llp.aircasting.bluetooth.SessionConfig
+import pl.llp.aircasting.bluetooth.supportsCellular
 import pl.llp.aircasting.domain.GeoLocation
 import kotlin.uuid.Uuid
 
@@ -52,7 +53,7 @@ class FixedSessionStarter(
     uplink: Uplink,
   ): FixedStartResult {
     // Checked before registering, so a refused start leaves no empty session on the backend.
-    if (uplink == Uplink.Cellular && target.device !in CellularDevices) {
+    if (uplink == Uplink.Cellular && !target.device.supportsCellular) {
       return FixedStartResult.DeviceFailed(ConfigResult.BadConfigFailure)
     }
 
@@ -119,8 +120,6 @@ class FixedSessionStarter(
     )
   }
 }
-
-private val CellularDevices = setOf(AirBeamDevice.AirBeam2, AirBeamDevice.AirBeam3)
 
 /** The live v3 backend answers with the names we sent (as legacy expects); API_V3.md documents the canonical ones. */
 private const val MINI_PM1 = "AirBeamMini-PM1"

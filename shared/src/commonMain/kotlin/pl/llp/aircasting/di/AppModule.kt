@@ -136,7 +136,7 @@ val recordModule = module {
   }
   viewModelOf(::NewSessionViewModel)
   viewModelOf(::PinPickerViewModel)
-  viewModelOf(::RecordingViewModel)
+  viewModel { RecordingViewModel(get(), get(), get(), get(), get()) }
 }
 
 val onboardingModule = module {

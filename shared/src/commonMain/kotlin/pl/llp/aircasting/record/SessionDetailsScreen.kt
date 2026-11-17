@@ -68,6 +68,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.painterResource
 import pl.llp.aircasting.i18n.LocalStrings
+import pl.llp.aircasting.settings.account.PasswordField
 import pl.llp.aircasting.ui.components.SectionHeader
 import pl.llp.aircasting.ui.components.SelectableChip
 import pl.llp.aircasting.ui.wizard.WizardButton
@@ -87,6 +88,7 @@ fun SessionDetailsScreen(
   onWifiPassword: (String) -> Unit,
   wifiNetworks: WifiNetworks?,
   onInterval: (SamplingInterval) -> Unit,
+  onCellular: (Boolean) -> Unit,
   onBack: () -> Unit,
   onCancel: () -> Unit,
   onNext: () -> Unit,
@@ -128,7 +130,12 @@ fun SessionDetailsScreen(
         SectionHeader(strings.matchingTagsHeader)
         Spacer(Modifier.height(12.dp))
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-          state.matchingTags.forEach { tag -> TagSuggestion(tag, strings.addTagLabel(tag)) { onAddTag(tag) } }
+          state.matchingTags.forEach { tag ->
+            TagSuggestion(
+              tag,
+              strings.addTagLabel(tag)
+            ) { onAddTag(tag) }
+          }
           TagSuggestion(strings.addNewTag(form.tagDraft), description = null, onClick = onCommitTag)
         }
       } else if (state.recentTags.isNotEmpty()) {
@@ -156,35 +163,27 @@ fun SessionDetailsScreen(
         }
         Spacer(Modifier.height(8.dp))
         Hint(strings.placementHint)
-
-        Spacer(Modifier.height(24.dp))
-        SectionHeader(strings.wifiHeader)
-        Spacer(Modifier.height(8.dp))
-        SessionField(
-          value = form.wifi.ssid,
-          onValueChange = onWifiName,
-          label = strings.wifiNameLabel,
-          placeholder = strings.wifiNamePlaceholder,
-          imeAction = ImeAction.Next,
-          hint = strings.wifiNameHint,
-        )
-        if (wifiNetworks?.listOnly == true) {
-          // Android: the scan is the only way to pick, as legacy did (DOMAIN_KNOWLEDGE.md "Wi-Fi credentials").
-          when {
-            !wifiNetworks.granted -> {
-              Hint(strings.wifiPermissionHint)
-              Spacer(Modifier.height(8.dp))
-              TagSuggestion(strings.wifiShowNearby, description = null, onClick = wifiNetworks::request)
+        if (form.offersCellular) {
+          Spacer(Modifier.height(24.dp))
+          SectionHeader(strings.networkHeader)
+          Spacer(Modifier.height(8.dp))
+          SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+            listOf(false, true).forEachIndexed { index, cellular ->
+              SegmentedButton(
+                selected = form.cellular == cellular,
+                onClick = { onCellular(cellular) },
+                shape = SegmentedButtonDefaults.itemShape(index, count = 2),
+              ) { Text(if (cellular) strings.networkCellular else strings.networkWifi) }
             }
-            wifiNetworks.names.isEmpty() && form.wifi.ssid.isBlank() -> Hint(strings.wifiSearching)
-            else -> NetworkList(
-              // A network picked on an earlier visit stays shown even before a scan finds it again.
-              names = wifiNetworks.names.withNewlySeen(listOfNotNull(form.wifi.ssid.takeIf { it.isNotBlank() })),
-              selected = form.wifi.ssid,
-              onSelect = onWifiName,
-            )
           }
-        } else {
+        }
+
+        if (!form.cellular) {
+          Spacer(Modifier.height(24.dp))
+          SectionHeader(strings.wifiHeader)
+          Spacer(Modifier.height(24.dp))
+          SectionHeader(strings.wifiHeader)
+          Spacer(Modifier.height(8.dp))
           SessionField(
             value = form.wifi.ssid,
             onValueChange = onWifiName,
@@ -193,37 +192,68 @@ fun SessionDetailsScreen(
             imeAction = ImeAction.Next,
             hint = strings.wifiNameHint,
           )
-          if (wifiNetworks != null && wifiNetworks.names.isNotEmpty()) {
-            Spacer(Modifier.height(8.dp))
-            NetworkList(wifiNetworks.names, selected = form.wifi.ssid, onSelect = onWifiName)
-          }
-        }
-        Spacer(Modifier.height(16.dp))
-        PasswordField(
-          value = form.wifi.password,
-          onValueChange = onWifiPassword,
-          label = strings.wifiPasswordLabel,
-          placeholder = strings.wifiPasswordPlaceholder,
-          hint = strings.wifiPasswordHint,
-        )
-      } else if (form.method == RecordingMethod.AirBeamMobile) {
-        // Fixed samples every 60 s (DOMAIN_KNOWLEDGE.md), the mic every second (legacy
-        // MicrophoneReader), so only an AirBeam mobile session picks.
-        Spacer(Modifier.height(24.dp))
-        SectionHeader(strings.samplingIntervalHeader)
-        Spacer(Modifier.height(8.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-          SamplingInterval.entries.forEach { interval ->
-            SelectableChip(
-              label = strings.label(interval),
-              selected = interval == form.interval,
-              onClick = { onInterval(interval) },
-              modifier = Modifier.weight(1f),
+          if (wifiNetworks?.listOnly == true) {
+            // Android: the scan is the only way to pick, as legacy did (DOMAIN_KNOWLEDGE.md "Wi-Fi credentials").
+            when {
+              !wifiNetworks.granted -> {
+                Hint(strings.wifiPermissionHint)
+                Spacer(Modifier.height(8.dp))
+                TagSuggestion(
+                  strings.wifiShowNearby,
+                  description = null,
+                  onClick = wifiNetworks::request
+                )
+              }
+
+              wifiNetworks.names.isEmpty() && form.wifi.ssid.isBlank() -> Hint(strings.wifiSearching)
+              else -> NetworkList(
+                // A network picked on an earlier visit stays shown even before a scan finds it again.
+                names = wifiNetworks.names.withNewlySeen(listOfNotNull(form.wifi.ssid.takeIf { it.isNotBlank() })),
+                selected = form.wifi.ssid,
+                onSelect = onWifiName,
+              )
+            }
+          } else {
+            SessionField(
+              value = form.wifi.ssid,
+              onValueChange = onWifiName,
+              label = strings.wifiNameLabel,
+              placeholder = strings.wifiNamePlaceholder,
+              imeAction = ImeAction.Next,
+              hint = strings.wifiNameHint,
             )
+            if (wifiNetworks != null && wifiNetworks.names.isNotEmpty()) {
+              Spacer(Modifier.height(8.dp))
+              NetworkList(wifiNetworks.names, selected = form.wifi.ssid, onSelect = onWifiName)
+            }
           }
+          Spacer(Modifier.height(16.dp))
+          PasswordField(
+            value = form.wifi.password,
+            onValueChange = onWifiPassword,
+            label = strings.wifiPasswordLabel,
+            placeholder = strings.wifiPasswordPlaceholder,
+            hint = strings.wifiPasswordHint,
+          )
+        } else if (form.method == RecordingMethod.AirBeamMobile) {
+          // Fixed samples every 60 s (DOMAIN_KNOWLEDGE.md), the mic every second (legacy
+          // MicrophoneReader), so only an AirBeam mobile session picks.
+          Spacer(Modifier.height(24.dp))
+          SectionHeader(strings.samplingIntervalHeader)
+          Spacer(Modifier.height(8.dp))
+          Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            SamplingInterval.entries.forEach { interval ->
+              SelectableChip(
+                label = strings.label(interval),
+                selected = interval == form.interval,
+                onClick = { onInterval(interval) },
+                modifier = Modifier.weight(1f),
+              )
+            }
+          }
+          Spacer(Modifier.height(8.dp))
+          Hint(strings.samplingIntervalHint)
         }
-        Spacer(Modifier.height(8.dp))
-        Hint(strings.samplingIntervalHint)
       }
     }
   }

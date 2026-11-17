@@ -411,4 +411,7 @@ object FrStrings : Strings {
   override val startFailedMicBusy = "Une session microphone est déjà en cours. Terminez-la avant d'en démarrer une autre."
   override val streamTemperature = "Temp."
   override val streamHumidity = "Hum."
+  override val networkHeader = "Réseau"
+  override val networkWifi = "Wi-Fi"
+  override val networkCellular = "Cellulaire"
 }

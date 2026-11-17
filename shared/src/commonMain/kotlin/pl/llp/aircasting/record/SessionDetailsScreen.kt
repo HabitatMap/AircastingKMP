@@ -184,14 +184,6 @@ fun SessionDetailsScreen(
           Spacer(Modifier.height(24.dp))
           SectionHeader(strings.wifiHeader)
           Spacer(Modifier.height(8.dp))
-          SessionField(
-            value = form.wifi.ssid,
-            onValueChange = onWifiName,
-            label = strings.wifiNameLabel,
-            placeholder = strings.wifiNamePlaceholder,
-            imeAction = ImeAction.Next,
-            hint = strings.wifiNameHint,
-          )
           if (wifiNetworks?.listOnly == true) {
             // Android: the scan is the only way to pick, as legacy did (DOMAIN_KNOWLEDGE.md "Wi-Fi credentials").
             when {

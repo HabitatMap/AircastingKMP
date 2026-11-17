@@ -29,7 +29,7 @@ data class ExploreUiState(
 data class FilterSheet(val draft: ExploreFilters, val count: Int? = null)
 
 sealed interface ExploreMarker {
-  /** A cluster, or any item of a clustered response */
+  /** A server cluster: plain, uncoloured, no count. */
   data class Dot(val location: GeoLocation) : ExploreMarker
   /** [level] null = draw uncoloured, with the source badge instead of a value. */
   data class Station(val station: MapStation, val level: MeasurementLevel?) : ExploreMarker

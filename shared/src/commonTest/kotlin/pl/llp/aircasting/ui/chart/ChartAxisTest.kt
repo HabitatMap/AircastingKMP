@@ -32,24 +32,12 @@ class ChartAxisTest {
   }
 
   @Test
-  fun full_hours_fill_the_middle_but_never_crowd_an_edge_label() {
-    // Edge label centres: 01:16:30 and 08:46:30. An hour must be a label width (30 min) clear of both,
-    // so 01:00 (inside the view) and 09:00 (outside it) give way.
-    val labels = timeAxisLabels((oneAm + 90)..(oneAm + 8 * 3_600 + 90), labelWidth = 1_800.0)
+  fun only_the_edges_are_labelled_however_many_hours_are_visible() {
+    // 8 h view with room for many hour labels: still only the two edges, as on a short active session.
+    val visible = (oneAm + 90)..(oneAm + 8 * 3_600 + 90)
+    val labels = timeAxisLabels(visible, labelWidth = 1_800.0)
 
-    assertEquals(
-      listOf("01:16", "02:00", "03:00", "04:00", "05:00", "06:00", "07:00", "08:00", "08:46"),
-      labels.keys.map { hourMinuteUtc(it) }, // positions, in order: the edge entries are the label centres
-    )
-  }
-
-  @Test
-  fun hours_thin_to_a_stride_that_divides_the_day_when_labels_are_wide() {
-    // 24 h view, label wider than 2 h: 3-hourly labels, on the day's own 00/03/06… marks.
-    val labels = timeAxisLabels(oneAm..(oneAm + 24 * 3_600), labelWidth = 2.5 * 3_600)
-    val hours = labels.keys.drop(1).dropLast(1).map { hourMinuteUtc(it) }
-
-    assertEquals(listOf("06:00", "09:00", "12:00", "15:00", "18:00", "21:00"), hours)
+    assertEquals(listOf("01:16", "08:46"), labels.keys.map { hourMinuteUtc(it) })
   }
 
   @Test

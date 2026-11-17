@@ -160,11 +160,14 @@ class ExploreViewModel(
   }
 }
 
-/** Any cluster in the response means we're zoomed out: the whole map turns into plain dots (design frame 4). */
-private fun List<MapItem>.toMarkers(colourType: MeasurementType?, thresholds: Thresholds): List<ExploreMarker> {
-  val clustered = any { it is MapCluster }
-  return map { item ->
-    if (clustered || item !is MapStation) ExploreMarker.Dot(item.location)
-    else ExploreMarker.Station(item, colourType?.let { item.levelFor(it, thresholds) })
+/**
+ * Each item draws as what it is: the server clusters per grid cell, so one response can mix clusters
+ * (plain dots, design frame 4) with lone stations (pills, frames 1–3).
+ */
+private fun List<MapItem>.toMarkers(colourType: MeasurementType?, thresholds: Thresholds): List<ExploreMarker> =
+  map { item ->
+    when (item) {
+      is MapCluster -> ExploreMarker.Dot(item.location)
+      is MapStation -> ExploreMarker.Station(item, colourType?.let { item.levelFor(it, thresholds) })
+    }
   }
-}

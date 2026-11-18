@@ -9,15 +9,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.input.pointer.pointerInput
 import kotlinx.datetime.TimeZone
+import pl.llp.aircasting.domain.DataSource
 import pl.llp.aircasting.domain.MeasurementLevel
 import pl.llp.aircasting.domain.SensorThreshold
 import pl.llp.aircasting.domain.StationDetails
 import pl.llp.aircasting.domain.StationStream
 import pl.llp.aircasting.domain.TrackPoint
+import pl.llp.aircasting.ui.components.StationPill
 import pl.llp.aircasting.ui.theme.LocalAqColors
 
 
@@ -38,8 +41,8 @@ fun TrackMap(
     val dots = remember(points, threshold) { TrackDots.of(points, threshold) }
     val aq = LocalAqColors.current
     val levelColours = remember(aq) { MeasurementLevel.entries.map(aq::forLevel) }
-    val uncoloured = MaterialTheme.colorScheme.primaryContainer // same as Explore's uncoloured dots
-    val line = MaterialTheme.colorScheme.primary                 // Figma path-overlay #00668A
+    val uncoloured = MaterialTheme.colorScheme.primary
+    val line = MaterialTheme.colorScheme.primaryContainer
     var selected by remember { mutableStateOf<Int?>(null) }
     val shown = selected?.takeIf { it < dots.size }
 
@@ -80,12 +83,30 @@ private const val DotRadiusDp = 8
 /** Dot radius (8 dp) plus a fingertip's slack. */
 private const val TapRadiusDp = 16
 
-/** One dot where the station stands, coloured by its newest reading. A fixed view, even full screen. */
+/**
+ * Figma 1138:28370: the station's pill (as on Explore) with its newest reading, coloured by
+ * [threshold]. A fixed view, even full screen: the camera centres on the station and never moves,
+ * so the pill just sits in the middle — no projection needed.
+ */
 @Composable
 fun StationMap(details: StationDetails, stream: StationStream, threshold: SensorThreshold?, modifier: Modifier = Modifier) {
   val location = details.location ?: return
-  val points = remember(location, stream.value, stream.measuredAt) {
-    listOf(TrackPoint(location, stream.value?.toDouble(), stream.measuredAt))
+  BoxWithConstraints(modifier.clipToBounds()) {
+    val camera = remember(location, maxWidth, maxHeight) {
+      fitCamera(listOf(location), maxWidth.value, maxHeight.value)
+    } ?: return@BoxWithConstraints
+    val level = stream.value?.let { value -> threshold?.levelFor(value.toDouble()) }
+    val label = stream.value?.let { "$it ${stream.unitSymbol}" } ?: "– ${stream.unitSymbol}"
+    PlatformMap(camera, Modifier.fillMaxSize(), onTap = { _, _ -> }) {
+      Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        StationPill(
+          label,
+          level?.let(LocalAqColors.current::forLevel),
+          airBeam = details.source == DataSource.AirBeam,
+        )
+      }
+    }
+    // Static, as TrackMap's inline map: drags scroll the screen.
+    Box(Modifier.matchParentSize().pointerInput(Unit) {})
   }
-  TrackMap(points, threshold, stream.unitSymbol, details.timeZone, interactive = false, modifier)
 }

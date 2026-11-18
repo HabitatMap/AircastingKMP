@@ -1,16 +1,10 @@
 package pl.llp.aircasting.explore
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -20,7 +14,6 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
@@ -31,10 +24,12 @@ import com.google.maps.android.compose.MarkerComposable
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.rememberUpdatedMarkerState
 import kotlinx.coroutines.flow.filterNotNull
+import pl.llp.aircasting.domain.ExploreSource
 import pl.llp.aircasting.domain.GeoLocation
 import pl.llp.aircasting.domain.GeoSquare
 import pl.llp.aircasting.domain.MapViewport
 import pl.llp.aircasting.domain.MeasurementType
+import pl.llp.aircasting.ui.components.StationPill
 import pl.llp.aircasting.ui.theme.LocalAqColors
 import com.google.android.gms.maps.model.MapStyleOptions
 import com.google.maps.android.compose.MapProperties
@@ -125,28 +120,13 @@ actual fun ExploreMap(
             // Otherwise, Google Maps also centres the camera on the marker while the screen slides in.
             onClick = { onStationClick(marker.station.uuid); true },
           ) {
-            StationPill(label, marker.level?.let(LocalAqColors.current::forLevel))
+            StationPill(
+              label,
+              marker.level?.let(LocalAqColors.current::forLevel),
+              airBeam = marker.station.source == ExploreSource.AirBeam,
+            )
           }
         }
-      }
-    }
-  }
-}
-
-/** Halo + white pill with a coloured dot and the label; blue (primaryContainer) when uncoloured. */
-@Composable
-private fun StationPill(label: String, levelColour: Color?) {
-  val colour = levelColour ?: MaterialTheme.colorScheme.primaryContainer
-  Box(contentAlignment = Alignment.Center) {
-    Box(Modifier.size(56.dp).background(colour.copy(alpha = 0.4f), CircleShape))
-    Surface(shape = RoundedCornerShape(50), shadowElevation = 2.dp, color = Color.White) {
-      Row(
-        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-      ) {
-        Box(Modifier.size(12.dp).background(colour, CircleShape))
-        Text(label, style = MaterialTheme.typography.labelMedium, color = Color.Black)
       }
     }
   }

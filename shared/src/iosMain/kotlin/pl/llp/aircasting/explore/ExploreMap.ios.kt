@@ -15,6 +15,7 @@ import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.ObjCSignatureOverride
 import kotlinx.cinterop.useContents
+import pl.llp.aircasting.domain.ExploreSource
 import pl.llp.aircasting.domain.GeoLocation
 import pl.llp.aircasting.domain.GeoSquare
 import pl.llp.aircasting.domain.MapViewport
@@ -28,6 +29,9 @@ import platform.Foundation.NSBundle
 import platform.UIKit.UIColor
 import platform.UIKit.UIFont
 import platform.UIKit.UIFontWeightMedium
+import platform.UIKit.UIImage
+import platform.UIKit.UIImageRenderingMode
+import platform.UIKit.UIImageView
 import platform.UIKit.UILabel
 import platform.UIKit.UIView
 import platform.darwin.NSObject
@@ -179,15 +183,16 @@ private fun StyledMarker.location() = when (val m = marker) {
 }.let { CLLocationCoordinate2DMake(it.latitude, it.longitude) }
 
 /**
- * UIKit twin of Android's StationPill / ClusterDot: a translucent halo with, centred on top,
- * a white pill (dot + label) for a station or a solid dot for a cluster.
+ * UIKit twin of StationPill (ui/components) / ClusterDot: a translucent halo with, centred on top,
+ * a white pill (dot or AirBeam glyph + label) for a station or a solid dot for a cluster.
  */
 @OptIn(ExperimentalForeignApi::class)
 private fun markerView(styled: StyledMarker): UIView {
   val colour = styled.colour.toUIColor()
   val label = styled.label
   val haloSize = if (label == null) 28.0 else 56.0
-  val content = if (label == null) dot(16.0, colour) else pill(label, colour)
+  val airBeam = (styled.marker as? ExploreMarker.Station)?.station?.source == ExploreSource.AirBeam
+  val content = if (label == null) dot(16.0, colour) else pill(label, colour, airBeam)
   val width = maxOf(haloSize, content.frame.useContents { size.width })
   val centre = CGPointMake(width / 2, haloSize / 2)
   return UIView(CGRectMake(0.0, 0.0, width, haloSize)).apply {
@@ -197,7 +202,7 @@ private fun markerView(styled: StyledMarker): UIView {
 }
 
 @OptIn(ExperimentalForeignApi::class)
-private fun pill(text: String, colour: UIColor): UIView {
+private fun pill(text: String, colour: UIColor, airBeam: Boolean): UIView {
   val label = UILabel().apply {
     this.text = text
     font = UIFont.systemFontOfSize(12.0, UIFontWeightMedium)
@@ -205,7 +210,15 @@ private fun pill(text: String, colour: UIColor): UIView {
     sizeToFit()
   }
   val textWidth = label.frame.useContents { size.width }
-  val width = PAD_X + DOT + GAP + textWidth + PAD_X
+  // The glyph: a template image (iosApp Assets.xcassets/AirBeamMarker), so tintColor paints it.
+  val marker = if (airBeam) {
+    UIImageView(UIImage.imageNamed("AirBeamMarker")?.imageWithRenderingMode(UIImageRenderingMode.UIImageRenderingModeAlwaysTemplate)).apply {
+      tintColor = colour
+      setFrame(CGRectMake(0.0, 0.0, GLYPH_W, GLYPH_H))
+    }
+  } else dot(DOT, colour)
+  val markerWidth = if (airBeam) GLYPH_W else DOT
+  val width = PAD_X + markerWidth + GAP + textWidth + PAD_X
   val height = PAD_Y + LINE + PAD_Y
   return UIView(CGRectMake(0.0, 0.0, width, height)).apply {
     backgroundColor = UIColor.whiteColor
@@ -214,8 +227,8 @@ private fun pill(text: String, colour: UIColor): UIView {
     layer.shadowOpacity = 0.25f
     layer.shadowRadius = 2.0
     layer.shadowOffset = CGSizeMake(0.0, 1.0)
-    addSubview(dot(DOT, colour).apply { setCenter(CGPointMake(PAD_X + DOT / 2, height / 2)) })
-    addSubview(label.apply { setFrame(CGRectMake(PAD_X + DOT + GAP, PAD_Y, textWidth, LINE)) })
+    addSubview(marker.apply { setCenter(CGPointMake(PAD_X + markerWidth / 2, height / 2)) })
+    addSubview(label.apply { setFrame(CGRectMake(PAD_X + markerWidth + GAP, PAD_Y, textWidth, LINE)) })
   }
 }
 
@@ -225,11 +238,13 @@ private fun dot(size: Double, colour: UIColor) = UIView(CGRectMake(0.0, 0.0, siz
   layer.cornerRadius = size / 2
 }
 
-// Pill metrics in points — same numbers as the dp values in ExploreMap.android.kt.
+// Pill metrics in points — same numbers as the dp values in StationPill.kt.
 private const val PAD_X = 10.0
 private const val PAD_Y = 6.0
 private const val DOT = 12.0
 private const val GAP = 6.0
+private const val GLYPH_W = 14.0 // ic_airbeam_marker
+private const val GLYPH_H = 16.0
 private const val LINE = 16.0 // labelMedium line height
 
 // Same camera numbers as ExploreMap.android.kt — both platforms now speak Google zoom levels.

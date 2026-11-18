@@ -40,12 +40,12 @@ class ColorSchemeTest {
   }
 
   @Test
-  fun `dark air quality colors are legible on their card`() {
+  fun `air quality colors are legible on the dark card`() {
     // These are read as a numeral, a border and a dot — always against the card, never the page.
-    // Light is deliberately not asserted: moderate #C9A400 on white is 2.4:1, a real pre-existing
-    // issue, but fixing it means changing a color the designer specified.
+    // Light is deliberately not asserted: the bright palette (moderate #FDD961, good #96D788) is
+    // well under 3:1 on white — accepted when the app switched to the graph-band shades.
     MeasurementLevel.entries.forEach { level ->
-      val ratio = contrastRatio(DarkAqColors.forLevel(level), DarkColors.surfaceContainerLowest)
+      val ratio = contrastRatio(AqPalette.forLevel(level), DarkColors.surfaceContainerLowest)
       assertTrue(ratio >= 3.0, "dark $level contrast ${ratio.format()} < 3.0:1")
     }
   }

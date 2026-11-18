@@ -126,7 +126,7 @@ There is **no backend "Good/Moderate" status field.** The Figma status ("Good", 
 colors are derived on-device:
 - 5 thresholds per stream (`threshold_very_low … threshold_very_high`) band a value into a
   semantic `AqiLevel` (`DOMAIN_KNOWLEDGE.md` §5 "threshold coloring", `Measurement.getLevel`).
-- **Shared code returns the level; the Compose theme maps level → color** (green `#006E02`, etc.).
+- **Shared code returns the level; the Compose theme maps level → color** (`AqPalette`: green `#96D788`, etc.).
 
 ---
 

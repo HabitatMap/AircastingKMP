@@ -25,7 +25,12 @@ import platform.CoreGraphics.CGPointMake
 import platform.CoreGraphics.CGRectMake
 import platform.CoreGraphics.CGSizeMake
 import platform.CoreLocation.CLLocationCoordinate2DMake
+import platform.Foundation.NSAttributedString
 import platform.Foundation.NSBundle
+import platform.Foundation.create
+import platform.UIKit.NSFontAttributeName
+import platform.UIKit.NSForegroundColorAttributeName
+import platform.UIKit.NSKernAttributeName
 import platform.UIKit.UIColor
 import platform.UIKit.UIFont
 import platform.UIKit.UIFontWeightMedium
@@ -183,30 +188,40 @@ private fun StyledMarker.location() = when (val m = marker) {
 }.let { CLLocationCoordinate2DMake(it.latitude, it.longitude) }
 
 /**
- * UIKit twin of StationPill (ui/components) / ClusterDot: a translucent halo with, centred on top,
- * a white pill (dot or AirBeam glyph + label) for a station or a solid dot for a cluster.
+ * UIKit twin of StationPill (ui/components) / ClusterDot: a translucent halo with a white pill
+ * (dot or AirBeam glyph + label) for a station or a solid dot for a cluster. The halo is centred on
+ * the pill's marker, and the view is padded symmetric around it so groundAnchor 0.5/0.5 lands the
+ * marker on the station — same layout as StationPill.
  */
 @OptIn(ExperimentalForeignApi::class)
 private fun markerView(styled: StyledMarker): UIView {
   val colour = styled.colour.toUIColor()
   val label = styled.label
-  val haloSize = if (label == null) 28.0 else 56.0
+  val haloSize = if (label == null) 48.0 else 56.0 // same as ClusterDot / StationPill
   val airBeam = (styled.marker as? ExploreMarker.Station)?.station?.source == ExploreSource.AirBeam
-  val content = if (label == null) dot(16.0, colour) else pill(label, colour, airBeam)
-  val width = maxOf(haloSize, content.frame.useContents { size.width })
-  val centre = CGPointMake(width / 2, haloSize / 2)
-  return UIView(CGRectMake(0.0, 0.0, width, haloSize)).apply {
-    addSubview(dot(haloSize, colour.colorWithAlphaComponent(0.4)).apply { setCenter(centre) })
-    addSubview(content.apply { setCenter(centre) })
+  val content = if (label == null) dot(24.0, colour) else pill(label, colour, airBeam)
+  val (contentWidth, contentHeight) = content.frame.useContents { size.width to size.height }
+  val markerX = if (label == null) contentWidth / 2 else PAD_START + (if (airBeam) GLYPH_W else DOT) / 2
+  val half = maxOf(haloSize / 2, markerX, contentWidth - markerX)
+  val height = maxOf(haloSize, contentHeight)
+  return UIView(CGRectMake(0.0, 0.0, half * 2, height)).apply {
+    addSubview(dot(haloSize, colour.colorWithAlphaComponent(0.4)).apply { setCenter(CGPointMake(half, height / 2)) })
+    addSubview(content.apply { setCenter(CGPointMake(half - markerX + contentWidth / 2, height / 2)) })
   }
 }
 
 @OptIn(ExperimentalForeignApi::class)
 private fun pill(text: String, colour: UIColor, airBeam: Boolean): UIView {
+  // Label Small: 11 pt medium, +0.5 tracking, in on-primary-container (#004059 in both schemes).
   val label = UILabel().apply {
-    this.text = text
-    font = UIFont.systemFontOfSize(12.0, UIFontWeightMedium)
-    textColor = UIColor.blackColor
+    attributedText = NSAttributedString.create(
+      string = text,
+      attributes = mapOf<Any?, Any?>(
+        NSFontAttributeName to UIFont.systemFontOfSize(11.0, UIFontWeightMedium),
+        NSKernAttributeName to 0.5,
+        NSForegroundColorAttributeName to LABEL_COLOUR,
+      ),
+    )
     sizeToFit()
   }
   val textWidth = label.frame.useContents { size.width }
@@ -218,17 +233,17 @@ private fun pill(text: String, colour: UIColor, airBeam: Boolean): UIView {
     }
   } else dot(DOT, colour)
   val markerWidth = if (airBeam) GLYPH_W else DOT
-  val width = PAD_X + markerWidth + GAP + textWidth + PAD_X
+  val width = PAD_START + markerWidth + GAP + textWidth + PAD_END
   val height = PAD_Y + LINE + PAD_Y
   return UIView(CGRectMake(0.0, 0.0, width, height)).apply {
     backgroundColor = UIColor.whiteColor
     layer.cornerRadius = height / 2
     layer.shadowColor = UIColor.blackColor.CGColor
-    layer.shadowOpacity = 0.25f
-    layer.shadowRadius = 2.0
+    layer.shadowOpacity = 0.3f
+    layer.shadowRadius = 1.0
     layer.shadowOffset = CGSizeMake(0.0, 1.0)
-    addSubview(marker.apply { setCenter(CGPointMake(PAD_X + markerWidth / 2, height / 2)) })
-    addSubview(label.apply { setFrame(CGRectMake(PAD_X + markerWidth + GAP, PAD_Y, textWidth, LINE)) })
+    addSubview(marker.apply { setCenter(CGPointMake(PAD_START + markerWidth / 2, height / 2)) })
+    addSubview(label.apply { setFrame(CGRectMake(PAD_START + markerWidth + GAP, PAD_Y, textWidth, LINE)) })
   }
 }
 
@@ -239,13 +254,17 @@ private fun dot(size: Double, colour: UIColor) = UIView(CGRectMake(0.0, 0.0, siz
 }
 
 // Pill metrics in points — same numbers as the dp values in StationPill.kt.
-private const val PAD_X = 10.0
+private const val PAD_START = 12.0
+private const val PAD_END = 10.0
 private const val PAD_Y = 6.0
 private const val DOT = 12.0
-private const val GAP = 6.0
+private const val GAP = 4.0
 private const val GLYPH_W = 14.0 // ic_airbeam_marker
 private const val GLYPH_H = 16.0
-private const val LINE = 16.0 // labelMedium line height
+private const val LINE = 16.0 // labelSmall line height
+
+@OptIn(ExperimentalForeignApi::class)
+private val LABEL_COLOUR = UIColor(red = 0x00 / 255.0, green = 0x40 / 255.0, blue = 0x59 / 255.0, alpha = 1.0)
 
 // Same camera numbers as ExploreMap.android.kt — both platforms now speak Google zoom levels.
 private val START = GeoLocation(39.8, -98.6) // contiguous US

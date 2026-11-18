@@ -135,8 +135,9 @@ actual fun ExploreMap(
 @Composable
 private fun ClusterDot() {
   val colour = MaterialTheme.colorScheme.primaryContainer
-  Box(Modifier.size(28.dp).background(colour.copy(alpha = 0.4f), CircleShape), contentAlignment = Alignment.Center) {
-    Box(Modifier.size(16.dp).background(colour, CircleShape))
+  // Larger than a station's 40 dp halo (StationPill), so clusters stand out from single stations.
+  Box(Modifier.size(48.dp).background(colour.copy(alpha = 0.4f), CircleShape), contentAlignment = Alignment.Center) {
+    Box(Modifier.size(24.dp).background(colour, CircleShape))
   }
 }
 

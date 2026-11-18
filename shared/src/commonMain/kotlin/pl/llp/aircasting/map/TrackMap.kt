@@ -10,6 +10,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.input.pointer.pointerInput
 import kotlinx.datetime.TimeZone
 import pl.llp.aircasting.domain.MeasurementLevel
@@ -26,7 +27,9 @@ fun TrackMap(
   points: List<TrackPoint>, threshold: SensorThreshold?, unit: String, timeZone: TimeZone,
   interactive: Boolean, modifier: Modifier = Modifier,
 ) {
-  BoxWithConstraints(modifier) {
+  // Clip: Compose doesn't clip drawing to layout bounds, and the overlay Canvas draws the whole
+  // path, off-screen parts included, over whatever sits next to the map.
+  BoxWithConstraints(modifier.clipToBounds()) {
     // Framed per size (inline vs full screen), not per reading: a live track grows without
     // yanking the camera away from where the user panned.
     val camera = remember(maxWidth, maxHeight, points.isNotEmpty()) {
@@ -44,10 +47,12 @@ fun TrackMap(
       camera,
       Modifier.fillMaxSize(),
       onTap = { at, now ->
+        // worldUnitsPerPixel at density 1 = world units per dp.
+        val worldPerDp = worldUnitsPerPixel(now.zoom, densityScale = 1f)
         selected = hitTest(
           dots, WebMercator.x(at.longitude), WebMercator.y(at.latitude),
-          // worldUnitsPerPixel at density 1 = world units per dp.
-          toleranceWorld = TapRadiusDp * worldUnitsPerPixel(now.zoom, densityScale = 1f),
+          dotRadiusWorld = DotRadiusDp * worldPerDp,
+          toleranceWorld = TapRadiusDp * worldPerDp,
         )
       },
     ) { liveCamera ->
@@ -68,6 +73,9 @@ fun TrackMap(
         .pointerInput(Unit) {})
   }
 }
+
+/** Half MapDotsOverlay's default dotDiameter: the disk a tap must land in to hit "that" dot. */
+private const val DotRadiusDp = 8
 
 /** Dot radius (8 dp) plus a fingertip's slack. */
 private const val TapRadiusDp = 16

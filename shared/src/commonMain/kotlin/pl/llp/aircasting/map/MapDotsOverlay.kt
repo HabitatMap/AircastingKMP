@@ -32,52 +32,74 @@ fun MapDotsOverlay(
   dotDiameter: Dp = 16.dp, // Figma dot-6
   lineWidth: Dp = 8.dp,    // Figma path-overlay stroke
 ) {
-  // Bucket 0 = uncoloured, bucket n + 1 = level n: one drawPoints call per colour.
-  val buckets = remember(dots, levelColours.size) { List(levelColours.size + 1) { ArrayList<Offset>() } }
+  // Per-frame scratch, reused: no allocation per dot while the map moves.
+  val xs = remember(dots) { FloatArray(dots.size) }
+  val ys = remember(dots) { FloatArray(dots.size) }
+  val order = remember(dots) { IntArray(dots.size) }
   val occupied = remember(dots) { PixelCellSet(dots.size) }
+  val run = remember { ArrayList<Offset>() }
   val path = remember { Path() }
 
   Canvas(modifier) {
     if (dots.size == 0) return@Canvas
     val screen = ScreenTransform(camera(), size.width, size.height, tileSizePx = 256f * density)
     val diameter = dotDiameter.toPx()
-    buckets.forEach { it.clear() }
-    occupied.clear()
+
+    // Path: every vertex, except ones within a pixel of the previous — zoomed out, a long
+    // session collapses to a few hundred segments. Only the path skips; every dot is projected.
     path.reset()
     var lastX = 0f
     var lastY = 0f
     for (i in 0 until dots.size) {
       val x = screen.screenX(dots.worldX[i])
       val y = screen.screenY(dots.worldY[i])
-
-      // Path: every vertex, except ones within a pixel of the previous — zoomed out, a long
-      // session collapses to a few hundred segments instead of tens of thousands.
-      if (i == 0) path.moveTo(x, y)
-      else if (abs(x - lastX) >= 1f || abs(y - lastY) >= 1f) path.lineTo(x, y) else continue
+      xs[i] = x
+      ys[i] = y
+      if (i > 0 && abs(x - lastX) < 1f && abs(y - lastY) < 1f) continue
+      if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
       lastX = x
       lastY = y
-      // Dots: viewport cull + one dot per screen cell.
-      if (x < -diameter || x > size.width + diameter || y < -diameter || y > size.height + diameter) continue
-      val cell = (x.toInt().toLong() shl 32) or (y.toInt().toLong() and 0xFFFFFFFFL)
-      if (!occupied.add(cell)) continue
-      buckets[dots.level[i] + 1].add(Offset(x, y))
     }
-
     drawPath(path, lineColour, style = Stroke(lineWidth.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
-    buckets.forEachIndexed { bucket, points ->
-      if (points.isEmpty()) return@forEachIndexed
-      val colour = if (bucket == 0) uncoloured else levelColours[bucket - 1]
-      drawPoints(points, PointMode.Points, colour, strokeWidth = diameter, cap = StrokeCap.Round)
+
+    // Dots oldest → newest, so the newest lands on top (what hitTest assumes, and what the web
+    // frontend does). Each run of same-coloured consecutive dots is one drawPoints call.
+    fun flush(level: Int) {
+      val colour = if (level == TrackDots.Uncoloured) uncoloured else levelColours[level]
+      drawPoints(run, PointMode.Points, colour, strokeWidth = diameter, cap = StrokeCap.Round)
+      run.clear()
     }
-    // Newest on top, whatever its colour bucket.
-    val newest = dots.size - 1
-    val level = dots.level[newest]
-    drawCircle(
-      if (level == TrackDots.Uncoloured) uncoloured else levelColours[level],
-      radius = diameter / 2,
-      center = Offset(screen.screenX(dots.worldX[newest]), screen.screenY(dots.worldY[newest])),
-    )
+    val count = topmostPerPixel(xs, ys, size.width, size.height, margin = diameter, occupied, order)
+    var runLevel = 0
+    for (k in count - 1 downTo 0) {
+      val i = order[k]
+      if (run.isNotEmpty() && dots.level[i] != runLevel) flush(runLevel)
+      runLevel = dots.level[i]
+      run.add(Offset(xs[i], ys[i]))
+    }
+    if (run.isNotEmpty()) flush(runLevel)
   }
+}
+
+/**
+ * The dots worth drawing, newest first: those within [margin] of the view, and per screen pixel
+ * only the newest — the one on top, the one [hitTest] picks. Writes indices into [out], returns
+ * how many.
+ */
+internal fun topmostPerPixel(
+  xs: FloatArray, ys: FloatArray, width: Float, height: Float, margin: Float,
+  occupied: PixelCellSet, out: IntArray,
+): Int {
+  occupied.clear()
+  var n = 0
+  for (i in xs.size - 1 downTo 0) {
+    val x = xs[i]
+    val y = ys[i]
+    if (x < -margin || x > width + margin || y < -margin || y > height + margin) continue
+    val cell = (x.toInt().toLong() shl 32) or (y.toInt().toLong() and 0xFFFFFFFFL)
+    if (occupied.add(cell)) out[n++] = i
+  }
+  return n
 }
 
 /** Open-addressed set of packed screen cells — `HashSet<Long>` boxes every key (spike, unchanged). */

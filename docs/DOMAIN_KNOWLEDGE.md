@@ -504,11 +504,16 @@ graph/map.
 - **Inline map is static, full screen is interactive** (session only; station maps stay fixed).
 - **Rendering** (spike `spike/map-dot-rendering`): every dot and the path are drawn by one shared
   Compose Canvas over a plain Google map (`PlatformMap`, expect/actual), positioned by our own
-  Web-Mercator transform — native markers can't hold a full session.
+  Web-Mercator transform — native markers can't hold a full session. Dots are drawn oldest →
+  newest (consecutive same-level dots batched into one `drawPoints`); per screen pixel only the
+  newest is drawn. Overlaps match the web frontend (`StreamMarkers.tsx`): one dot per location,
+  the newest; stacked oldest → newest; a click hits the topmost dot. The Canvas is clipped to the
+  map's bounds.
 - **Tap a dot (full-screen session map) → tooltip** with the reading's time and value (Figma
   `609:13295`). Time is `HH:mm:ss` on the session's wall clock, same formatter as the graph's
   marker (Figma shows `HH:mm`, but 1-second mobile readings need the seconds). The map reports
-  the tap; `hitTest` picks the nearest dot within 16 dp, newest wins on a tie. Tapping the bubble
+  the tap; `hitTest` picks the newest dot whose 8 dp disk covers the tap (the one drawn on top),
+  else the nearest within 16 dp, newest wins on a tie. Tapping the bubble
   or empty map closes it.
 
 **Own mobile session details — stats and graph window** (*checked 2026-11-14*):

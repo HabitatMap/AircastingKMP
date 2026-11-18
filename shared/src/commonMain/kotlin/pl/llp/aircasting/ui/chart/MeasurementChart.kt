@@ -189,7 +189,7 @@ fun MeasurementChart(
                 .copy(color = colors.onBackground),
             )
           },
-          labelPosition = DefaultCartesianMarker.LabelPosition.AbovePoint,
+          labelPosition = DefaultCartesianMarker.LabelPosition.AroundPoint,
           indicator = remember(colors.primaryContainer) {
             { _: Color ->
               ShapeComponent(

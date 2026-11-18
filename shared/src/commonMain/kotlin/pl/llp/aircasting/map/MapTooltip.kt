@@ -116,4 +116,22 @@ internal fun Modifier.anchoredTo(dots: TrackDots, index: Int, camera: () -> MapC
     }
   }
 
+/**
+ * Centres the content on world point ([worldX], [worldY]) under the live [camera]. Like
+ * [anchoredTo], it reads the camera in the placement phase: a pan re-places, no recomposition.
+ */
+internal fun Modifier.centredOn(worldX: Double, worldY: Double, camera: () -> MapCamera): Modifier =
+  layout { measurable, constraints ->
+    val placeable = measurable.measure(constraints.copy(minWidth = 0, minHeight = 0))
+    val mapWidth = constraints.maxWidth
+    val mapHeight = constraints.maxHeight
+    layout(placeable.width, placeable.height) {
+      val screen = ScreenTransform(camera(), mapWidth.toFloat(), mapHeight.toFloat(), tileSizePx = 256f * density)
+      placeable.place(
+        (screen.screenX(worldX) - placeable.width / 2f).roundToInt(),
+        (screen.screenY(worldY) - placeable.height / 2f).roundToInt(),
+      )
+    }
+  }
+
 private val TooltipOffset = 18.dp

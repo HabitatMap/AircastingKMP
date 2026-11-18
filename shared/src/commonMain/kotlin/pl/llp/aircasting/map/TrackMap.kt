@@ -9,7 +9,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.input.pointer.pointerInput
@@ -85,11 +84,14 @@ private const val TapRadiusDp = 16
 
 /**
  * Figma 1138:28370: the station's pill (as on Explore) with its newest reading, coloured by
- * [threshold]. A fixed view, even full screen: the camera centres on the station and never moves,
- * so the pill just sits in the middle — no projection needed.
+ * [threshold]. Framed on the station; [interactive] (full screen) lets the user pan and zoom, so the
+ * pill is pinned to the station's projected position rather than to the middle of the view.
  */
 @Composable
-fun StationMap(details: StationDetails, stream: StationStream, threshold: SensorThreshold?, modifier: Modifier = Modifier) {
+fun StationMap(
+  details: StationDetails, stream: StationStream, threshold: SensorThreshold?,
+  interactive: Boolean, modifier: Modifier = Modifier,
+) {
   val location = details.location ?: return
   BoxWithConstraints(modifier.clipToBounds()) {
     val camera = remember(location, maxWidth, maxHeight) {
@@ -97,16 +99,15 @@ fun StationMap(details: StationDetails, stream: StationStream, threshold: Sensor
     } ?: return@BoxWithConstraints
     val level = stream.value?.let { value -> threshold?.levelFor(value.toDouble()) }
     val label = stream.value?.let { "$it ${stream.unitSymbol}" } ?: "– ${stream.unitSymbol}"
-    PlatformMap(camera, Modifier.fillMaxSize(), onTap = { _, _ -> }) {
-      Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        StationPill(
-          label,
-          level?.let(LocalAqColors.current::forLevel),
-          airBeam = details.source == DataSource.AirBeam,
-        )
-      }
+    PlatformMap(camera, Modifier.fillMaxSize(), onTap = { _, _ -> }) { liveCamera ->
+      StationPill(
+        label,
+        level?.let(LocalAqColors.current::forLevel),
+        airBeam = details.source == DataSource.AirBeam,
+        modifier = Modifier.centredOn(WebMercator.x(location.longitude), WebMercator.y(location.latitude), liveCamera),
+      )
     }
     // Static, as TrackMap's inline map: drags scroll the screen.
-    Box(Modifier.matchParentSize().pointerInput(Unit) {})
+    if (!interactive) Box(Modifier.matchParentSize().pointerInput(Unit) {})
   }
 }

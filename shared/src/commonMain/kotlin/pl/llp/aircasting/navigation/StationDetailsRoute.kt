@@ -23,6 +23,8 @@ fun StationDetailsDestination(uuid: String, onBack: () -> Unit) {
     state, onBack = onBack, onRetry = vm::load, onSelectStream = vm::selectStream,
     onThresholdChange = vm::saveThreshold,
     graph = { details, stream, threshold, modifier -> StationGraph(details, stream, threshold, modifier) },
-    map = { details, stream, threshold, _, modifier -> StationMap(details, stream, threshold, modifier) },
-    )
+    map = { details, stream, threshold, fullScreen, modifier ->
+      StationMap(details, stream, threshold, interactive = fullScreen, modifier)
+    },
+  )
 }

@@ -501,7 +501,8 @@ graph/map.
 - **Camera fits the track's bounds, never past zoom 16** (legacy `animateCameraToMobileSession` +
   `DEFAULT_ZOOM`); fixed = centred at 16. The rewrite fits once per view size (`map/FitCamera.kt`),
   not on every new reading.
-- **Inline map is static, full screen is interactive** (session only; station maps stay fixed).
+- **Inline map is static, full screen is interactive** — session and station maps alike; the
+  station pill is pinned to its location (`Modifier.centredOn`), so it follows pans and zooms.
 - **Rendering** (spike `spike/map-dot-rendering`): every dot and the path are drawn by one shared
   Compose Canvas over a plain Google map (`PlatformMap`, expect/actual), positioned by our own
   Web-Mercator transform — native markers can't hold a full session. Dots are drawn oldest →

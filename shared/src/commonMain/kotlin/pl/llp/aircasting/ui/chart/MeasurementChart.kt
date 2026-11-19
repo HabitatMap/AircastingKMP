@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.shadow.Shadow
@@ -22,6 +23,7 @@ import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
 import com.patrykandpatrick.vico.compose.cartesian.CartesianDrawingContext
 import com.patrykandpatrick.vico.compose.cartesian.CartesianMeasuringContext
 import com.patrykandpatrick.vico.compose.cartesian.Scroll
+import com.patrykandpatrick.vico.compose.cartesian.VicoScrollState
 import com.patrykandpatrick.vico.compose.cartesian.Zoom
 import com.patrykandpatrick.vico.compose.cartesian.axis.Axis
 import com.patrykandpatrick.vico.compose.cartesian.axis.HorizontalAxis
@@ -124,6 +126,7 @@ fun MeasurementChart(
   val panSlop = with(LocalDensity.current) { PanSlop.toPx() }
   val chartConfiguration = remember(system, panSlop) { ChartViewConfiguration(system, panSlop) }
   val scrollState = rememberVicoScrollState(initialScroll = Scroll.Absolute.End)
+  FollowNewestPoint(scrollState)
   val markerController = remember(panSlop, system.touchSlop, scrollState) {
     ScrubUntilPanController(panSlop, system.touchSlop, canPan = { scrollState.maxValue >= 1f })
   }
@@ -214,6 +217,27 @@ fun MeasurementChart(
       animationSpec = null,
       animateIn = false,
     )
+  }
+}
+
+/**
+ * Keeps a live graph on its newest reading, as the legacy app does: when new points widen the
+ * series while the view is at the end, scroll to the new end. Panned back into history, it stays put.
+ *
+ * Vico's own `AutoScrollCondition.OnModelGrowth` can't do this: our model holds only a window, so it
+ * doesn't grow with the series. The fixed x-range does, which shows up as a larger `maxValue`.
+ */
+@Composable
+private fun FollowNewestPoint(scrollState: VicoScrollState) {
+  LaunchedEffect(scrollState) {
+    var wasAtEnd = true
+    var lastMax = 0f
+    snapshotFlow { scrollState.value to scrollState.maxValue }.collect { (value, max) ->
+      // Checked against the state before this change: once max grows, value no longer reads as "at end".
+      if (max > lastMax && wasAtEnd) scrollState.scroll(Scroll.Absolute.End)
+      else wasAtEnd = value >= max - 1f // 1 px: scroll values are Float pixels
+      lastMax = max
+    }
   }
 }
 

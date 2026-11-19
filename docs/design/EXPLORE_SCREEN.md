@@ -81,6 +81,8 @@ Endpoints: `API_V3.md` → *Explore session details*.
   hourly). Axis labels come from local-as-UTC times, so format them as UTC and don't convert again.
   **Open (design):** the frame's x-axis spans only ~8 h (19:00–03:00). Is it a pannable 24 h, or
   does it show only the last ~8 h?
+  *Live follow:* while the view sits at the newest point, each new reading scrolls it along
+  (`FollowNewestPoint`, as legacy); panned back into history, it stays put until scrolled to the end again.
   *Zoom:* pinch zooms in to at most 2 min, but never past the zoom where the whole series fits. 
   *Tooltip:* follows the finger until the chart starts panning (48 dp sideways) or the page scrolls.
    Fully zoomed out there is nothing to pan, so it follows the finger across the whole width

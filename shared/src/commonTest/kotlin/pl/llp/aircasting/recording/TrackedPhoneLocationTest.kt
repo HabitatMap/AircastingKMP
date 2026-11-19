@@ -3,6 +3,8 @@ package pl.llp.aircasting.recording
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
@@ -110,5 +112,25 @@ class TrackedPhoneLocationTest {
     val fix = backgroundScope.async { phone.awaitFix() }
     runCurrent()
     assertEquals(krakow, fix.await())
+  }
+
+  /**
+   * Without location permission the platform's fixes end at once. The wizard asks for it while
+   * already tracking, so a grant after that must still start the GPS.
+   */
+  @Test
+  fun fixes_that_end_are_retried_so_a_later_permission_grant_starts_the_gps() = runTest {
+    var granted = false
+    val phone = TrackedPhoneLocation(flow { if (granted) emitAll(fixes) }, backgroundScope)
+    backgroundScope.launch { phone.track() }
+    runCurrent()
+
+    granted = true
+    advanceTimeBy(FixesRetry)
+    runCurrent()
+    fixes.emit(krakow)
+    runCurrent()
+
+    assertEquals(krakow, phone.latest())
   }
 }

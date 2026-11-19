@@ -38,7 +38,11 @@ import pl.llp.aircasting.settings.mic.rememberMicrophonePermission
 data object NewSessionRoute
 
 @Composable
-fun NewSessionDestination(onExit: () -> Unit, onStarted: () -> Unit) {
+fun NewSessionDestination(onExit: () -> Unit, onStarted: () -> Unit, onRequestLocation: () -> Unit) {
+  // Legacy NewSessionController asks on wizard entry: mobile readings are stamped with the phone's
+  // fix, and the pin picker starts there. The platform callback skips the prompt once decided;
+  // PhoneLocation picks up a grant on its own.
+  LaunchedEffect(Unit) { onRequestLocation() }
   val vm = koinViewModel<NewSessionViewModel>()
   val recorder = koinViewModel<RecordingViewModel>()
   val state by vm.state.collectAsStateWithLifecycle()

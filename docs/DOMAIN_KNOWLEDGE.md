@@ -334,6 +334,12 @@ Fixed-session measurements carry no per-measurement location (it lives on the se
   Platforms supply a `Flow<GeoLocation>` (`androidLocationFixes`: fused 1 s HIGH_ACCURACY, as
   legacy; `iosLocationFixes`: `CLLocationManager` with background updates). The newest fix is
   kept across GPS sessions (`latest()`, legacy step 3).
+- **Location permission** (2026-11-19). The wizard asks for it on entry (`NewSessionDestination`
+  → `onRequestLocation`), as legacy `NewSessionController` did before its first step; the platform
+  callback skips the prompt once the user has decided. Denied → recording carries on with
+  `DEFAULT_LOCATION` (legacy instead showed `errors_location_services_required`; not built).
+  Android's fixes end at once without permission, so `TrackedPhoneLocation` re-collects them every
+  `FixesRetry` (1 s): a grant given after the wizard started tracking still starts the GPS.
 - **Start waits for a real fix** (fixes the NYC gap, 2026-10-22). Confirmed in the first real
   Mini V2 run (2026-10-21): GPS registered at Start, the first fix came ~3 s later, so the first
   6 readings were stamped New York and the session's backend bounding box stretched from New York

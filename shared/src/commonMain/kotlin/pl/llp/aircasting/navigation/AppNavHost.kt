@@ -85,6 +85,7 @@ fun AppNavHost(onRequestLocation: () -> Unit = {}) {
     }
     composable<NewSessionRoute> {
       NewSessionDestination(
+        onRequestLocation = onRequestLocation,
         onExit = { nav.popBackStack() },
         onStarted = {
           tab = AppTab.Active

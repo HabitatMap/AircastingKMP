@@ -23,33 +23,19 @@ data class AqColors(
   }
 }
 
-internal val LightAqColors = AqColors(
-  good = Color(0xFF006E02),
-  moderate = Color(0xFFC9A400),
-  unhealthySensitive = Color(0xFFE8720C),
-  unhealthy = Color(0xFFD32F2F),
-  hazardous = Color(0xFF7B1FA2),
-)
-
-internal val DarkAqColors = AqColors(
-  good = Color(0xFF6EDC6E),
-  moderate = Color(0xFFEBCD4A),
-  unhealthySensitive = Color(0xFFFF9F55),
-  unhealthy = Color(0xFFFF8A80),
-  hazardous = Color(0xFFD69CF0),
-)
-
-val LocalAqColors = staticCompositionLocalOf { LightAqColors }
-
 /**
- * Graph background bands (Figma `720:867`): lighter than [AqColors], which is for dots and text on
- * the surface. Not Figma variables, and no dark variant designed yet. [AqColors.hazardous] is
- * unused — the top band ends at "very high".
+ * The one AQ palette, for both themes and every surface — map dots and pills, badges, card numerals,
+ * graph bands and the threshold slider. These are the bright graph-band shades (Figma `720:867`);
+ * they replaced the darker light-theme set and the separate dark-theme set (2026-11-18), so the app
+ * shows each level in one colour. There is no distinct "hazardous" shade in that set: above "very
+ * high" stays the same red, as the graph's top band always did.
  */
-val AqBandColors = AqColors(
+internal val AqPalette = AqColors(
   good = Color(0xFF96D788),
   moderate = Color(0xFFFDD961),
   unhealthySensitive = Color(0xFFFCA443),
   unhealthy = Color(0xFFE85E60),
   hazardous = Color(0xFFE85E60),
 )
+
+val LocalAqColors = staticCompositionLocalOf { AqPalette }

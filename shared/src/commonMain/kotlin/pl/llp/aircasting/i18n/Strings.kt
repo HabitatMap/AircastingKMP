@@ -334,6 +334,11 @@ interface Strings {
   val exploreHumidity: String
   val exploreClearAll: String
   val stationNow: String
+  val detailsGraph: String
+  val detailsMap: String
+  val mapFullScreen: String
+  val mapExitFullScreen: String
+  val mapTooltipClose: String
   val stationMin24h: String
   val stationMax24h: String
   val stationOutdoor: String

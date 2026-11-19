@@ -90,7 +90,7 @@ internal val DarkColors = darkColorScheme(
 
 @Composable
 fun AircastingTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
-  CompositionLocalProvider(LocalAqColors provides if (darkTheme) DarkAqColors else LightAqColors) {
+  CompositionLocalProvider(LocalAqColors provides AqPalette) {
     MaterialTheme(
       colorScheme = if (darkTheme) DarkColors else LightColors,
       typography = rememberAircastingTypography(),

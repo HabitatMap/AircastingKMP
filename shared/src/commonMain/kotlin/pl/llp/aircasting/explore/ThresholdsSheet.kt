@@ -42,7 +42,7 @@ import pl.llp.aircasting.domain.SensorThreshold
 import pl.llp.aircasting.domain.invalidBounds
 import pl.llp.aircasting.i18n.LocalStrings
 import pl.llp.aircasting.settings.SettingsSheet
-import pl.llp.aircasting.ui.theme.AqBandColors
+import pl.llp.aircasting.ui.theme.LocalAqColors
 
 private val FieldShape = RoundedCornerShape(10.dp)
 
@@ -129,7 +129,7 @@ private fun ThresholdLadder(
     // A key, not to scale: one equal step per band, very high on top.
     Column(Modifier.width(10.dp).fillMaxHeight().clip(RoundedCornerShape(5.dp))) {
       threshold.bands.asReversed().forEach { (_, level) ->
-        Box(Modifier.weight(1f).fillMaxWidth().background(AqBandColors.forLevel(level)))
+        Box(Modifier.weight(1f).fillMaxWidth().background(LocalAqColors.current.forLevel(level)))
       }
     }
     // Composed top to bottom, so the keyboard's Next walks Max → Min.

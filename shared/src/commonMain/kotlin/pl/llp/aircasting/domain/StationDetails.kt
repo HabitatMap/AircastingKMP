@@ -20,6 +20,11 @@ data class StationDetails(
   val tags: List<String> = emptyList(),
   /** Explore only returns outdoor stations. */
   val isIndoor: Boolean = false,
+  /**
+   * Where a fixed station stands: Explore's coordinates, or our own fixed session's. Null =
+   * indoor / unknown → no map. Mobile sessions draw their track instead.
+   */
+  val location: GeoLocation? = null,
 )
 
 /**

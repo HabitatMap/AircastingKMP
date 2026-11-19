@@ -3,6 +3,7 @@ package pl.llp.aircasting.data.network
 import kotlinx.datetime.TimeZone
 import pl.llp.aircasting.domain.DataSource
 import pl.llp.aircasting.domain.ExploreSource
+import pl.llp.aircasting.domain.GeoLocation
 import pl.llp.aircasting.domain.StationDetails
 import pl.llp.aircasting.domain.StationStream
 import pl.llp.aircasting.domain.session.SessionType
@@ -19,6 +20,7 @@ fun StationDetailsDto.toStationDetails(): StationDetails = StationDetails(
   title = title,
   provider = provider,
   deviceModel = deviceModel,
+  location = latitude?.let { lat -> longitude?.let { lng -> GeoLocation(lat, lng) } },
   timeZone = TimeZone.of(timeZone),
   streams = streams.map {
     StationStream(

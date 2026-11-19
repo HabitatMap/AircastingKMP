@@ -61,7 +61,6 @@ fun ExploreTopBar(
   Column(
     modifier
       .zIndex(1f)
-      .background(colors.surfaceContainerLowest)
       .statusBarsPadding()
       // Figma's 16dp bottom; with chips, their touch-target slack already covers 8dp of it.
       .padding(top = 8.dp, bottom = if (hasFilters) 8.dp else 16.dp),

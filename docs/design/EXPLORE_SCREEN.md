@@ -34,9 +34,9 @@ Top → bottom:
   the third one `MIN. 24H` — a design typo; frame 2 says `MAX. 24H`.)
 - **Graph | Map** segmented toggle.
   - *Graph:* line over threshold-coloured bands, x-axis labelled at the visible edges only (start/end time) on every graph, tap → tooltip (`01:00 · 13 µg/m³`).
-    Graph frame `720:867`: full-bleed, 406 dp plot. Bands use their own light palette (red `#E85E60`,
-    orange `#FCA443`, yellow `#FDD961`, green `#96D788`; not Figma variables, no dark variant) →
-    `AqBandColors`. Tooltip = `Background` card with `M3/Elevation Light/1`, time in Label Small, level
+    Graph frame `720:867`: full-bleed, 406 dp plot. Bands use the bright palette (red `#E85E60`,
+    orange `#FCA443`, yellow `#FDD961`, green `#96D788`; not Figma variables) — since 2026-11-18 that
+    is the app-wide AQ palette, `AqPalette` via `LocalAqColors`, for both themes. Tooltip = `Background` card with `M3/Elevation Light/1`, time in Label Small, level
     dot + value in Title Small Emphasized + unit; white 1 dp guideline; 12 dp `Primary Container` dot.
   - *Map:* track of coloured points + expand-to-full-screen button.
 - **Threshold slider** (5 handles, e.g. 0·12·32·55·150) + `Reset to default`.
@@ -131,6 +131,14 @@ Chrome, top → bottom:
 | **Show all** / several parameters | Blue halo + white pill with source badge: `GOV` (dot) or `AIRBEAM` (AirBeam icon). **No value, no colour.** | frame 1 |
 | **Exactly one parameter** (e.g. Particulate matter) | Halo + pill tinted by threshold level, pill shows value + unit: `6 µg/m³` (green), `12 µg/m³` (yellow), `23 µg/m³` (orange), `65 µg/m³` (red). AirBeam keeps its icon, gov a dot. | frames 2–3 |
 | Server `cluster` item | Plain blue dot with a ring. No count, no value, never coloured. Lone `station` items in the **same** response keep their pill per the rows above — the server clusters per grid cell, so a response mixes both (live: zoom 10 over NYC = 18 stations + 1 cluster). Decided in `ExploreViewModel.toMarkers`. *Changed 2026-11-16: used to turn every item into a dot once any cluster was present.* | frame 4 |
+
+**Sizes** (deviate from Figma on purpose — design review 2026-11-18: "shrink measurement markers and
+enlarge cluster markers, cluster markers should be larger than measurement markers, both smaller than
+the current measurement marker"): the station marker shrinks by matching Figma's pill (`783:5110`:
+padding 12/10 × 6 dp, 4 dp gap, Label Small in `on-primary-container`, elevation 1) — it used to be
+built bigger, with Label Medium. Station halo stays **56 dp**, centred on the pill's dot / AirBeam
+glyph (Figma `783:5396`), not on the pill. Cluster grows to a **48 dp** halo + 24 dp dot. Figma still
+shows 64 dp station halos and 32 dp clusters (`795:2706`).
 
 Matches the API: the server sends `value` only when exactly one `measurement_type` is selected
 (`API_V3.md` → *Explore map*), and colour comes from the user's local thresholds

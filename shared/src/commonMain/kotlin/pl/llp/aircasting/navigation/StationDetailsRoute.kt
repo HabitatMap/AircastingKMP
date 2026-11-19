@@ -9,6 +9,7 @@ import org.koin.core.parameter.parametersOf
 import pl.llp.aircasting.explore.StationDetailsScreen
 import pl.llp.aircasting.explore.StationDetailsViewModel
 import pl.llp.aircasting.explore.StationGraph
+import pl.llp.aircasting.map.StationMap
 
 /** Only the uuid: `/explore/stations/{uuid}` returns the rest (docs/API_V3.md → Explore station details). */
 @Serializable
@@ -22,5 +23,8 @@ fun StationDetailsDestination(uuid: String, onBack: () -> Unit) {
     state, onBack = onBack, onRetry = vm::load, onSelectStream = vm::selectStream,
     onThresholdChange = vm::saveThreshold,
     graph = { details, stream, threshold, modifier -> StationGraph(details, stream, threshold, modifier) },
+    map = { details, stream, threshold, fullScreen, modifier ->
+      StationMap(details, stream, threshold, interactive = fullScreen, modifier)
+    },
   )
 }

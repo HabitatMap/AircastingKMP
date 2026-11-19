@@ -57,7 +57,6 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.withContext
 import pl.llp.aircasting.domain.MeasurementLevel
 import pl.llp.aircasting.domain.SensorThreshold
-import pl.llp.aircasting.ui.theme.AqBandColors
 import pl.llp.aircasting.ui.theme.AqColors
 import pl.llp.aircasting.ui.theme.LocalAqColors
 import kotlin.math.roundToInt
@@ -113,8 +112,8 @@ fun MeasurementChart(
       shape = DashedShape(dashLength = 8.dp, gapLength = 4.dp),
     )
   }
-  val decorations = remember(threshold, points, midnightLine) {
-    threshold?.let { bands(it, AqBandColors) }.orEmpty() +
+  val decorations = remember(threshold, points, midnightLine, aq) {
+    threshold?.let { bands(it, aq) }.orEmpty() +
       MidnightLines(midnightsBetween(points.first().x, points.last().x), midnightLine) +
       visibleRange
   }
@@ -189,7 +188,7 @@ fun MeasurementChart(
                 .copy(color = colors.onBackground),
             )
           },
-          labelPosition = DefaultCartesianMarker.LabelPosition.AbovePoint,
+          labelPosition = DefaultCartesianMarker.LabelPosition.AroundPoint,
           indicator = remember(colors.primaryContainer) {
             { _: Color ->
               ShapeComponent(

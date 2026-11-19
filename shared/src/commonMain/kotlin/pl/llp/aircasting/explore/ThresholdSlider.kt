@@ -46,7 +46,7 @@ import pl.llp.aircasting.domain.InnerBound
 import pl.llp.aircasting.domain.SensorThreshold
 import pl.llp.aircasting.i18n.LocalStrings
 import pl.llp.aircasting.ui.chart.ElevationLight1
-import pl.llp.aircasting.ui.theme.AqBandColors
+import pl.llp.aircasting.ui.theme.LocalAqColors
 import kotlin.math.roundToInt
 
 private val ThumbSize = 24.dp
@@ -121,10 +121,11 @@ fun ThresholdSlider(
       val width = constraints.maxWidth
       fun xOf(value: Int) = (value - threshold.veryLow) / span * width
 
+      val aq = LocalAqColors.current
       Canvas(Modifier.padding(top = TrackTop).fillMaxWidth().height(TrackHeight).clip(RoundedCornerShape(8.dp))) {
         draft.bands.forEach { (range, level) ->
           drawRect(
-            AqBandColors.forLevel(level),
+            aq.forLevel(level),
             topLeft = Offset(xOf(range.first), 0f),
             size = Size(xOf(range.last) - xOf(range.first), size.height),
           )

@@ -70,6 +70,14 @@ private class PlatformMapDelegate(
   private var target = initial
   private var styledWith: String? = null
 
+  /** Fires on every frame of a gesture or animation: the overlay redraws against it. */
+  @ObjCSignatureOverride
+  override fun mapView(mapView: GMSMapView, didChangeCameraPosition: GMSCameraPosition) {
+    camera = didChangeCameraPosition.target.useContents {
+      MapCamera(latitude, longitude, didChangeCameraPosition.zoom)
+    }
+  }
+
   /** Taps that land on the map, not on a marker (we have none). */
   @ObjCSignatureOverride
   override fun mapView(mapView: GMSMapView, didTapAtCoordinate: CValue<CLLocationCoordinate2D>) {

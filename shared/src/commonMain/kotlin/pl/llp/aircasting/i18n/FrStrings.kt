@@ -17,6 +17,9 @@ object FrStrings : Strings {
   override val newSessionDetailsTitle = "Nommez votre session"
   override val newSessionDetailsBody =
     "Ajoutez des détails pour la retrouver et la partager plus tard."
+  override val powerOnAirBeamTitle = "Allumez votre AirBeam"
+  override val powerOnAirBeamBody =
+    "Appuyez sur le bouton d'alimentation de votre AirBeam jusqu'à ce que le voyant devienne vert. Il est alors prêt à se connecter."
   override val newSessionDeviceTitle = "Choisissez l'appareil avec lequel vous souhaitez mesurer."
   override val newSessionDeviceBody =
     "Choisissez la méthode adaptée à votre matériel et à votre objectif."

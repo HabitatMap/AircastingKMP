@@ -172,6 +172,9 @@ Paths below are under legacy `app/src/main/java/pl/llp/aircasting/`.
 
 **Wizard order.** Details → *Choose location* (**outdoor only**) → Confirm. Indoor skips the map.
 (`NewSessionController.onSessionDetailsContinueClicked`)
+- Before the device picker, every AirBeam method (mobile and fixed) shows *Power on your AirBeam*,
+  so the device is advertising when the scan starts (legacy `connect_airbeam/TurnOnAirBeamViewMvcImpl`;
+  rewrite `NewSessionStep.PowerOn`, `PowerOnScreen`). The phone mic skips it along with the device step.
 - Indoor is the default placement.
 - Indoor sends the placeholder `(200, 200)` plus `time_zone`.
 - Outdoor uses the map's camera target. The map starts at the current location, or New York

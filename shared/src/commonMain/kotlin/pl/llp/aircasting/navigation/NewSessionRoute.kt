@@ -20,6 +20,7 @@ import pl.llp.aircasting.record.DeviceStepUi
 import pl.llp.aircasting.record.NewSessionStep
 import pl.llp.aircasting.record.NewSessionViewModel
 import pl.llp.aircasting.record.PinPickerViewModel
+import pl.llp.aircasting.record.PowerOnScreen
 import pl.llp.aircasting.record.RecordMethodScreen
 import pl.llp.aircasting.record.RecordingMethod
 import pl.llp.aircasting.record.RecordingViewModel
@@ -58,6 +59,7 @@ fun NewSessionDestination(onExit: () -> Unit, onStarted: () -> Unit, onRequestLo
       onCancel = onExit,
       onNext = vm::next,
     )
+    NewSessionStep.PowerOn -> PowerOnScreen(onBack = back, onCancel = onExit, onNext = vm::next)
     NewSessionStep.Details -> SessionDetailsScreen(
       state = state,
       onRename = vm::rename,

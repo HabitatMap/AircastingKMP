@@ -30,6 +30,9 @@ object EnStrings : Strings {
   override fun samplingMinutes(count: Int): String = "$count min"
   override val newSessionDetailsTitle = "Name your session"
   override val newSessionDetailsBody = "Add details so you can find and share it later."
+  override val powerOnAirBeamTitle = "Power on your AirBeam"
+  override val powerOnAirBeamBody =
+    "Press the power button on your AirBeam until the light turns green. This means it's ready to connect."
   override val newSessionDeviceTitle = "Choose the device you would like to record with."
   override val newSessionDeviceBody = "Choose the method that fits your setup and session goal."
   override val newSessionDeviceAirBeamHeader = "AIRBEAM"

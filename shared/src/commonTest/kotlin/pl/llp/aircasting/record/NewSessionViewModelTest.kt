@@ -100,25 +100,32 @@ class NewSessionViewModelTest {
 
   @Test
   fun `progress fills as the wizard advances`() {
-    assertEquals(1f / 5, NewSessionStep.Method.progress)
+    assertEquals(1f / 6, NewSessionStep.Method.progress)
     assertEquals(1f, NewSessionStep.Confirm.progress)
     assertTrue(NewSessionStep.entries.all { it.progress in 0f..1f })
   }
 
   @Test
-  fun `an AirBeam method leads to the device step`() {
+  fun `an AirBeam method asks to power it on before the device step`() {
     val vm = NewSessionViewModel(location)
 
     vm.select(RecordingMethod.AirBeamMobile)
     vm.next()
+    assertEquals(NewSessionStep.PowerOn, vm.state.value.step)
+    assertTrue(vm.state.value.canContinue)
 
+    vm.next()
     assertEquals(NewSessionStep.Device, vm.state.value.step)
+
+    vm.back()
+    assertEquals(NewSessionStep.PowerOn, vm.state.value.step)
   }
 
   @Test
   fun `next is dead on the device step until a device is picked`() {
     val vm = NewSessionViewModel(location)
     vm.select(RecordingMethod.AirBeamMobile)
+    vm.next()
     vm.next()
 
     assertFalse(vm.state.value.canContinue)
@@ -188,6 +195,7 @@ class NewSessionViewModelTest {
   fun `a mobile session never asks for wifi or a location`() {
     val vm = NewSessionViewModel(location)
     vm.select(RecordingMethod.AirBeamMobile)
+    vm.next()
     vm.next()
     vm.selectDevice(ab3)
     vm.next()
@@ -338,6 +346,7 @@ class NewSessionViewModelTest {
   private fun fixedDetailsOn(device: DiscoveredAirBeam) = NewSessionViewModel(location).apply {
     select(RecordingMethod.AirBeamFixed)
     next()
+    next()
     selectDevice(device)
     next()
     rename("Balcony")
@@ -386,6 +395,7 @@ class NewSessionViewModelTest {
 
   private fun fixedAtDetails() = NewSessionViewModel(location).apply {
     select(RecordingMethod.AirBeamFixed)
+    next()
     next()
     selectDevice(ab3)
     next()

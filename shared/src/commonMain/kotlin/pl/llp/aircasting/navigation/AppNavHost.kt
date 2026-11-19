@@ -18,6 +18,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.IntOffset
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.dropUnlessResumed
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
@@ -86,7 +87,7 @@ fun AppNavHost(onRequestLocation: () -> Unit = {}) {
     composable<NewSessionRoute> {
       NewSessionDestination(
         onRequestLocation = onRequestLocation,
-        onExit = { nav.popBackStack() },
+        onExit = dropUnlessResumed { nav.popBackStack() },
         onStarted = {
           tab = AppTab.Active
           nav.popBackStack()

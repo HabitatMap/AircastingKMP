@@ -13,6 +13,7 @@ import org.koin.core.parameter.parametersOf
 import pl.llp.aircasting.domain.SensorThreshold
 import pl.llp.aircasting.domain.StationDetails
 import pl.llp.aircasting.domain.StationStream
+import pl.llp.aircasting.ui.chart.MIN_VISIBLE_SECONDS
 import pl.llp.aircasting.ui.chart.MeasurementChart
 import pl.llp.aircasting.ui.components.ErrorState
 import pl.llp.aircasting.ui.components.LoadingSpinner
@@ -38,6 +39,7 @@ internal fun GraphContent(
   stream: StationStream,
   threshold: SensorThreshold?,
   modifier: Modifier = Modifier,
+  minVisibleSeconds: Double = MIN_VISIBLE_SECONDS,
 ) {
   // Fills the caller's slot (the details screen sizes it), so loading, error and chart are the same size.
   Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -47,7 +49,7 @@ internal fun GraphContent(
       // key: a new stream starts from a fresh scroll/zoom, opened on its newest point.
       is StationGraphState.Ready -> if (state.points.isNotEmpty()) key(stream.id) {
         // Size on the host itself: CartesianChartHost caps itself at 200 dp otherwise.
-        MeasurementChart(state.points, threshold, stream.unitSymbol, Modifier.fillMaxSize())
+        MeasurementChart(state.points, threshold, stream.unitSymbol, Modifier.fillMaxSize(), minVisibleSeconds)
       }
     }
   }

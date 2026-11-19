@@ -77,6 +77,7 @@ private class ChartViewConfiguration(system: ViewConfiguration, override val tou
  *
  * @param points sorted by x (epoch seconds, local-as-UTC); not empty.
  * @param threshold null = no bands, as the uncoloured header.
+ * @param minVisibleSeconds the furthest pinch zoom-in, in seconds visible.
  */
 @Composable
 fun MeasurementChart(
@@ -84,6 +85,7 @@ fun MeasurementChart(
   threshold: SensorThreshold?,
   unit: String,
   modifier: Modifier = Modifier,
+  minVisibleSeconds: Double = MIN_VISIBLE_SECONDS,
 ) {
   val modelProducer = remember { CartesianChartModelProducer() }
   val visibleRange = remember { VisibleRangeProbe() }
@@ -95,7 +97,7 @@ fun MeasurementChart(
     var loaded: ClosedFloatingPointRange<Double>? = null
     // conflate: while one reload computes, keep only the newest range, so a fling never queues work.
     visibleRange.value.filterNotNull().conflate().collect { visible ->
-      if (loaded?.let { needsReload(it, visible) } == false) return@collect
+      if (loaded?.let { needsReload(it, visible, minVisibleSeconds) } == false) return@collect
       val window = windowFor(visible)
       val draw = withContext(Dispatchers.Default) { pointsToDraw(points, window) }
       modelProducer.runTransaction { lineModel { series(draw.map { it.x }, draw.map { it.y }) } }
@@ -133,9 +135,9 @@ fun MeasurementChart(
   val zoomState = rememberVicoZoomState(
     initialZoom = remember { Zoom.max(Zoom.x(INITIAL_VISIBLE_SECONDS), Zoom.Content) },
     minZoom = Zoom.Content,
-    // A series shorter than MIN_VISIBLE_SECONDS already fits at Content; Zoom.x alone would then sit
+    // A series shorter than minVisibleSeconds already fits at Content; Zoom.x alone would then sit
     // below minZoom, which Vico rejects (IllegalArgumentException). max() keeps maxZoom ≥ minZoom.
-    maxZoom = remember { Zoom.max(Zoom.x(MIN_VISIBLE_SECONDS), Zoom.Content) },
+    maxZoom = remember { Zoom.max(Zoom.x(minVisibleSeconds), Zoom.Content) },
   )
   CompositionLocalProvider(LocalViewConfiguration provides chartConfiguration) {
     CartesianChartHost(

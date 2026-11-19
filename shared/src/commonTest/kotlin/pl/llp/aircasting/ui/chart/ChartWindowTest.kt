@@ -26,6 +26,15 @@ class ChartWindowTest {
     assertFalse(needsReload(loaded = loadedAtMaxZoom, visible = maxZoom))
   }
 
+  @Test
+  fun a_mobile_graph_reaches_max_zoom_at_its_own_shorter_limit() {
+    // At 2 min a mobile graph isn't at max zoom yet; at its 30 s limit the same rule must fire.
+    val loadedForTwiceMobileMaxZoom = windowFor(0.0..(2 * MOBILE_MIN_VISIBLE_SECONDS))
+    val mobileMaxZoom = 450.0..(450.0 + MOBILE_MIN_VISIBLE_SECONDS + 0.3)
+
+    assertTrue(needsReload(loadedForTwiceMobileMaxZoom, mobileMaxZoom, MOBILE_MIN_VISIBLE_SECONDS))
+  }
+
   /** One point per second, x = 0 … n-1. */
   private fun seconds(n: Int) = List(n) { ChartPoint(it.toDouble(), 1.0) }
 

@@ -14,11 +14,11 @@ package pl.llp.aircasting.ui.chart
  */
 internal const val POINTS_PER_WINDOW = 2_000
 
-/**
- * Furthest zoom-in, in seconds visible: enough to tell 1 Hz samples apart (~9 px each). Not lower
- * than ~1 min: axis labels are HH:mm, so both edge labels would read the same.
- */
+/** Furthest zoom-in by default (fixed stations), in seconds visible: their data is 1-minute. */
 internal const val MIN_VISIBLE_SECONDS = 2 * 60.0
+
+/** Furthest zoom-in for a mobile session's 1 Hz graph: 30 readings across the screen. */
+internal const val MOBILE_MIN_VISIBLE_SECONDS = 30.0
 
 /** Extra width loaded on each side of the visible range, as a fraction of it, so short pans need no reload. */
 private const val MARGIN = 0.5
@@ -35,15 +35,17 @@ private const val WIDTH_SLACK = 1.01
 /**
  * Reload when the view leaves [loaded]; when zooming in has left fewer than half the points it was
  * decimated for; or at max zoom, when [loaded] was decimated for a wider view. The halving rule
- * can't cover that last case: zoom stops at [MIN_VISIBLE_SECONDS], short of half of any window
+ * can't cover that last case: zoom stops at [minVisibleSeconds], short of half of any window
  * loaded for under twice that. Zooming out needs no rule of its own: the view then outgrows [loaded].
+ * [minVisibleSeconds] = the chart's max-zoom width.
  */
 internal fun needsReload(
   loaded: ClosedFloatingPointRange<Double>,
   visible: ClosedFloatingPointRange<Double>,
+  minVisibleSeconds: Double = MIN_VISIBLE_SECONDS,
 ): Boolean {
   val loadedForWidth = loaded.width / (1 + 2 * MARGIN)
-  val atMaxZoom = visible.width <= MIN_VISIBLE_SECONDS * WIDTH_SLACK
+  val atMaxZoom = visible.width <= minVisibleSeconds * WIDTH_SLACK
   return visible.start < loaded.start ||
     visible.endInclusive > loaded.endInclusive ||
     visible.width < loadedForWidth / 2 ||

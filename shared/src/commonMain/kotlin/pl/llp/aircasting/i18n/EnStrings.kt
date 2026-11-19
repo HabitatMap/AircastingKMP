@@ -320,7 +320,7 @@ object EnStrings : Strings {
       else -> "Show $n results"
     }
   override fun exploreRemoveFilter(name: String): String = "Remove filter: $name"
-  override val colourThresholds: String = "Colour thresholds"
+  override val colourThresholds: String = "Color thresholds"
   override val save = "Save"
   override val thresholdsEdit = "Edit"
   override val thresholdsTitle = "Thresholds"

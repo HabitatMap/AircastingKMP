@@ -16,13 +16,10 @@ internal fun midnightsBetween(fromX: Double, toX: Double): List<Double> {
   return (first..toX.toLong() step SECONDS_PER_DAY.toLong()).map { it.toDouble() }
 }
 
-/** `HH:mm` of an epoch-seconds x. UTC on purpose: Explore times are local-as-UTC (DOMAIN_KNOWLEDGE.md). */
-internal fun hourMinuteUtc(x: Double): String {
-  val time = Instant.fromEpochSeconds(x.toLong()).toLocalDateTime(TimeZone.UTC)
-  return "${time.hour.twoDigits()}:${time.minute.twoDigits()}"
-}
-
-/** `HH:mm:ss` of an epoch-seconds x, for the marker tooltip. UTC for the same reason as [hourMinuteUtc]. */
+/**
+ * `HH:mm:ss` of an epoch-seconds x, for the axis labels and the marker tooltip. UTC on purpose:
+ * Explore times are local-as-UTC (DOMAIN_KNOWLEDGE.md).
+ */
 internal fun hourMinuteSecondUtc(x: Double): String {
   val time = Instant.fromEpochSeconds(x.toLong()).toLocalDateTime(TimeZone.UTC)
   return "${time.hour.twoDigits()}:${time.minute.twoDigits()}:${time.second.twoDigits()}"

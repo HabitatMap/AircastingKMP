@@ -268,10 +268,10 @@ private class TimeAxisLabels : HorizontalAxis.ItemPlacer, CartesianValueFormatte
   }
 
   override fun format(context: CartesianMeasuringContext, value: Double, verticalAxisPosition: Axis.Position.Vertical?) =
-    hourMinuteUtc(shownTimes[value] ?: value)
+    hourMinuteSecondUtc(shownTimes[value] ?: value)
 
-  /** `00:00`, `01:01` … `09:09`: every digit in both last places, so the widest label whatever the font. */
-  private val measuredValues = List(10) { it * 3_660.0 }
+  /** `00:00:00`, `01:01:01` … `09:09:09`: every digit in each last place, so the widest label whatever the font. */
+  private val measuredValues = List(10) { it * 3_661.0 }
 
   override fun getWidthMeasurementLabelValues(
     context: CartesianMeasuringContext,

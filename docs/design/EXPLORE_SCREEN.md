@@ -33,7 +33,7 @@ Top → bottom:
 - **Stats:** `NOW` · `MIN. 24H` · `MAX. 24H`, each value with a level dot + unit. (Frame 1 and 3 label
   the third one `MIN. 24H` — a design typo; frame 2 says `MAX. 24H`.)
 - **Graph | Map** segmented toggle.
-  - *Graph:* line over threshold-coloured bands, x-axis labelled at the visible edges only (start/end time) on every graph, tap → tooltip (`01:00 · 13 µg/m³`).
+  - *Graph:* line over threshold-coloured bands, x-axis labelled at the visible edges only (start/end time, `HH:mm:ss`) on every graph, tap → tooltip (`01:00:00 · 13 µg/m³`).
     Graph frame `720:867`: full-bleed, 406 dp plot. Bands use the bright palette (red `#E85E60`,
     orange `#FCA443`, yellow `#FDD961`, green `#96D788`; not Figma variables) — since 2026-11-18 that
     is the app-wide AQ palette, `AqPalette` via `LocalAqColors`, for both themes. Tooltip = `Background` card with `M3/Elevation Light/1`, time in Label Small, level

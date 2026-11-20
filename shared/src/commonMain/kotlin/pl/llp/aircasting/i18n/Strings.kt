@@ -27,6 +27,8 @@ interface Strings {
   // New session wizard — "How will you record?"
   val newSessionMethodTitle: String
   val newSessionMethodBody: String
+  val powerOnAirBeamTitle: String
+  val powerOnAirBeamBody: String
   val newSessionDeviceTitle: String
   val newSessionDeviceBody: String
   val newSessionDeviceAirBeamHeader: String

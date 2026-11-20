@@ -62,13 +62,13 @@ data class NewSessionForm(
 val NewSessionForm.steps: List<NewSessionStep>
   get() = NewSessionStep.entries.filter { step ->
     when (step) {
-      NewSessionStep.Device -> method != RecordingMethod.PhoneMicrophone
+      NewSessionStep.PowerOn, NewSessionStep.Device -> method != RecordingMethod.PhoneMicrophone
       NewSessionStep.Location -> method == RecordingMethod.AirBeamFixed && !indoor
       else -> true
     }
   }
 
-enum class NewSessionStep { Method, Device, Details, Location, Confirm }
+enum class NewSessionStep { Method, PowerOn, Device, Details, Location, Confirm }
 
 val NewSessionStep.progress: Float
   get() = (ordinal + 1).toFloat() / NewSessionStep.entries.size

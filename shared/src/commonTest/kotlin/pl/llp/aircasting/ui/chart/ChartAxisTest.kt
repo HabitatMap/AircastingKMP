@@ -13,13 +13,8 @@ class ChartAxisTest {
   @Test
   fun times_are_formatted_as_UTC_so_the_station_wall_clock_shows_unchanged() {
     // Never converted to the device zone: that would shift a New York station by the viewer's offset.
-    assertEquals("01:00", hourMinuteUtc(oneAm))
-    assertEquals("01:05", hourMinuteUtc(oneAm + 5 * 60 + 59)) // seconds are dropped, not rounded
-  }
-
-  @Test
-  fun tooltip_time_includes_seconds() {
-    assertEquals("01:05:59", hourMinuteSecondUtc(oneAm + 5 * 60 + 59))
+    assertEquals("01:00:00", hourMinuteSecondUtc(oneAm))
+    assertEquals("01:05:59", hourMinuteSecondUtc(oneAm + 5 * 60 + 59.9)) // fractions are dropped, not rounded
   }
 
   @Test
@@ -37,7 +32,7 @@ class ChartAxisTest {
     val visible = (oneAm + 90)..(oneAm + 8 * 3_600 + 90)
     val labels = timeAxisLabels(visible, labelWidth = 1_800.0)
 
-    assertEquals(listOf("01:16", "08:46"), labels.keys.map { hourMinuteUtc(it) })
+    assertEquals(listOf("01:16:30", "08:46:30"), labels.keys.map { hourMinuteSecondUtc(it) })
   }
 
   @Test

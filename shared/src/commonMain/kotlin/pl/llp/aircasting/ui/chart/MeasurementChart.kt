@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.shadow.Shadow
@@ -22,6 +23,7 @@ import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
 import com.patrykandpatrick.vico.compose.cartesian.CartesianDrawingContext
 import com.patrykandpatrick.vico.compose.cartesian.CartesianMeasuringContext
 import com.patrykandpatrick.vico.compose.cartesian.Scroll
+import com.patrykandpatrick.vico.compose.cartesian.VicoScrollState
 import com.patrykandpatrick.vico.compose.cartesian.Zoom
 import com.patrykandpatrick.vico.compose.cartesian.axis.Axis
 import com.patrykandpatrick.vico.compose.cartesian.axis.HorizontalAxis
@@ -75,6 +77,7 @@ private class ChartViewConfiguration(system: ViewConfiguration, override val tou
  *
  * @param points sorted by x (epoch seconds, local-as-UTC); not empty.
  * @param threshold null = no bands, as the uncoloured header.
+ * @param minVisibleSeconds the furthest pinch zoom-in, in seconds visible.
  */
 @Composable
 fun MeasurementChart(
@@ -82,6 +85,7 @@ fun MeasurementChart(
   threshold: SensorThreshold?,
   unit: String,
   modifier: Modifier = Modifier,
+  minVisibleSeconds: Double = MIN_VISIBLE_SECONDS,
 ) {
   val modelProducer = remember { CartesianChartModelProducer() }
   val visibleRange = remember { VisibleRangeProbe() }
@@ -93,7 +97,7 @@ fun MeasurementChart(
     var loaded: ClosedFloatingPointRange<Double>? = null
     // conflate: while one reload computes, keep only the newest range, so a fling never queues work.
     visibleRange.value.filterNotNull().conflate().collect { visible ->
-      if (loaded?.let { needsReload(it, visible) } == false) return@collect
+      if (loaded?.let { needsReload(it, visible, minVisibleSeconds) } == false) return@collect
       val window = windowFor(visible)
       val draw = withContext(Dispatchers.Default) { pointsToDraw(points, window) }
       modelProducer.runTransaction { lineModel { series(draw.map { it.x }, draw.map { it.y }) } }
@@ -124,15 +128,16 @@ fun MeasurementChart(
   val panSlop = with(LocalDensity.current) { PanSlop.toPx() }
   val chartConfiguration = remember(system, panSlop) { ChartViewConfiguration(system, panSlop) }
   val scrollState = rememberVicoScrollState(initialScroll = Scroll.Absolute.End)
+  FollowNewestPoint(scrollState)
   val markerController = remember(panSlop, system.touchSlop, scrollState) {
     ScrubUntilPanController(panSlop, system.touchSlop, canPan = { scrollState.maxValue >= 1f })
   }
   val zoomState = rememberVicoZoomState(
     initialZoom = remember { Zoom.max(Zoom.x(INITIAL_VISIBLE_SECONDS), Zoom.Content) },
     minZoom = Zoom.Content,
-    // A series shorter than MIN_VISIBLE_SECONDS already fits at Content; Zoom.x alone would then sit
+    // A series shorter than minVisibleSeconds already fits at Content; Zoom.x alone would then sit
     // below minZoom, which Vico rejects (IllegalArgumentException). max() keeps maxZoom ≥ minZoom.
-    maxZoom = remember { Zoom.max(Zoom.x(MIN_VISIBLE_SECONDS), Zoom.Content) },
+    maxZoom = remember { Zoom.max(Zoom.x(minVisibleSeconds), Zoom.Content) },
   )
   CompositionLocalProvider(LocalViewConfiguration provides chartConfiguration) {
     CartesianChartHost(
@@ -218,6 +223,27 @@ fun MeasurementChart(
 }
 
 /**
+ * Keeps a live graph on its newest reading, as the legacy app does: when new points widen the
+ * series while the view is at the end, scroll to the new end. Panned back into history, it stays put.
+ *
+ * Vico's own `AutoScrollCondition.OnModelGrowth` can't do this: our model holds only a window, so it
+ * doesn't grow with the series. The fixed x-range does, which shows up as a larger `maxValue`.
+ */
+@Composable
+private fun FollowNewestPoint(scrollState: VicoScrollState) {
+  LaunchedEffect(scrollState) {
+    var wasAtEnd = true
+    var lastMax = 0f
+    snapshotFlow { scrollState.value to scrollState.maxValue }.collect { (value, max) ->
+      // Checked against the state before this change: once max grows, value no longer reads as "at end".
+      if (max > lastMax && wasAtEnd) scrollState.scroll(Scroll.Absolute.End)
+      else wasAtEnd = value >= max - 1f // 1 px: scroll values are Float pixels
+      lastMax = max
+    }
+  }
+}
+
+/**
  * Reports the visible x-range on every frame. Vico has no listener for it (its `getVisibleXRange`
  * is internal), so this is that function's maths, done in a decoration where the values are public.
  * Draws nothing.
@@ -268,10 +294,10 @@ private class TimeAxisLabels : HorizontalAxis.ItemPlacer, CartesianValueFormatte
   }
 
   override fun format(context: CartesianMeasuringContext, value: Double, verticalAxisPosition: Axis.Position.Vertical?) =
-    hourMinuteUtc(shownTimes[value] ?: value)
+    hourMinuteSecondUtc(shownTimes[value] ?: value)
 
-  /** `00:00`, `01:01` … `09:09`: every digit in both last places, so the widest label whatever the font. */
-  private val measuredValues = List(10) { it * 3_660.0 }
+  /** `00:00:00`, `01:01:01` … `09:09:09`: every digit in each last place, so the widest label whatever the font. */
+  private val measuredValues = List(10) { it * 3_661.0 }
 
   override fun getWidthMeasurementLabelValues(
     context: CartesianMeasuringContext,

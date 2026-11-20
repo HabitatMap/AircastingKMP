@@ -1,7 +1,10 @@
 package pl.llp.aircasting.recording
 
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.filterNotNull
@@ -27,12 +30,26 @@ interface PhoneLocation {
 /** How long the GPS outlives its last tracker, so the wizard can hand it to the engine without a restart. */
 internal val GpsHandOff = 5.seconds
 
+/**
+ * How soon [TrackedPhoneLocation] re-collects fixes that ended. Android's end at once without
+ * location permission, and the wizard asks for it while already tracking.
+ */
+internal val FixesRetry = 1.seconds
+
 /** The shared half: platforms only supply [fixes], which run the GPS while collected. */
 class TrackedPhoneLocation(fixes: Flow<GeoLocation>, scope: CoroutineScope) : PhoneLocation {
   private val newest = MutableStateFlow<GeoLocation?>(null)
 
-  /** One GPS session however many collect it; null until its first fix, and again once it stops. */
-  private val live = fixes.stateIn(
+  /**
+   * One GPS session however many collect it; null until its first fix, and again once it stops.
+   * Fixes that end are retried, so a permission granted mid-session starts the GPS.
+   */
+  private val live = flow {
+    while (true) {
+      emitAll(fixes)
+      delay(FixesRetry)
+    }
+  }.stateIn(
     scope,
     SharingStarted.WhileSubscribed(GpsHandOff.inWholeMilliseconds, replayExpirationMillis = 0),
     null,

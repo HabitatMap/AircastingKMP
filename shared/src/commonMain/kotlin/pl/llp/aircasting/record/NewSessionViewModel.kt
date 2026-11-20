@@ -21,7 +21,7 @@ data class NewSessionState(
       NewSessionStep.Method -> form.method != null
       NewSessionStep.Device -> form.device != null
       NewSessionStep.Location -> form.placement != null
-      NewSessionStep.Confirm -> true
+      NewSessionStep.PowerOn, NewSessionStep.Confirm -> true
       NewSessionStep.Details -> form.name.isNotBlank() &&
         (form.method != RecordingMethod.AirBeamFixed || form.cellular || form.hasWifi)
 

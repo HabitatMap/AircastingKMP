@@ -125,7 +125,7 @@ class NewSessionViewModelTest {
   }
 
   @Test
-  fun `bluetooth off routes an AirBeam method to the bluetooth step, and turning it on moves on`() {
+  fun `bluetooth off routes an AirBeam method to the bluetooth step and turning it on moves on`() {
     radio.isOff.value = true
     val vm = NewSessionViewModel(location, radio)
 
@@ -184,7 +184,7 @@ class NewSessionViewModelTest {
   }
 
   @Test
-  fun `connect sits between the picker and details, and back from details skips it`() {
+  fun `connect sits between the picker and details and back from details skips it`() {
     val vm = NewSessionViewModel(location, radio)
     vm.select(RecordingMethod.AirBeamMobile)
     vm.next()

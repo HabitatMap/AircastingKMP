@@ -517,10 +517,24 @@ graph/map.
 - **Fixed station / fixed session = one dot** at the station's location (Explore `latitude`/
   `longitude`, or the session row), coloured by the newest reading. No map when indoor.
 - **Camera fits the track's bounds, never past zoom 16** (legacy `animateCameraToMobileSession` +
-  `DEFAULT_ZOOM`); fixed = centred at 16. The rewrite fits once per view size (`map/FitCamera.kt`),
-  not on every new reading.
-- **Inline map is static, full screen is interactive** — session and station maps alike; the
-  station pill is pinned to its location (`Modifier.centredOn`), so it follows pans and zooms.
+  `DEFAULT_ZOOM`); fixed = centred at 16 (`map/FitCamera.kt`).
+- **Mobile track map** (*decided 2026-11-20*): pans and zooms **inline and full screen alike**
+  (the details column stops scrolling while it shows, or it would steal vertical drags).
+  - **Active session** — default view is centred on the **newest point** (= the user's location)
+    and zoomed out until the whole track fits (`fitCamera(centre = …)`); it's re-framed on every
+    reading, so the map follows the user. A pan/zoom freezes the camera where the user left it;
+    the **Centre button** (bottom-right) returns to the default view and resumes following.
+    If the user **changed the zoom** (not just panned), Centre keeps it: the map then follows the
+    newest point at that zoom instead of re-fitting the track. Leaving details forgets it.
+    Legacy `MapContainer`: default = centre on the last measurement at the current zoom;
+    `locate()` → `MapController.locateRequested` centres on the phone's last fix at zoom 16.
+  - **Finished session** (not built yet): default view frames the whole track; no Centre button
+    (`TrackMap(live = false)`).
+  - The user's camera lives in `SessionMapViewModel` (per stream), so it survives the graph tab,
+    the full-screen toggle, screen off and backgrounding, and resets when details are left.
+    Not persisted across process death.
+- **Fixed station map: inline static, full screen interactive**; the station pill is pinned to
+  its location (`Modifier.centredOn`), so it follows pans and zooms.
 - **Rendering** (spike `spike/map-dot-rendering`): every dot and the path are drawn by one shared
   Compose Canvas over a plain Google map (`PlatformMap`, expect/actual), positioned by our own
   Web-Mercator transform — native markers can't hold a full session. Dots are drawn oldest →

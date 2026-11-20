@@ -1,17 +1,22 @@
 package pl.llp.aircasting.map
 
+import aircasting.shared.generated.resources.Res
+import aircasting.shared.generated.resources.ic_my_location
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.unit.dp
 import kotlinx.datetime.TimeZone
 import pl.llp.aircasting.domain.DataSource
 import pl.llp.aircasting.domain.MeasurementLevel
@@ -19,24 +24,35 @@ import pl.llp.aircasting.domain.SensorThreshold
 import pl.llp.aircasting.domain.StationDetails
 import pl.llp.aircasting.domain.StationStream
 import pl.llp.aircasting.domain.TrackPoint
+import pl.llp.aircasting.i18n.LocalStrings
 import pl.llp.aircasting.ui.components.StationPill
 import pl.llp.aircasting.ui.theme.LocalAqColors
 
 
-/** [points] as dots joined by a path, framed to fit; tap a dot for its reading. Blank until a first point. */
+/**
+ * [points] as dots joined by a path; tap a dot for its reading. Blank until a first point.
+ * Pans and zooms inline and full screen alike. [userCamera] (null = the default view) and
+ * [onUserMoved] are hoisted so the view survives the map leaving composition (graph tab,
+ * full-screen toggle). [live] = an active session: the default view centres on the newest point
+ * (the user's location) with the whole track in view, re-framed on every reading so the map
+ * follows the user, and a Centre button returns to it. Otherwise the default view frames the track.
+ * [followZoom]: a zoom the user chose — the default view keeps it rather than fitting the track.
+ */
 @Composable
 fun TrackMap(
   points: List<TrackPoint>, threshold: SensorThreshold?, unit: String, timeZone: TimeZone,
-  interactive: Boolean, modifier: Modifier = Modifier,
+  live: Boolean, userCamera: MapCamera?, followZoom: Float?, onUserMoved: (MapCamera) -> Unit, onRecentre: () -> Unit,
+  modifier: Modifier = Modifier,
 ) {
   // Clip: Compose doesn't clip drawing to layout bounds, and the overlay Canvas draws the whole
   // path, off-screen parts included, over whatever sits next to the map.
   BoxWithConstraints(modifier.clipToBounds()) {
-    // Framed per size (inline vs full screen), not per reading: a live track grows without
-    // yanking the camera away from where the user panned.
-    val camera = remember(maxWidth, maxHeight, points.isNotEmpty()) {
-      fitCamera(points.map { it.location }, maxWidth.value, maxHeight.value)
+    val defaultCamera = remember(points, live, followZoom, maxWidth, maxHeight) {
+      val locations = points.map { it.location }
+      val fit = fitCamera(locations, maxWidth.value, maxHeight.value, centre = locations.lastOrNull()?.takeIf { live })
+      followZoom?.let { fit?.copy(zoom = it) } ?: fit
     } ?: return@BoxWithConstraints
+    val camera = userCamera ?: defaultCamera
     val dots = remember(points, threshold) { TrackDots.of(points, threshold) }
     val aq = LocalAqColors.current
     val levelColours = remember(aq) { MeasurementLevel.entries.map(aq::forLevel) }
@@ -48,6 +64,10 @@ fun TrackMap(
     PlatformMap(
       camera,
       Modifier.fillMaxSize(),
+      // Freeze on the view the gesture starts from — the same value as `camera`, so the map isn't
+      // moved — so the next reading doesn't re-frame it mid-gesture. Then keep where it settles.
+      onGestureStart = { onUserMoved(camera) },
+      onGestureEnd = onUserMoved,
       onTap = { at, now ->
         // worldUnitsPerPixel at density 1 = world units per dp.
         val worldPerDp = worldUnitsPerPixel(now.zoom, densityScale = 1f)
@@ -69,10 +89,12 @@ fun TrackMap(
         )
       }
     }
-    // A static map: this sibling wins the hit test, so a drag here scrolls the screen, not the map.
-    if (!interactive) Box(
-      Modifier.matchParentSize()
-        .pointerInput(Unit) {})
+    if (live) MapButton(
+      Res.drawable.ic_my_location,
+      LocalStrings.current.myLocation,
+      onClick = onRecentre,
+      Modifier.align(Alignment.BottomEnd).padding(4.dp),
+    )
   }
 }
 
@@ -107,7 +129,7 @@ fun StationMap(
         modifier = Modifier.centredOn(WebMercator.x(location.longitude), WebMercator.y(location.latitude), liveCamera),
       )
     }
-    // Static, as TrackMap's inline map: drags scroll the screen.
+    // Static inline: this sibling wins the hit test, so a drag here scrolls the screen, not the map.
     if (!interactive) Box(Modifier.matchParentSize().pointerInput(Unit) {})
   }
 }

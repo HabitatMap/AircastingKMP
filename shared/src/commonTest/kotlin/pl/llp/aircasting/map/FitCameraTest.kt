@@ -47,4 +47,18 @@ class FitCameraTest {
 
     assertEquals(MaxFitZoom, camera.zoom)
   }
+
+  @Test
+  fun a_given_centre_is_kept_and_the_farthest_point_still_fits() {
+    // Centre on the newest point (east end): the west end must still be inside the padding.
+    val camera = fitCamera(
+      listOf(GeoLocation(0.0, 0.0), GeoLocation(0.0, 0.01)),
+      widthDp = 400f, heightDp = 400f, paddingDp = 32f, centre = GeoLocation(0.0, 0.01),
+    )!!
+
+    assertEquals(0.0, camera.centerLatitude, 1e-9)
+    assertEquals(0.01, camera.centerLongitude, 1e-9)
+    val screen = ScreenTransform(camera, widthPx = 400f, heightPx = 400f, tileSizePx = 256f)
+    assertEquals(32f, screen.screenX(WebMercator.x(0.0)), 0.5f)
+  }
 }

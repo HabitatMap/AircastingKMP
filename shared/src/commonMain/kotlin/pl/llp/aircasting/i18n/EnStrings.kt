@@ -391,6 +391,9 @@ object EnStrings : Strings {
   override val networkCellular = "Cellular"
   override val streamTemperature = "Temp."
   override val streamHumidity = "Hum."
+  override val wifiLocationOffHint = "Turn on location services to list the Wi-Fi networks around you."
+  override val wifiTurnOnLocation = "Turn on location"
+  override val wifiRetryHint = "This session already exists on AirCasting, so only its Wi-Fi details can change. Check the password and try again."
 }
 
 /** Every available locale, keyed by BCP-47 tag. Lyricist selects one by the system locale at runtime. */

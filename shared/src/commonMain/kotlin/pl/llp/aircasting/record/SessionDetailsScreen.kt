@@ -66,6 +66,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import co.touchlab.kermit.Logger.Companion.tag
 import org.jetbrains.compose.resources.painterResource
 import pl.llp.aircasting.i18n.LocalStrings
 import pl.llp.aircasting.settings.account.PasswordField
@@ -115,30 +116,31 @@ fun SessionDetailsScreen(
       )
       Spacer(Modifier.height(24.dp))
 
+      val locked = form.wifiOnly
+      if (locked) {
+        Hint(strings.wifiRetryHint)
+        Spacer(Modifier.height(16.dp))
+      }
       SessionField(
         value = form.name,
         onValueChange = onRename,
         label = strings.sessionNameLabel,
         placeholder = strings.sessionNamePlaceholder,
         imeAction = ImeAction.Next,
+        enabled = !locked,
       )
       Spacer(Modifier.height(32.dp))
-      TagsField(form.committedTags, form.tagDraft, onEditTagDraft, onCommitTag, onRemoveTag)
+      TagsField(form.committedTags, form.tagDraft, onEditTagDraft, onCommitTag, onRemoveTag, enabled = !locked)
 
-      if (form.tagDraft.isNotEmpty()) {
+      if (!locked && form.tagDraft.isNotEmpty()) {
         Spacer(Modifier.height(24.dp))
         SectionHeader(strings.matchingTagsHeader)
         Spacer(Modifier.height(12.dp))
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-          state.matchingTags.forEach { tag ->
-            TagSuggestion(
-              tag,
-              strings.addTagLabel(tag)
-            ) { onAddTag(tag) }
-          }
+          state.matchingTags.forEach { tag -> TagSuggestion(tag, strings.addTagLabel(tag)) { onAddTag(tag) } }
           TagSuggestion(strings.addNewTag(form.tagDraft), description = null, onClick = onCommitTag)
         }
-      } else if (state.recentTags.isNotEmpty()) {
+      } else if (!locked && state.recentTags.isNotEmpty()) {
         Spacer(Modifier.height(24.dp))
         SectionHeader(strings.latestTagsHeader)
         Spacer(Modifier.height(12.dp))
@@ -158,6 +160,7 @@ fun SessionDetailsScreen(
               selected = form.indoor == indoor,
               onClick = { onIndoor(indoor) },
               shape = SegmentedButtonDefaults.itemShape(index, count = 2),
+              enabled = !locked,
             ) { Text(if (indoor) strings.placementIndoor else strings.placementOutdoor) }
           }
         }
@@ -181,8 +184,6 @@ fun SessionDetailsScreen(
         if (!form.cellular) {
           Spacer(Modifier.height(24.dp))
           SectionHeader(strings.wifiHeader)
-          Spacer(Modifier.height(24.dp))
-          SectionHeader(strings.wifiHeader)
           Spacer(Modifier.height(8.dp))
           if (wifiNetworks?.listOnly == true) {
             // Android: the scan is the only way to pick, as legacy did (DOMAIN_KNOWLEDGE.md "Wi-Fi credentials").
@@ -190,13 +191,13 @@ fun SessionDetailsScreen(
               !wifiNetworks.granted -> {
                 Hint(strings.wifiPermissionHint)
                 Spacer(Modifier.height(8.dp))
-                TagSuggestion(
-                  strings.wifiShowNearby,
-                  description = null,
-                  onClick = wifiNetworks::request
-                )
+                TagSuggestion(strings.wifiShowNearby, description = null, onClick = wifiNetworks::request)
               }
-
+              wifiNetworks.locationOff -> {
+                Hint(strings.wifiLocationOffHint)
+                Spacer(Modifier.height(8.dp))
+                TagSuggestion(strings.wifiTurnOnLocation, description = null, onClick = wifiNetworks::turnOnLocation)
+              }
               wifiNetworks.names.isEmpty() && form.wifi.ssid.isBlank() -> Hint(strings.wifiSearching)
               else -> NetworkList(
                 // A network picked on an earlier visit stays shown even before a scan finds it again.
@@ -227,25 +228,25 @@ fun SessionDetailsScreen(
             placeholder = strings.wifiPasswordPlaceholder,
             hint = strings.wifiPasswordHint,
           )
-        } else if (form.method == RecordingMethod.AirBeamMobile) {
-          // Fixed samples every 60 s (DOMAIN_KNOWLEDGE.md), the mic every second (legacy
-          // MicrophoneReader), so only an AirBeam mobile session picks.
-          Spacer(Modifier.height(24.dp))
-          SectionHeader(strings.samplingIntervalHeader)
-          Spacer(Modifier.height(8.dp))
-          Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            SamplingInterval.entries.forEach { interval ->
-              SelectableChip(
-                label = strings.label(interval),
-                selected = interval == form.interval,
-                onClick = { onInterval(interval) },
-                modifier = Modifier.weight(1f),
-              )
-            }
-          }
-          Spacer(Modifier.height(8.dp))
-          Hint(strings.samplingIntervalHint)
         }
+      } else if (form.method == RecordingMethod.AirBeamMobile) {
+        // Fixed samples every 60 s (DOMAIN_KNOWLEDGE.md), the mic every second (legacy
+        // MicrophoneReader), so only an AirBeam mobile session picks.
+        Spacer(Modifier.height(24.dp))
+        SectionHeader(strings.samplingIntervalHeader)
+        Spacer(Modifier.height(8.dp))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+          SamplingInterval.entries.forEach { interval ->
+            SelectableChip(
+              label = strings.label(interval),
+              selected = interval == form.interval,
+              onClick = { onInterval(interval) },
+              modifier = Modifier.weight(1f),
+            )
+          }
+        }
+        Spacer(Modifier.height(8.dp))
+        Hint(strings.samplingIntervalHint)
       }
     }
   }
@@ -263,6 +264,7 @@ private fun TagsField(
   onDraft: (String) -> Unit,
   onCommit: () -> Unit,
   onRemove: (String) -> Unit,
+  enabled: Boolean,
 ) {
   val strings = LocalStrings.current
   val colors = MaterialTheme.colorScheme
@@ -282,6 +284,7 @@ private fun TagsField(
         InputChip(
           selected = false,
           onClick = { onRemove(tag) },
+          enabled = enabled,
           label = { Text(tag, style = MaterialTheme.typography.labelSmall) },
           trailingIcon = {
             Icon(
@@ -295,8 +298,10 @@ private fun TagsField(
       }
       BasicTextField(
         state = fieldState,
+        enabled = enabled,
+        // BasicTextField doesn't dim itself the way Material fields do.
+        textStyle = MaterialTheme.typography.bodyLarge.copy(color = colors.onSurface.copy(alpha = if (enabled) 1f else 0.38f)),
         modifier = Modifier.widthIn(min = 96.dp).align(Alignment.CenterVertically),
-        textStyle = MaterialTheme.typography.bodyLarge.copy(color = colors.onSurface),
         cursorBrush = SolidColor(colors.primary),
         lineLimits = TextFieldLineLimits.SingleLine,
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
@@ -334,17 +339,19 @@ private fun SessionField(
   placeholder: String,
   imeAction: ImeAction,
   hint: String? = null,
+  enabled: Boolean = true,
 ) {
   val strings = LocalStrings.current
   val fieldState = rememberReportingFieldState(value, onValueChange)
   TextField(
     state = fieldState,
+    enabled = enabled,
     modifier = Modifier.fillMaxWidth(),
     labelPosition = TextFieldLabelPosition.Attached(alwaysMinimize = true),
     label = { Text(label) },
     placeholder = { Text(placeholder) },
     trailingIcon = {
-      if (fieldState.text.isNotEmpty()) {
+      if (enabled && fieldState.text.isNotEmpty()) {
         IconButton(onClick = { fieldState.clearText() }) {
           Icon(
             painterResource(Res.drawable.ic_cancel),

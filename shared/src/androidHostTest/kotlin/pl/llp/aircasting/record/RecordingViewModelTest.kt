@@ -44,6 +44,7 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -442,6 +443,43 @@ class RecordingViewModelTest {
 
     assertEquals(StartState.Started, vm.startState.value)
     assertIs<SessionConfig.FixedCellular>(link.configured.single())
+  }
+  /** Wrong password, Start again: the backend must still hold one session, now configured. */
+  @Test
+  fun a_fixed_retry_reuses_the_session_already_on_the_backend() = runTest {
+    link.configureResult = ConfigResult.WifiPassFailure
+    vm.start(fixedForm)
+    runCurrent()
+    link.configureResult = ConfigResult.Success
+
+    vm.start(fixedForm.copy(wifi = WifiCredentials("HomeNet", "right")))
+    runCurrent()
+
+    assertEquals(StartState.Started, vm.startState.value)
+    assertEquals(1, registered.size)
+    assertEquals(registered.single().uuid, link.configured.last().uuid)
+  }
+
+  @Test
+  fun a_fixed_device_failure_marks_the_session_registered() = runTest {
+    assertFalse(vm.sessionRegistered.value)
+    link.configureResult = ConfigResult.WifiPassFailure
+
+    vm.start(fixedForm)
+    runCurrent()
+
+    assertTrue(vm.sessionRegistered.value)
+  }
+
+  /** Nothing reached the backend, so the form stays free and the next Start registers. */
+  @Test
+  fun a_signed_out_fixed_start_registers_nothing() = runTest {
+    registration = null
+
+    vm.start(fixedForm)
+    runCurrent()
+
+    assertFalse(vm.sessionRegistered.value)
   }
 }
 

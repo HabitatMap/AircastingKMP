@@ -6,8 +6,11 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.location.LocationManager
 import android.net.wifi.WifiManager
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -16,7 +19,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
+import androidx.core.location.LocationManagerCompat
 import co.touchlab.kermit.Logger
+import com.google.android.gms.common.api.ResolvableApiException
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.LocationSettingsRequest
+import com.google.android.gms.location.Priority
 import kotlinx.coroutines.delay
 import kotlin.time.Duration.Companion.seconds
 
@@ -35,7 +44,29 @@ actual fun rememberWifiNetworks(): WifiNetworks {
   }
   val names = remember { mutableStateOf(emptyList<String>()) }
 
-  if (granted.value) {
+  val locationManager = remember { context.getSystemService(LocationManager::class.java) }
+  val locationOn = remember { mutableStateOf(LocationManagerCompat.isLocationEnabled(locationManager)) }
+  // Follows the quick-settings tile and the dialog below alike.
+  DisposableEffect(locationManager) {
+    val receiver = object : BroadcastReceiver() {
+      override fun onReceive(context: Context, intent: Intent) {
+        locationOn.value = LocationManagerCompat.isLocationEnabled(locationManager)
+      }
+    }
+    ContextCompat.registerReceiver(
+      context,
+      receiver,
+      IntentFilter(LocationManager.PROVIDERS_CHANGED_ACTION),
+      ContextCompat.RECEIVER_NOT_EXPORTED,
+    )
+    onDispose { context.unregisterReceiver(receiver) }
+  }
+  // The system "Turn on location?" dialog (legacy LocationHelper.checkLocationServicesSettings).
+  // Its result needs no reading: the receiver above sees location come on.
+  val enableLocation = rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) {}
+
+  // Scanning with location off only returns nothing; once it's on, this enters composition and scans at once.
+  if (granted.value && locationOn.value) {
     val wifi = remember { context.applicationContext.getSystemService(WifiManager::class.java) }
     DisposableEffect(wifi) {
       val publish = {
@@ -69,14 +100,26 @@ actual fun rememberWifiNetworks(): WifiNetworks {
     }
   }
 
-  return remember(launcher) {
+  return remember(launcher, enableLocation) {
     object : WifiNetworks {
       override val names get() = names.value
       override val granted get() = granted.value
+      override val locationOff get() = !locationOn.value
       override val listOnly = true
       override fun request() = launcher.launch(
         arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION),
       )
+      override fun turnOnLocation() {
+        val request = LocationSettingsRequest.Builder()
+          .addLocationRequest(LocationRequest.Builder(Priority.PRIORITY_BALANCED_POWER_ACCURACY, 10_000).build())
+          .setAlwaysShow(true)
+          .build()
+        LocationServices.getSettingsClient(context).checkLocationSettings(request)
+          .addOnFailureListener { e ->
+            if (e is ResolvableApiException) enableLocation.launch(IntentSenderRequest.Builder(e.resolution).build())
+            else context.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+          }
+      }
     }
   }
 }

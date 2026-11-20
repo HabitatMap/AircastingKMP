@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
@@ -22,6 +23,7 @@ import pl.llp.aircasting.recording.FixedSessionStarter
 import pl.llp.aircasting.recording.FixedStartResult
 import pl.llp.aircasting.recording.MicrophoneRecorder
 import pl.llp.aircasting.recording.NewSessionDetails
+import pl.llp.aircasting.recording.PendingFixedSession
 import pl.llp.aircasting.recording.PhoneLocation
 import pl.llp.aircasting.recording.RecordingEngine
 import kotlin.time.Duration.Companion.seconds
@@ -85,6 +87,14 @@ class RecordingViewModel(
   private val _startState = MutableStateFlow<StartState>(StartState.Idle)
   val startState: StateFlow<StartState> = _startState.asStateFlow()
 
+  /**
+   * Fixed only: the backend holds this session but the AirBeam refused it. Start again reuses it
+   * instead of creating a second session, so the wizard must not change what was registered.
+   */
+  private val pending = MutableStateFlow<PendingFixedSession?>(null)
+  val sessionRegistered: StateFlow<Boolean> =
+    pending.map { it != null }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
   fun start(form: NewSessionForm) {
     if (_startState.value is StartState.Preparing) return
     val fixed = form.method == RecordingMethod.AirBeamFixed
@@ -135,15 +145,19 @@ class RecordingViewModel(
     val placement = form.placement
     if (picked == null || placement == null) return StartState.Failed(ConfigResult.BadConfigFailure)
     if (!linkTo(picked)) return StartState.Failed(ConfigResult.NotConnected)
-    val details = NewSessionDetails(form.name, form.tags)
-    return when (val result = fixedStarter.start(picked, details, placement, form.uplink)) {
+    val retry = pending.value
+    val result = if (retry != null) fixedStarter.configure(retry, form.uplink)
+    else fixedStarter.start(picked, NewSessionDetails(form.name, form.tags), placement, form.uplink)
+    return when (result) {
       FixedStartResult.Started -> StartState.Started
       FixedStartResult.SignedOut -> StartState.SignedOut
       FixedStartResult.ServerError -> StartState.ServerError
-      is FixedStartResult.DeviceFailed -> StartState.Failed(result.result)
+      is FixedStartResult.DeviceFailed -> {
+        result.pending?.let { pending.value = it }
+        StartState.Failed(result.result)
+      }
     }
   }
-
   /**
    * Waits for a real fix before the device is configured: readings start right after, and any
    * that arrive before the phone's first fix are stamped with the default location (New York).

@@ -63,10 +63,28 @@ class FixedSessionStarterTest {
   fun a_device_failure_is_reported_and_keeps_the_link_for_a_retry() = runTest {
     link.configureResult = ConfigResult.WifiPassFailure
 
-    val result = starter.start(MINI_V2, DETAILS, OUTDOOR, WIFI)
+    val result = starter.start(MINI_V2, DETAILS, OUTDOOR, WIFI) as FixedStartResult.DeviceFailed
 
-    assertEquals(FixedStartResult.DeviceFailed(ConfigResult.WifiPassFailure), result)
+    assertEquals(ConfigResult.WifiPassFailure, result.result)
+    assertEquals(registered.single(), result.pending?.session)
     assertEquals(0, link.disconnects)
+  }
+
+  /** Wrong Wi-Fi password: the retry configures the session the backend already holds, not a second one. */
+  @Test
+  fun a_retry_reuses_the_registered_session() = runTest {
+    link.configureResult = ConfigResult.WifiPassFailure
+    val failed = starter.start(MINI_V2, DETAILS, OUTDOOR, WIFI) as FixedStartResult.DeviceFailed
+    link.configureResult = ConfigResult.Success
+
+    val result = starter.configure(failed.pending!!, Uplink.Wifi(WifiCredentials("HomeNet", "right")))
+
+    assertEquals(FixedStartResult.Started, result)
+    val retry = link.configured.last() as SessionConfig.FixedWiFi
+    assertEquals(registered.single().uuid, retry.uuid) // single(): still one registration
+    assertEquals(TOKEN, retry.authToken)
+    assertEquals("right", retry.password)
+    assertEquals(1, link.disconnects)
   }
 
   @Test

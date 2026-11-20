@@ -42,6 +42,8 @@ data class NewSessionForm(
   val wifi: WifiCredentials = WifiCredentials("", ""),
   /** Fixed, AB2/AB3 only. Wi-Fi by default, as in legacy FixedSessionDetailsViewMvcImpl. */
   val cellular: Boolean = false,
+  /** Fixed, once the backend registered it: a retry reuses that session, so only the uplink may change. */
+  val wifiOnly: Boolean = false,
 ) {
   val offersCellular: Boolean
     get() = method == RecordingMethod.AirBeamFixed && device?.device?.supportsCellular == true
@@ -60,7 +62,8 @@ data class NewSessionForm(
 
 /** The steps this form walks: the phone mic needs no device, only an outdoor fixed session needs a pin. */
 val NewSessionForm.steps: List<NewSessionStep>
-  get() = NewSessionStep.entries.filter { step ->
+  get() = if (wifiOnly) listOf(NewSessionStep.Details, NewSessionStep.Confirm)
+  else NewSessionStep.entries.filter { step ->
     when (step) {
       NewSessionStep.Device -> method != RecordingMethod.PhoneMicrophone
       NewSessionStep.Location -> method == RecordingMethod.AirBeamFixed && !indoor

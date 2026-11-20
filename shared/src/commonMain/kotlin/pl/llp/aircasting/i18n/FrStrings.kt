@@ -419,4 +419,7 @@ object FrStrings : Strings {
   override val networkHeader = "Réseau"
   override val networkWifi = "Wi-Fi"
   override val networkCellular = "Cellulaire"
+  override val wifiLocationOffHint = "Activez la localisation pour lister les réseaux Wi-Fi autour de vous."
+  override val wifiTurnOnLocation = "Activer la localisation"
+  override val wifiRetryHint = "Cette session existe déjà sur AirCasting : seuls ses identifiants Wi-Fi peuvent encore changer. Vérifiez le mot de passe et réessayez."
 }

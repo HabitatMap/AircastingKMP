@@ -30,6 +30,8 @@ import pl.llp.aircasting.record.deviceStepUi
 import pl.llp.aircasting.record.progress
 import pl.llp.aircasting.record.rememberWifiNetworks
 import pl.llp.aircasting.record.startFailure
+import pl.llp.aircasting.record.steps
+import pl.llp.aircasting.scan.ScanUiState
 import pl.llp.aircasting.scan.ScanViewModel
 import pl.llp.aircasting.scan.rememberBluetoothPermission
 import pl.llp.aircasting.settings.mic.rememberMicrophonePermission
@@ -48,7 +50,9 @@ fun NewSessionDestination(onExit: () -> Unit, onStarted: () -> Unit, onRequestLo
   val state by vm.state.collectAsStateWithLifecycle()
   val startState by recorder.startState.collectAsStateWithLifecycle()
   LaunchedEffect(startState) { if (startState == StartState.Started) onStarted() }
-  val back: () -> Unit = { if (state.step == NewSessionStep.Method) onExit() else vm.back() }
+  val sessionRegistered by recorder.sessionRegistered.collectAsStateWithLifecycle()
+  LaunchedEffect(sessionRegistered) { if (sessionRegistered) vm.lockToWifi() }
+  val back: () -> Unit = { if (state.step == state.form.steps.first()) onExit() else vm.back() }
 
   when (state.step) {
     NewSessionStep.Method -> RecordMethodScreen(

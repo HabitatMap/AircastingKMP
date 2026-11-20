@@ -22,15 +22,15 @@ sealed interface Uplink {
   /** AB2 and AB3 only (DOMAIN_KNOWLEDGE.md "Cellular"). */
   data object Cellular : Uplink
 }
+/** On the backend, not yet on the AirBeam: what a retry configures instead of registering anew. */
+data class PendingFixedSession(val session: NewFixedSession, val registered: RegisteredFixedSession)
 
 sealed interface FixedStartResult {
-  /** The AirBeam uploads on its own; the link is dropped. */
   data object Started : FixedStartResult
   data object SignedOut : FixedStartResult
-  /** The backend refused, or answered without what the device needs. The device was not touched. */
   data object ServerError : FixedStartResult
-  /** The link stays up, so a retry needs no reconnect. */
-  data class DeviceFailed(val result: ConfigResult) : FixedStartResult
+  /** The link stays up. Once registered, [pending] lets a retry reuse the backend session. */
+  data class DeviceFailed(val result: ConfigResult, val pending: PendingFixedSession? = null) : FixedStartResult
 }
 
 /**
@@ -66,13 +66,17 @@ class FixedSessionStarter(
       log.e(e) { "${session.uuid}: backend create failed" }
       return FixedStartResult.ServerError
     }
-    val config = configFor(target.device, session.uuid, registered, placement.coordinates, uplink)
+    return configure(PendingFixedSession(session, registered), uplink)
+  }
+  /** Configures the AirBeam for a session the backend already holds. A retry calls this directly, so no second session is created. */
+  suspend fun configure(pending: PendingFixedSession, uplink: Uplink): FixedStartResult {
+    val session = pending.session
+    val config = configFor(session.device.device, session.uuid, pending.registered, session.placement.coordinates, uplink)
       ?: return FixedStartResult.ServerError
-
     val result = link.configure(config)
-    if (result != ConfigResult.Success) return FixedStartResult.DeviceFailed(result)
+    if (result != ConfigResult.Success) return FixedStartResult.DeviceFailed(result, pending)
     link.disconnect()
-    log.i { "Fixed ${session.uuid} running on ${target.name}" }
+    log.i { "Fixed ${session.uuid} running on ${session.device.name}" }
     return FixedStartResult.Started
   }
 

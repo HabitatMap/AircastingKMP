@@ -106,18 +106,12 @@ class NewSessionViewModel(
 
   fun placePin(location: GeoLocation) = edit { it.copy(outdoorLocation = location) }
 
-  fun editWifiName(ssid: String) = edit { it.copy(wifi = it.wifi.copy(ssid = ssid)) }
-
-  fun editWifiPassword(password: String) = edit { it.copy(wifi = it.wifi.copy(password = password)) }
-
   fun next() = _state.update { state -> if (!state.canContinue) state else state.moveBy(1) }
 
   /** Connecting is a transition, not a place: back from Details returns to the picker. */
   fun back() = _state.update { state ->
     state.moveBy(-1).let { if (it.step == NewSessionStep.Connect) it.moveBy(-1) else it }
   }
-
-  fun setCellular(cellular: Boolean) = edit { it.copy(cellular = cellular && it.offersCellular) }
 
   fun selectDevice(device: DiscoveredAirBeam) = edit {
     it.copy(device = device).run { copy(cellular = cellular && offersCellular) }
@@ -128,7 +122,21 @@ class NewSessionViewModel(
     return copy(step = steps.getOrElse(steps.indexOf(step) + offset) { step })
   }
 
+  fun editWifiName(ssid: String) = editUplink { it.copy(wifi = it.wifi.copy(ssid = ssid)) }
+
+  fun editWifiPassword(password: String) = editUplink { it.copy(wifi = it.wifi.copy(password = password)) }
+
+  fun setCellular(cellular: Boolean) = editUplink { it.copy(cellular = cellular && it.offersCellular) }
+
+  /** One-way: the session can't be un-registered, so nothing unlocks it within this wizard. */
+  fun lockToWifi() = editUplink { it.copy(wifiOnly = true) }
+
+  /** Anything the backend already holds is frozen once [NewSessionForm.wifiOnly]. */
   private fun edit(block: (NewSessionForm) -> NewSessionForm) =
+    _state.update { if (it.form.wifiOnly) it else it.copy(form = block(it.form)) }
+
+  /** How the AirBeam gets online is never sent to the backend, so it stays editable for a retry. */
+  private fun editUplink(block: (NewSessionForm) -> NewSessionForm) =
     _state.update { it.copy(form = block(it.form)) }
 }
 

@@ -24,7 +24,10 @@ interface WifiNetworks {
   /** True where [names] is a real scan (Android): pick from it only, as legacy did. False where it can't be (iOS): typing stays. */
   val listOnly: Boolean
   fun request()
+  val locationOff: Boolean get() = false
+  fun turnOnLocation() {}
 }
+
 
 /** Android scans nearby networks; iOS can only name the one the phone is on. */
 @Composable

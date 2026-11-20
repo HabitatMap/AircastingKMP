@@ -13,6 +13,7 @@ import pl.llp.aircasting.bluetooth.DiscoveredAirBeam
 import pl.llp.aircasting.domain.GeoLocation
 import pl.llp.aircasting.recording.PhoneLocation
 import pl.llp.aircasting.recording.Placement
+import pl.llp.aircasting.recording.WifiCredentials
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -482,6 +483,45 @@ class NewSessionViewModelTest {
     vm.selectDevice(miniV2)
 
     assertFalse(vm.state.value.form.cellular)
+  }
+
+  /** Once the backend has the session, only how the AirBeam gets online may change. */
+  @Test
+  fun `locked to wifi only the wifi can change`() {
+    val vm = fixedAtDetails()
+    vm.fillDetails()
+    vm.editTagDraft("home ")
+    vm.lockToWifi()
+
+    vm.rename("Other")
+    vm.editTagDraft("x ")
+    vm.removeTag("home")
+    vm.setIndoor(false)
+    vm.editWifiName("Office")
+    vm.editWifiPassword("right")
+
+    val form = vm.state.value.form
+    assertEquals("Rooftop", form.name)
+    assertEquals(listOf("home"), form.tags)
+    assertEquals(Placement.Indoor, form.placement)
+    assertEquals(WifiCredentials("Office", "right"), form.wifi)
+  }
+
+  /** The pin, device and method are what the backend got, so the steps that pick them are gone. */
+  @Test
+  fun `locked to wifi the wizard walks only details and confirm`() {
+    val vm = fixedAtDetails()
+    vm.fillDetails()
+    vm.setIndoor(false)
+    vm.next() // Location
+    vm.next() // Confirm
+    vm.lockToWifi()
+
+    vm.back()
+    assertEquals(NewSessionStep.Details, vm.state.value.step) // the pin step is skipped
+    vm.next()
+    assertEquals(NewSessionStep.Confirm, vm.state.value.step)
+    assertEquals(NewSessionStep.Details, vm.state.value.form.steps.first()) // so Back on Details leaves
   }
 
   private val rooftop = GeoLocation(latitude = 50.06, longitude = 19.94)

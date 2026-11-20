@@ -415,4 +415,7 @@ interface Strings {
   val networkHeader: String
   val networkWifi: String
   val networkCellular: String
+  val wifiLocationOffHint: String
+  val wifiTurnOnLocation: String
+  val wifiRetryHint: String
 }

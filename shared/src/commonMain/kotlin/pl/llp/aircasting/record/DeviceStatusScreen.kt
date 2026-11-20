@@ -22,19 +22,20 @@ import org.jetbrains.compose.resources.painterResource
 import pl.llp.aircasting.ui.wizard.WizardButton
 import pl.llp.aircasting.ui.wizard.WizardScaffold
 
-/** The device step when it can't scan yet: Bluetooth off, or permission missing. */
+/** Power-on and device steps when Bluetooth isn't usable yet: off, or permission missing. */
 @Composable
 fun DeviceStatusScreen(
   title: String,
   body: String,
   buttonLabel: String,
+  progress: Float,
   onButton: () -> Unit,
   onBack: () -> Unit,
   onCancel: () -> Unit,
   showChevron: Boolean = true,
 ) {
   WizardScaffold(
-    progress = NewSessionStep.Device.progress,
+    progress = progress,
     onBack = onBack,
     onCancel = onCancel,
     footer = { WizardButton(buttonLabel, onButton, showChevron = showChevron) },

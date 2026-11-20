@@ -66,7 +66,7 @@ fun StationDetailsScreen(
   onSelectStream: (streamId: Long) -> Unit,
   onThresholdChange: (SensorThreshold) -> Unit,
   graph: @Composable (details: StationDetails, stream: StationStream, threshold: SensorThreshold?, modifier: Modifier) -> Unit,
-  /** [fullScreen]: the session map pans and zooms only there; the inline one is static. */
+  /** [fullScreen]: a fixed station's map pans and zooms only there; a mobile track's does both. */
   map: @Composable (details: StationDetails, stream: StationStream, threshold: SensorThreshold?, fullScreen: Boolean, modifier: Modifier) -> Unit,
 ) {
   val strings = LocalStrings.current
@@ -91,8 +91,10 @@ fun StationDetailsScreen(
         // landscape) the column stops shrinking and scrolls instead, so the graph stays usable.
         // A fixed height is what lets weight() work inside verticalScroll.
         is StationDetailsState.Content -> BoxWithConstraints {
+          // A mobile track pans inline: the column's scroll would steal its vertical drags (Android).
+          val mapTakesDrags = showMap && state.details.hasMap && state.details.type == SessionType.MOBILE
           Column(
-            Modifier.verticalScroll(rememberScrollState())
+            Modifier.verticalScroll(rememberScrollState(), enabled = !mapTakesDrags)
               .height(max(maxHeight, MinContentHeight))
               .padding(horizontal = ScreenPadding),
             verticalArrangement = Arrangement.spacedBy(16.dp),

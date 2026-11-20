@@ -10,6 +10,15 @@ import pl.llp.aircasting.domain.MeasurementType
 import kotlin.math.roundToInt
 import kotlin.time.Instant
 
+/**
+ * TWEAK HERE: how many levels below the map's real zoom we ask the server to cluster at. The server
+ * picks its grid cell size from `zoom`, so a lower zoom = bigger cells = more aggressive clustering.
+ * At the real zoom (0), markers in neighbouring cells still overlapped on screen; 1 merges those.
+ * Raise it to cluster harder, 0 restores the server's own grid. The server stops clustering at
+ * zoom 16, so this also pushes that point 1 level deeper on the map (docs/API_V3.md).
+ */
+private const val CLUSTER_ZOOM_OFFSET = 2
+
 /** Public, server-clustered map of active fixed sessions + government stations. No auth. */
 class ExploreMapApi(private val client: HttpClient) {
   /** Empty [sources] / [measurementTypes] = all, so the param is omitted. */
@@ -22,7 +31,7 @@ class ExploreMapApi(private val client: HttpClient) {
     parameter("east", viewport.bounds.east)
     parameter("south", viewport.bounds.south)
     parameter("north", viewport.bounds.north)
-    parameter("zoom", viewport.zoom.roundToInt())
+    parameter("zoom", (viewport.zoom.roundToInt() - CLUSTER_ZOOM_OFFSET).coerceAtLeast(0))
     if (sources.isNotEmpty()) parameter("sources", sources.joinToString(",") { it.apiName })
     if (measurementTypes.isNotEmpty()) {
       parameter("measurement_types", measurementTypes.joinToString(",") { it.apiName })

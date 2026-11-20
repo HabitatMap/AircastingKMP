@@ -197,7 +197,7 @@ private fun StyledMarker.location() = when (val m = marker) {
 private fun markerView(styled: StyledMarker): UIView {
   val colour = styled.colour.toUIColor()
   val label = styled.label
-  val haloSize = if (label == null) 48.0 else 56.0 // same as ClusterDot / StationPill
+  val haloSize = if (label == null) 48.0 else 56.0 * SCALE // same as ClusterDot / StationPill
   val airBeam = (styled.marker as? ExploreMarker.Station)?.station?.source == ExploreSource.AirBeam
   val content = if (label == null) dot(24.0, colour) else pill(label, colour, airBeam)
   val (contentWidth, contentHeight) = content.frame.useContents { size.width to size.height }
@@ -212,13 +212,13 @@ private fun markerView(styled: StyledMarker): UIView {
 
 @OptIn(ExperimentalForeignApi::class)
 private fun pill(text: String, colour: UIColor, airBeam: Boolean): UIView {
-  // Label Small: 11 pt medium, +0.5 tracking, in on-primary-container (#004059 in both schemes).
+  // Label Small (11 pt medium, +0.5 tracking) scaled by SCALE, in on-primary-container (#004059 in both schemes).
   val label = UILabel().apply {
     attributedText = NSAttributedString.create(
       string = text,
       attributes = mapOf<Any?, Any?>(
-        NSFontAttributeName to UIFont.systemFontOfSize(11.0, UIFontWeightMedium),
-        NSKernAttributeName to 0.5,
+        NSFontAttributeName to UIFont.systemFontOfSize(11.0 * SCALE, UIFontWeightMedium),
+        NSKernAttributeName to 0.5 * SCALE,
         NSForegroundColorAttributeName to LABEL_COLOUR,
       ),
     )
@@ -253,15 +253,16 @@ private fun dot(size: Double, colour: UIColor) = UIView(CGRectMake(0.0, 0.0, siz
   layer.cornerRadius = size / 2
 }
 
-// Pill metrics in points — same numbers as the dp values in StationPill.kt.
-private const val PAD_START = 12.0
-private const val PAD_END = 10.0
-private const val PAD_Y = 6.0
-private const val DOT = 12.0
-private const val GAP = 4.0
-private const val GLYPH_W = 14.0 // ic_airbeam_marker
-private const val GLYPH_H = 16.0
-private const val LINE = 16.0 // labelSmall line height
+// Pill metrics in points — same numbers as the dp values in StationPill.kt (Figma size × SCALE).
+private const val SCALE = 0.8
+private const val PAD_START = 12.0 * SCALE
+private const val PAD_END = 10.0 * SCALE
+private const val PAD_Y = 6.0 * SCALE
+private const val DOT = 12.0 * SCALE
+private const val GAP = 4.0 * SCALE
+private const val GLYPH_W = 14.0 * SCALE // ic_airbeam_marker
+private const val GLYPH_H = 16.0 * SCALE
+private const val LINE = 16.0 * SCALE // labelSmall line height
 
 @OptIn(ExperimentalForeignApi::class)
 private val LABEL_COLOUR = UIColor(red = 0x00 / 255.0, green = 0x40 / 255.0, blue = 0x59 / 255.0, alpha = 1.0)

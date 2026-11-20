@@ -158,6 +158,8 @@ already existed is `session_uuid_taken` (409) — stop retrying, continue with t
 - **Clustering is server-side.** The viewport is snapped outward to whole grid cells (so off-screen
   items can come back); items sharing a cell become one `cluster`, a lone item stays a `station`.
   From **zoom 16** nothing is clustered. The client renders what it gets — no client clustering.
+  The app sends its map zoom **minus `CLUSTER_ZOOM_OFFSET` (1)** (`ExploreMapApi`), so markers that
+  would overlap on screen cluster too; on the map nothing is clustered from zoom 17.
 
 **`200`:** `{ items: [...] }`, each item discriminated by `type`:
 

@@ -33,6 +33,14 @@ object EnStrings : Strings {
   override val powerOnAirBeamTitle = "Power on your AirBeam"
   override val powerOnAirBeamBody =
     "Press the power button on your AirBeam until the light turns green. This means it's ready to connect."
+  override val connectingAirBeamTitle = "Connecting"
+  override val connectingAirBeamBody = "It should take less than 10 seconds."
+  override val airBeamConnectedTitle = "AirBeam connected"
+  override val airBeamConnectedBody =
+    "Your AirBeam is connected to your phone and ready to start a session."
+  override val airBeamConnectFailedTitle = "Something went wrong"
+  override val airBeamConnectFailedBody =
+    "Your AirBeam couldn\u2019t connect to your phone. Make sure the device is on and nearby, then try again."
   override val newSessionDeviceTitle = "Choose the device you would like to record with."
   override val newSessionDeviceBody = "Choose the method that fits your setup and session goal."
   override val newSessionDeviceAirBeamHeader = "AIRBEAM"

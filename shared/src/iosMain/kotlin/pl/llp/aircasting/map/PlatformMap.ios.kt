@@ -33,10 +33,21 @@ actual fun PlatformMap(
   camera: MapCamera,
   modifier: Modifier,
   onTap: (at: GeoLocation, camera: MapCamera) -> Unit,
+  onGestureStart: () -> Unit,
+  onGestureEnd: (camera: MapCamera) -> Unit,
   overlay: @Composable (camera: () -> MapCamera) -> Unit,
 ) {
   val currentOnTap by rememberUpdatedState(onTap)
-  val delegate = remember { PlatformMapDelegate(camera, onTap = { at, now -> currentOnTap(at, now) }) }
+  val currentOnGestureStart by rememberUpdatedState(onGestureStart)
+  val currentOnGestureEnd by rememberUpdatedState(onGestureEnd)
+  val delegate = remember {
+    PlatformMapDelegate(
+      camera,
+      onTap = { at, now -> currentOnTap(at, now) },
+      onGestureStart = { currentOnGestureStart() },
+      onGestureEnd = { currentOnGestureEnd(it) },
+    )
+  }
 
   val style = mapStyle()
   Box(modifier) {
@@ -65,10 +76,28 @@ actual fun PlatformMap(
 private class PlatformMapDelegate(
   initial: MapCamera,
   private val onTap: (GeoLocation, MapCamera) -> Unit,
+  private val onGestureStart: () -> Unit,
+  private val onGestureEnd: (MapCamera) -> Unit,
 ) : NSObject(), GMSMapViewDelegateProtocol {
   var camera by mutableStateOf(initial)
   private var target = initial
   private var styledWith: String? = null
+  /** Between a gesture's willMove and the idle that ends it (fling included). */
+  private var gesturing = false
+
+  /** [willMove] = "by a gesture"; false = our own setCamera: not the user's move. */
+  override fun mapView(mapView: GMSMapView, willMove: Boolean) {
+    if (!willMove || gesturing) return
+    gesturing = true
+    onGestureStart()
+  }
+
+  @ObjCSignatureOverride
+  override fun mapView(mapView: GMSMapView, idleAtCameraPosition: GMSCameraPosition) {
+    if (!gesturing) return
+    gesturing = false
+    onGestureEnd(idleAtCameraPosition.target.useContents { MapCamera(latitude, longitude, idleAtCameraPosition.zoom) })
+  }
 
   /** Fires on every frame of a gesture or animation: the overlay redraws against it. */
   @ObjCSignatureOverride

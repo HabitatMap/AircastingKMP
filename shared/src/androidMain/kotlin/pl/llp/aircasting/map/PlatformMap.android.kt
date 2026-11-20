@@ -3,15 +3,20 @@ package pl.llp.aircasting.map
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MapStyleOptions
+import com.google.maps.android.compose.CameraMoveStartedReason
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.rememberCameraPositionState
+import kotlinx.coroutines.flow.drop
 import pl.llp.aircasting.domain.GeoLocation
 import pl.llp.aircasting.explore.mapStyle
 
@@ -20,11 +25,23 @@ actual fun PlatformMap(
   camera: MapCamera,
   modifier: Modifier,
   onTap: (at: GeoLocation, camera: MapCamera) -> Unit,
+  onGestureStart: () -> Unit,
+  onGestureEnd: (camera: MapCamera) -> Unit,
   overlay: @Composable (camera: () -> MapCamera) -> Unit,
 ) {
   val state = rememberCameraPositionState { position = camera.toPosition() }
   // Setting `position` moves an attached map, or seeds one that's not attached yet.
   LaunchedEffect(camera) { state.position = camera.toPosition() }
+  val currentOnGestureStart by rememberUpdatedState(onGestureStart)
+  val currentOnGestureEnd by rememberUpdatedState(onGestureEnd)
+  LaunchedEffect(state) {
+    // maps-compose sets the reason and isMoving together in OnCameraMoveStarted, and clears
+    // isMoving on idle. Only GESTURE moves are the user's: ours (setting `position`) are DEVELOPER.
+    snapshotFlow { state.isMoving }.drop(1).collect { moving ->
+      if (state.cameraMoveStartedReason != CameraMoveStartedReason.GESTURE) return@collect
+      if (moving) currentOnGestureStart() else currentOnGestureEnd(state.position.toMapCamera())
+    }
+  }
   val style = mapStyle()
   val properties = remember(style) { MapProperties(mapStyleOptions = MapStyleOptions(style)) }
 

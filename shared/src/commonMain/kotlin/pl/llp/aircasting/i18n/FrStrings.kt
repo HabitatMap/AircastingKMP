@@ -20,6 +20,14 @@ object FrStrings : Strings {
   override val powerOnAirBeamTitle = "Allumez votre AirBeam"
   override val powerOnAirBeamBody =
     "Appuyez sur le bouton d'alimentation de votre AirBeam jusqu'à ce que le voyant devienne vert. Il est alors prêt à se connecter."
+  override val connectingAirBeamTitle = "Connexion"
+  override val connectingAirBeamBody = "Cela devrait prendre moins de 10 secondes."
+  override val airBeamConnectedTitle = "AirBeam connecté"
+  override val airBeamConnectedBody =
+    "Votre AirBeam est connecté à votre téléphone et prêt à démarrer une session."
+  override val airBeamConnectFailedTitle = "Une erreur s'est produite"
+  override val airBeamConnectFailedBody =
+    "Votre AirBeam n'a pas pu se connecter à votre téléphone. Vérifiez qu'il est allumé et à proximité, puis réessayez."
   override val newSessionDeviceTitle = "Choisissez l'appareil avec lequel vous souhaitez mesurer."
   override val newSessionDeviceBody =
     "Choisissez la méthode adaptée à votre matériel et à votre objectif."

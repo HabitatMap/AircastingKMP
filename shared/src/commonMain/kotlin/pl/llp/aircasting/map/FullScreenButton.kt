@@ -13,12 +13,24 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import pl.llp.aircasting.i18n.LocalStrings
 
 @Composable
 fun FullScreenButton(fullScreen: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
   val strings = LocalStrings.current
+  MapButton(
+    if (fullScreen) Res.drawable.ic_fullscreen_exit else Res.drawable.ic_fullscreen,
+    if (fullScreen) strings.mapExitFullScreen else strings.mapFullScreen,
+    onClick,
+    modifier,
+  )
+}
+
+/** A round control floating over a map (full screen, Centre). */
+@Composable
+fun MapButton(icon: DrawableResource, contentDescription: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
   Surface(
     onClick = onClick,
     modifier = modifier.size(36.dp),
@@ -27,11 +39,7 @@ fun FullScreenButton(fullScreen: Boolean, onClick: () -> Unit, modifier: Modifie
     shadowElevation = 2.dp,
   ) {
     Box(contentAlignment = Alignment.Center) {
-      Icon(
-        painterResource(if (fullScreen) Res.drawable.ic_fullscreen_exit else Res.drawable.ic_fullscreen),
-        contentDescription = if (fullScreen) strings.mapExitFullScreen else strings.mapFullScreen,
-        tint = MaterialTheme.colorScheme.onSurface,
-      )
+      Icon(painterResource(icon), contentDescription, tint = MaterialTheme.colorScheme.onSurface)
     }
   }
 }

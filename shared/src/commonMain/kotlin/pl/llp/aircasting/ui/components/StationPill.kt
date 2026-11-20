@@ -43,8 +43,8 @@ fun StationPill(label: String, levelColour: Color?, airBeam: Boolean, modifier: 
       // Figma "Tag" (783:5110): white in both themes — it sits on the map, not on a surface.
       Surface(shape = RoundedCornerShape(50), shadowElevation = 1.dp, color = Color.White) {
         Row(
-          modifier = Modifier.padding(start = PadStart, end = 10.dp, top = 6.dp, bottom = 6.dp),
-          horizontalArrangement = Arrangement.spacedBy(4.dp),
+          modifier = Modifier.padding(start = PadStart, end = PadEnd, top = PadY, bottom = PadY),
+          horizontalArrangement = Arrangement.spacedBy(Gap),
           verticalAlignment = Alignment.CenterVertically,
         ) {
           if (airBeam) Icon(
@@ -54,7 +54,16 @@ fun StationPill(label: String, levelColour: Color?, airBeam: Boolean, modifier: 
             tint = colour,
           )
           else Box(Modifier.size(DotSize).background(colour, CircleShape))
-          Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onPrimaryContainer)
+          val type = MaterialTheme.typography.labelSmall
+          Text(
+            label,
+            style = type.copy(
+              fontSize = type.fontSize * Scale,
+              lineHeight = type.lineHeight * Scale,
+              letterSpacing = type.letterSpacing * Scale,
+            ),
+            color = MaterialTheme.colorScheme.onPrimaryContainer,
+          )
         }
       }
     },
@@ -73,8 +82,14 @@ fun StationPill(label: String, levelColour: Color?, airBeam: Boolean, modifier: 
   }
 }
 
-private val HaloSize = 56.dp
-private val PadStart = 12.dp
-private val DotSize = 12.dp
-private val GlyphWidth = 14.dp // ic_airbeam_marker
-private val GlyphHeight = 16.dp
+// Every metric (text included) is the Figma size times Scale, so the pill shrinks without changing
+// its proportions. ExploreMap.ios.kt uses the same SCALE.
+private const val Scale = 0.8f
+private val HaloSize = 56.dp * Scale
+private val PadStart = 12.dp * Scale
+private val PadEnd = 10.dp * Scale
+private val PadY = 6.dp * Scale
+private val Gap = 4.dp * Scale
+private val DotSize = 12.dp * Scale
+private val GlyphWidth = 14.dp * Scale // ic_airbeam_marker
+private val GlyphHeight = 16.dp * Scale

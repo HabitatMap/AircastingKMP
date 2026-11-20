@@ -29,6 +29,12 @@ interface Strings {
   val newSessionMethodBody: String
   val powerOnAirBeamTitle: String
   val powerOnAirBeamBody: String
+  val connectingAirBeamTitle: String
+  val connectingAirBeamBody: String
+  val airBeamConnectedTitle: String
+  val airBeamConnectedBody: String
+  val airBeamConnectFailedTitle: String
+  val airBeamConnectFailedBody: String
   val newSessionDeviceTitle: String
   val newSessionDeviceBody: String
   val newSessionDeviceAirBeamHeader: String

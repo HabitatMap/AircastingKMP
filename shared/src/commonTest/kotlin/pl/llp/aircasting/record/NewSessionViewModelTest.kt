@@ -2,10 +2,12 @@ package pl.llp.aircasting.record
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import pl.llp.aircasting.bluetooth.AirBeamDevice
+import pl.llp.aircasting.bluetooth.BluetoothRadio
 import pl.llp.aircasting.bluetooth.DeviceId
 import pl.llp.aircasting.bluetooth.DiscoveredAirBeam
 import pl.llp.aircasting.domain.GeoLocation
@@ -27,6 +29,7 @@ class NewSessionViewModelTest {
   fun tearDown() = Dispatchers.resetMain()
 
   private val location = TrackingPhoneLocation()
+  private val radio = FakeRadio()
   private val park = GeoLocation(latitude = 50.05, longitude = 19.93)
   private val ab3 =
     DiscoveredAirBeam(DeviceId("id-ab3"), "AirBeam3:246f28c47698", AirBeamDevice.AirBeam3)
@@ -34,14 +37,14 @@ class NewSessionViewModelTest {
   /** As legacy `startNewSessionWizard`: the GPS gets the whole wizard to find a fix before Start. */
   @Test
   fun `opening the wizard starts the gps`() {
-    NewSessionViewModel(location)
+    NewSessionViewModel(location, radio)
 
     assertTrue(location.tracking)
   }
 
   @Test
   fun `the wizard opens on the method step with an empty form`() {
-    val state = NewSessionViewModel(location).state.value
+    val state = NewSessionViewModel(location, radio).state.value
 
     assertEquals(NewSessionStep.Method, state.step)
     assertNull(state.form.method)
@@ -50,7 +53,7 @@ class NewSessionViewModelTest {
 
   @Test
   fun `next walks method to details to confirm`() {
-    val vm = NewSessionViewModel(location)
+    val vm = NewSessionViewModel(location, radio)
 
     vm.select(RecordingMethod.PhoneMicrophone)
     vm.next()
@@ -63,7 +66,7 @@ class NewSessionViewModelTest {
 
   @Test
   fun `next is a no-op while the current step is incomplete`() {
-    val vm = NewSessionViewModel(location)
+    val vm = NewSessionViewModel(location, radio)
 
     vm.next()
     assertEquals(NewSessionStep.Method, vm.state.value.step)
@@ -77,7 +80,7 @@ class NewSessionViewModelTest {
 
   @Test
   fun `back returns to the previous step and keeps what was typed`() {
-    val vm = NewSessionViewModel(location)
+    val vm = NewSessionViewModel(location, radio)
     vm.select(RecordingMethod.PhoneMicrophone)
     vm.next()
     vm.rename("Morning commute")
@@ -90,7 +93,7 @@ class NewSessionViewModelTest {
 
   @Test
   fun `the sampling interval defaults to one second and is replaceable`() {
-    val vm = NewSessionViewModel(location)
+    val vm = NewSessionViewModel(location, radio)
     assertEquals(SamplingInterval.OneSecond, vm.state.value.form.interval)
 
     vm.setInterval(SamplingInterval.FiveMinutes)
@@ -100,14 +103,14 @@ class NewSessionViewModelTest {
 
   @Test
   fun `progress fills as the wizard advances`() {
-    assertEquals(1f / 6, NewSessionStep.Method.progress)
+    assertEquals(1f / 8, NewSessionStep.Method.progress)
     assertEquals(1f, NewSessionStep.Confirm.progress)
     assertTrue(NewSessionStep.entries.all { it.progress in 0f..1f })
   }
 
   @Test
   fun `an AirBeam method asks to power it on before the device step`() {
-    val vm = NewSessionViewModel(location)
+    val vm = NewSessionViewModel(location, radio)
 
     vm.select(RecordingMethod.AirBeamMobile)
     vm.next()
@@ -122,8 +125,50 @@ class NewSessionViewModelTest {
   }
 
   @Test
+  fun `bluetooth off routes an AirBeam method to the bluetooth step and turning it on moves on`() {
+    radio.isOff.value = true
+    val vm = NewSessionViewModel(location, radio)
+
+    vm.select(RecordingMethod.AirBeamFixed)
+    vm.next()
+    assertEquals(NewSessionStep.Bluetooth, vm.state.value.step)
+    assertFalse(vm.state.value.canContinue)
+
+    radio.isOff.value = false
+    assertEquals(NewSessionStep.PowerOn, vm.state.value.step)
+
+    vm.back()
+    assertEquals(NewSessionStep.Method, vm.state.value.step)
+  }
+
+  @Test
+  fun `bluetooth turned off before a device is picked goes back to the bluetooth step`() {
+    val vm = NewSessionViewModel(location, radio)
+    vm.select(RecordingMethod.AirBeamMobile)
+    vm.next()
+    vm.next()
+    assertEquals(NewSessionStep.Device, vm.state.value.step)
+
+    radio.isOff.value = true
+
+    assertEquals(NewSessionStep.Bluetooth, vm.state.value.step)
+  }
+
+  /** On iOS, observing the radio is what raises the Bluetooth permission prompt. */
+  @Test
+  fun `the phone microphone never watches the bluetooth radio`() {
+    val vm = NewSessionViewModel(location, radio)
+
+    vm.select(RecordingMethod.PhoneMicrophone)
+    assertEquals(0, radio.isOff.subscriptionCount.value)
+
+    vm.select(RecordingMethod.AirBeamMobile)
+    assertEquals(1, radio.isOff.subscriptionCount.value)
+  }
+
+  @Test
   fun `next is dead on the device step until a device is picked`() {
-    val vm = NewSessionViewModel(location)
+    val vm = NewSessionViewModel(location, radio)
     vm.select(RecordingMethod.AirBeamMobile)
     vm.next()
     vm.next()
@@ -134,13 +179,59 @@ class NewSessionViewModelTest {
 
     vm.selectDevice(ab3)
     vm.next()
-    assertEquals(NewSessionStep.Details, vm.state.value.step)
+    assertEquals(NewSessionStep.Connect, vm.state.value.step)
     assertEquals(ab3, vm.state.value.form.device)
   }
 
   @Test
+  fun `connect sits between the picker and details and back from details skips it`() {
+    val vm = NewSessionViewModel(location, radio)
+    vm.select(RecordingMethod.AirBeamMobile)
+    vm.next()
+    vm.next()
+    vm.selectDevice(ab3)
+    vm.next()
+    assertEquals(NewSessionStep.Connect, vm.state.value.step)
+
+    vm.next()
+    assertEquals(NewSessionStep.Details, vm.state.value.step)
+
+    vm.back()
+    assertEquals(NewSessionStep.Device, vm.state.value.step)
+  }
+
+  /** A failed connection's "Try again" is a back step: the user re-picks the AirBeam. */
+  @Test
+  fun `back from connect returns to the picker`() {
+    val vm = NewSessionViewModel(location, radio)
+    vm.select(RecordingMethod.AirBeamFixed)
+    vm.next()
+    vm.next()
+    vm.selectDevice(ab3)
+    vm.next()
+
+    vm.back()
+
+    assertEquals(NewSessionStep.Device, vm.state.value.step)
+  }
+
+  @Test
+  fun `bluetooth turned off while connecting goes back to the bluetooth step`() {
+    val vm = NewSessionViewModel(location, radio)
+    vm.select(RecordingMethod.AirBeamMobile)
+    vm.next()
+    vm.next()
+    vm.selectDevice(ab3)
+    vm.next()
+
+    radio.isOff.value = true
+
+    assertEquals(NewSessionStep.Bluetooth, vm.state.value.step)
+  }
+
+  @Test
   fun `the phone microphone skips the device step in both directions`() {
-    val vm = NewSessionViewModel(location)
+    val vm = NewSessionViewModel(location, radio)
     vm.select(RecordingMethod.PhoneMicrophone)
 
     vm.next()
@@ -193,11 +284,12 @@ class NewSessionViewModelTest {
 
   @Test
   fun `a mobile session never asks for wifi or a location`() {
-    val vm = NewSessionViewModel(location)
+    val vm = NewSessionViewModel(location, radio)
     vm.select(RecordingMethod.AirBeamMobile)
     vm.next()
     vm.next()
     vm.selectDevice(ab3)
+    vm.next()
     vm.next()
     vm.setIndoor(false)
 
@@ -217,7 +309,7 @@ class NewSessionViewModelTest {
 
   @Test
   fun `a space or comma turns the typed word into a chip`() {
-    val vm = NewSessionViewModel(location)
+    val vm = NewSessionViewModel(location, radio)
 
     vm.editTagDraft("school ")
     vm.editTagDraft("traffic,")
@@ -229,7 +321,7 @@ class NewSessionViewModelTest {
   /** tag_list is space-separated: a tag holding a space would come back from the backend as two. */
   @Test
   fun `a pasted list becomes chips except the word still being typed`() {
-    val vm = NewSessionViewModel(location)
+    val vm = NewSessionViewModel(location, radio)
 
     vm.editTagDraft(" school , traffic,, bus")
 
@@ -239,7 +331,7 @@ class NewSessionViewModelTest {
 
   @Test
   fun `a half-typed tag still counts so Next never silently drops it`() {
-    val vm = NewSessionViewModel(location)
+    val vm = NewSessionViewModel(location, radio)
     vm.editTagDraft("school ")
 
     vm.editTagDraft("traf")
@@ -249,7 +341,7 @@ class NewSessionViewModelTest {
 
   @Test
   fun `the add chip turns the typed word into a chip`() {
-    val vm = NewSessionViewModel(location)
+    val vm = NewSessionViewModel(location, radio)
     vm.editTagDraft("rooftop")
 
     vm.commitTagDraft()
@@ -260,7 +352,7 @@ class NewSessionViewModelTest {
 
   @Test
   fun `a tag is never added twice`() {
-    val vm = NewSessionViewModel(location)
+    val vm = NewSessionViewModel(location, radio)
 
     vm.editTagDraft("school school ")
     vm.addTag("school")
@@ -270,7 +362,7 @@ class NewSessionViewModelTest {
 
   @Test
   fun `picking a matching tag replaces the half-typed word`() {
-    val vm = NewSessionViewModel(location)
+    val vm = NewSessionViewModel(location, radio)
     vm.editTagDraft("traf")
 
     vm.addTag("traffic")
@@ -281,7 +373,7 @@ class NewSessionViewModelTest {
 
   @Test
   fun `removing a chip drops that tag`() {
-    val vm = NewSessionViewModel(location)
+    val vm = NewSessionViewModel(location, radio)
     vm.editTagDraft("school traffic ")
 
     vm.removeTag("school")
@@ -343,11 +435,12 @@ class NewSessionViewModelTest {
     DiscoveredAirBeam(DeviceId("id-mini"), "AirBeamMini-1234", AirBeamDevice.Mini.V2)
 
   /** Walks to the Details step of a fixed session on [device]. */
-  private fun fixedDetailsOn(device: DiscoveredAirBeam) = NewSessionViewModel(location).apply {
+  private fun fixedDetailsOn(device: DiscoveredAirBeam) = NewSessionViewModel(location, radio).apply {
     select(RecordingMethod.AirBeamFixed)
     next()
     next()
     selectDevice(device)
+    next()
     next()
     rename("Balcony")
   }
@@ -393,11 +486,12 @@ class NewSessionViewModelTest {
 
   private val rooftop = GeoLocation(latitude = 50.06, longitude = 19.94)
 
-  private fun fixedAtDetails() = NewSessionViewModel(location).apply {
+  private fun fixedAtDetails() = NewSessionViewModel(location, radio).apply {
     select(RecordingMethod.AirBeamFixed)
     next()
     next()
     selectDevice(ab3)
+    next()
     next()
   }
 
@@ -406,6 +500,12 @@ class NewSessionViewModelTest {
     editWifiName("HomeNet")
     editWifiPassword("secret")
   }
+}
+
+private class FakeRadio : BluetoothRadio {
+  override val isOff = MutableStateFlow(false)
+
+  override fun requestEnable() = Unit
 }
 
 private class TrackingPhoneLocation : PhoneLocation {

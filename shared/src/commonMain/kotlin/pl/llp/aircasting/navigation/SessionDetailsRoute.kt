@@ -33,7 +33,7 @@ fun SessionDetailsDestination(route: SessionDetailsRoute, onBack: () -> Unit) {
     graph = { details, stream, threshold, modifier -> SessionGraph(details, stream, threshold, modifier) },
     map = { details, stream, threshold, fullScreen, modifier ->
       if (details.type == SessionType.FIXED) StationMap(details, stream, threshold, interactive = fullScreen, modifier)
-      else SessionMap(details, stream, threshold, interactive = fullScreen, modifier)
+      else SessionMap(details, stream, threshold, modifier)
     },
   )
 }

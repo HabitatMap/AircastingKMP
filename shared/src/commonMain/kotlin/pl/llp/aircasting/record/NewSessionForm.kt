@@ -58,17 +58,24 @@ data class NewSessionForm(
     get() = if (indoor) Placement.Indoor else outdoorLocation?.let(Placement::Outdoor)
 }
 
-/** The steps this form walks: the phone mic needs no device, only an outdoor fixed session needs a pin. */
-val NewSessionForm.steps: List<NewSessionStep>
-  get() = NewSessionStep.entries.filter { step ->
+val NewSessionForm.usesAirBeam: Boolean
+  get() = method != null && method != RecordingMethod.PhoneMicrophone
+
+/**
+ * The steps this form walks: the phone mic needs no device, an AirBeam needs Bluetooth turned on
+ * first only when it's off, and only an outdoor fixed session needs a pin.
+ */
+fun NewSessionForm.steps(bluetoothOff: Boolean): List<NewSessionStep> =
+  NewSessionStep.entries.filter { step ->
     when (step) {
-      NewSessionStep.PowerOn, NewSessionStep.Device -> method != RecordingMethod.PhoneMicrophone
+      NewSessionStep.Bluetooth -> usesAirBeam && bluetoothOff
+      NewSessionStep.PowerOn, NewSessionStep.Device, NewSessionStep.Connect -> method != RecordingMethod.PhoneMicrophone
       NewSessionStep.Location -> method == RecordingMethod.AirBeamFixed && !indoor
       else -> true
     }
   }
 
-enum class NewSessionStep { Method, PowerOn, Device, Details, Location, Confirm }
+enum class NewSessionStep { Method, Bluetooth, PowerOn, Device, Connect, Details, Location, Confirm }
 
 val NewSessionStep.progress: Float
   get() = (ordinal + 1).toFloat() / NewSessionStep.entries.size

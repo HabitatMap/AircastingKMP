@@ -69,13 +69,13 @@ fun NewSessionForm.steps(bluetoothOff: Boolean): List<NewSessionStep> =
   NewSessionStep.entries.filter { step ->
     when (step) {
       NewSessionStep.Bluetooth -> usesAirBeam && bluetoothOff
-      NewSessionStep.PowerOn, NewSessionStep.Device -> method != RecordingMethod.PhoneMicrophone
+      NewSessionStep.PowerOn, NewSessionStep.Device, NewSessionStep.Connect -> method != RecordingMethod.PhoneMicrophone
       NewSessionStep.Location -> method == RecordingMethod.AirBeamFixed && !indoor
       else -> true
     }
   }
 
-enum class NewSessionStep { Method, Bluetooth, PowerOn, Device, Details, Location, Confirm }
+enum class NewSessionStep { Method, Bluetooth, PowerOn, Device, Connect, Details, Location, Confirm }
 
 val NewSessionStep.progress: Float
   get() = (ordinal + 1).toFloat() / NewSessionStep.entries.size

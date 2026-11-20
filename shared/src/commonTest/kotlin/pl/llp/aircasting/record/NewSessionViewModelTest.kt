@@ -103,7 +103,7 @@ class NewSessionViewModelTest {
 
   @Test
   fun `progress fills as the wizard advances`() {
-    assertEquals(1f / 7, NewSessionStep.Method.progress)
+    assertEquals(1f / 8, NewSessionStep.Method.progress)
     assertEquals(1f, NewSessionStep.Confirm.progress)
     assertTrue(NewSessionStep.entries.all { it.progress in 0f..1f })
   }
@@ -179,8 +179,54 @@ class NewSessionViewModelTest {
 
     vm.selectDevice(ab3)
     vm.next()
-    assertEquals(NewSessionStep.Details, vm.state.value.step)
+    assertEquals(NewSessionStep.Connect, vm.state.value.step)
     assertEquals(ab3, vm.state.value.form.device)
+  }
+
+  @Test
+  fun `connect sits between the picker and details, and back from details skips it`() {
+    val vm = NewSessionViewModel(location, radio)
+    vm.select(RecordingMethod.AirBeamMobile)
+    vm.next()
+    vm.next()
+    vm.selectDevice(ab3)
+    vm.next()
+    assertEquals(NewSessionStep.Connect, vm.state.value.step)
+
+    vm.next()
+    assertEquals(NewSessionStep.Details, vm.state.value.step)
+
+    vm.back()
+    assertEquals(NewSessionStep.Device, vm.state.value.step)
+  }
+
+  /** A failed connection's "Try again" is a back step: the user re-picks the AirBeam. */
+  @Test
+  fun `back from connect returns to the picker`() {
+    val vm = NewSessionViewModel(location, radio)
+    vm.select(RecordingMethod.AirBeamFixed)
+    vm.next()
+    vm.next()
+    vm.selectDevice(ab3)
+    vm.next()
+
+    vm.back()
+
+    assertEquals(NewSessionStep.Device, vm.state.value.step)
+  }
+
+  @Test
+  fun `bluetooth turned off while connecting goes back to the bluetooth step`() {
+    val vm = NewSessionViewModel(location, radio)
+    vm.select(RecordingMethod.AirBeamMobile)
+    vm.next()
+    vm.next()
+    vm.selectDevice(ab3)
+    vm.next()
+
+    radio.isOff.value = true
+
+    assertEquals(NewSessionStep.Bluetooth, vm.state.value.step)
   }
 
   @Test
@@ -243,6 +289,7 @@ class NewSessionViewModelTest {
     vm.next()
     vm.next()
     vm.selectDevice(ab3)
+    vm.next()
     vm.next()
     vm.setIndoor(false)
 
@@ -394,6 +441,7 @@ class NewSessionViewModelTest {
     next()
     selectDevice(device)
     next()
+    next()
     rename("Balcony")
   }
 
@@ -443,6 +491,7 @@ class NewSessionViewModelTest {
     next()
     next()
     selectDevice(ab3)
+    next()
     next()
   }
 

@@ -28,7 +28,8 @@ data class NewSessionState(
       NewSessionStep.Device -> form.device != null
       NewSessionStep.Location -> form.placement != null
       NewSessionStep.Bluetooth -> !bluetoothOff
-      NewSessionStep.PowerOn, NewSessionStep.Confirm -> true
+      // Connect's Next only shows once the link is up; RecordingViewModel owns that state.
+      NewSessionStep.PowerOn, NewSessionStep.Connect, NewSessionStep.Confirm -> true
       NewSessionStep.Details -> form.name.isNotBlank() &&
         (form.method != RecordingMethod.AirBeamFixed || form.cellular || form.hasWifi)
 
@@ -111,7 +112,10 @@ class NewSessionViewModel(
 
   fun next() = _state.update { state -> if (!state.canContinue) state else state.moveBy(1) }
 
-  fun back() = _state.update { it.moveBy(-1) }
+  /** Connecting is a transition, not a place: back from Details returns to the picker. */
+  fun back() = _state.update { state ->
+    state.moveBy(-1).let { if (it.step == NewSessionStep.Connect) it.moveBy(-1) else it }
+  }
 
   fun setCellular(cellular: Boolean) = edit { it.copy(cellular = cellular && it.offersCellular) }
 
@@ -134,4 +138,4 @@ private val NewSessionForm.hasWifi: Boolean
 
 private val NewYork = GeoLocation(40.7128, -74.0060)
 
-private val NeedsBluetooth = setOf(NewSessionStep.PowerOn, NewSessionStep.Device)
+private val NeedsBluetooth = setOf(NewSessionStep.PowerOn, NewSessionStep.Device, NewSessionStep.Connect)

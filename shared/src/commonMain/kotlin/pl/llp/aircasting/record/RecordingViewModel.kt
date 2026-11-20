@@ -49,6 +49,9 @@ sealed interface StartState {
 
 enum class PrepareStep { Locating, Configuring }
 
+/** The wizard's Connect step: the outcome of the last [RecordingViewModel.connect]. */
+enum class ConnectState { Idle, Connecting, Connected, Failed }
+
 /** The UI's handle on [RecordingEngine]: the wizard starts a session, the shell stops it. */
 class RecordingViewModel(
   private val link: AirBeamLink,
@@ -61,9 +64,22 @@ class RecordingViewModel(
 
   private var openedLink = false
 
+  private val _connectState = MutableStateFlow(ConnectState.Idle)
+  val connectState: StateFlow<ConnectState> = _connectState.asStateFlow()
+  private var connectAttempt = 0
+
   fun connect(device: DiscoveredAirBeam) {
     openedLink = true
-    viewModelScope.launch { linkTo(device) }
+    // Set before launching, so the Connect step never renders a stale outcome first.
+    _connectState.value = ConnectState.Connecting
+    val attempt = ++connectAttempt
+    viewModelScope.launch {
+      val connected = linkTo(device)
+      // A retry may have started meanwhile; only the latest attempt speaks for the screen.
+      if (attempt == connectAttempt) {
+        _connectState.value = if (connected) ConnectState.Connected else ConnectState.Failed
+      }
+    }
   }
 
   /** Joins an attempt already on its way to [device]; reuses a link already on it; else connects. */

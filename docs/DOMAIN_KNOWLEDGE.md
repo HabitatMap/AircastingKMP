@@ -179,7 +179,11 @@ Paths below are under legacy `app/src/main/java/pl/llp/aircasting/`.
   off. `NewSessionViewModel` watches the radio once an AirBeam method is picked, so the route is
   decided at Next, with no screen shown and then swapped. Turning Bluetooth on moves to power-on;
   turning it off on power-on or the picker goes back to it. The Bluetooth permission screen still
-  gates those three steps (read synchronously; Android's enable request needs BLUETOOTH_CONNECT).
+  gates those steps (read synchronously; Android's enable request needs BLUETOOTH_CONNECT).
+- After the picker's Next, `NewSessionStep.Connect` shows *Connecting* → *AirBeam connected* (Next
+  to Details) or *Something went wrong* (Try again = back to the picker), as legacy
+  `connect_airbeam/ConnectingAirBeamFragment` / `AirBeamConnectedFragment`. The outcome is
+  `RecordingViewModel.connectState`. Back from Details skips Connect and lands on the picker.
 - Indoor is the default placement.
 - Indoor sends the placeholder `(200, 200)` plus `time_zone`.
 - Outdoor uses the map's camera target. The map starts at the current location, or New York

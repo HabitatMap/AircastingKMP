@@ -13,6 +13,7 @@ import org.koin.compose.viewmodel.koinViewModel
 import pl.llp.aircasting.bluetooth.BluetoothRadio
 import pl.llp.aircasting.i18n.LocalStrings
 import pl.llp.aircasting.record.AirBeamLocationScreen
+import pl.llp.aircasting.record.ConnectScreen
 import pl.llp.aircasting.record.DevicePickerScreen
 import pl.llp.aircasting.record.DeviceStatusScreen
 import pl.llp.aircasting.record.NewSessionStep
@@ -117,7 +118,7 @@ fun NewSessionDestination(onExit: () -> Unit, onStarted: () -> Unit, onRequestLo
         onConfirm = vm::next,
       )
     }
-    NewSessionStep.Bluetooth, NewSessionStep.PowerOn, NewSessionStep.Device -> {
+    NewSessionStep.Bluetooth, NewSessionStep.PowerOn, NewSessionStep.Device, NewSessionStep.Connect -> {
       val strings = LocalStrings.current
       // Permission state is read synchronously, so this gate never flashes the screen behind it.
       // It also guards the Bluetooth step: Android's enable request needs BLUETOOTH_CONNECT.
@@ -148,6 +149,17 @@ fun NewSessionDestination(onExit: () -> Unit, onStarted: () -> Unit, onRequestLo
           )
         }
         NewSessionStep.PowerOn -> PowerOnScreen(onBack = back, onCancel = onExit, onNext = vm::next)
+        NewSessionStep.Connect -> {
+          val connectState by recorder.connectState.collectAsStateWithLifecycle()
+          // Try again returns to the picker: the AirBeam may need a re-pick (legacy pops back too).
+          ConnectScreen(
+            state = connectState,
+            onBack = back,
+            onCancel = onExit,
+            onNext = vm::next,
+            onRetry = back,
+          )
+        }
         else -> {
           // Subscribing starts the scan (WhileSubscribed), so it runs only while the picker shows.
           val scanVm = koinViewModel<ScanViewModel>()

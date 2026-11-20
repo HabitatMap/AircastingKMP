@@ -7,7 +7,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.serialization.Serializable
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
@@ -16,7 +15,6 @@ import pl.llp.aircasting.i18n.LocalStrings
 import pl.llp.aircasting.record.AirBeamLocationScreen
 import pl.llp.aircasting.record.DevicePickerScreen
 import pl.llp.aircasting.record.DeviceStatusScreen
-import pl.llp.aircasting.record.DeviceStepUi
 import pl.llp.aircasting.record.NewSessionStep
 import pl.llp.aircasting.record.NewSessionViewModel
 import pl.llp.aircasting.record.PinPickerViewModel
@@ -28,9 +26,9 @@ import pl.llp.aircasting.record.SessionConfirmScreen
 import pl.llp.aircasting.record.SessionDetailsScreen
 import pl.llp.aircasting.record.StartState
 import pl.llp.aircasting.record.deviceStepUi
+import pl.llp.aircasting.record.progress
 import pl.llp.aircasting.record.rememberWifiNetworks
 import pl.llp.aircasting.record.startFailure
-import pl.llp.aircasting.scan.ScanUiState
 import pl.llp.aircasting.scan.ScanViewModel
 import pl.llp.aircasting.scan.rememberBluetoothPermission
 import pl.llp.aircasting.settings.mic.rememberMicrophonePermission
@@ -59,7 +57,6 @@ fun NewSessionDestination(onExit: () -> Unit, onStarted: () -> Unit, onRequestLo
       onCancel = onExit,
       onNext = vm::next,
     )
-    NewSessionStep.PowerOn -> PowerOnScreen(onBack = back, onCancel = onExit, onNext = vm::next)
     NewSessionStep.Details -> SessionDetailsScreen(
       state = state,
       onRename = vm::rename,
@@ -120,54 +117,54 @@ fun NewSessionDestination(onExit: () -> Unit, onStarted: () -> Unit, onRequestLo
         onConfirm = vm::next,
       )
     }
-    NewSessionStep.Device -> {
+    NewSessionStep.Bluetooth, NewSessionStep.PowerOn, NewSessionStep.Device -> {
       val strings = LocalStrings.current
+      // Permission state is read synchronously, so this gate never flashes the screen behind it.
+      // It also guards the Bluetooth step: Android's enable request needs BLUETOOTH_CONNECT.
       val permission = rememberBluetoothPermission()
-      val radio = koinInject<BluetoothRadio>()
-      val scanVm = koinViewModel<ScanViewModel>()
-
-      // Radio state only after permission: on iOS, creating a CBCentralManager is what prompts.
-      val bluetoothOff by remember(radio, permission.granted) {
-        if (permission.granted) radio.isOff else flowOf(false)
-      }.collectAsStateWithLifecycle(initialValue = false)
-
-      // Subscribing starts the scan (WhileSubscribed), so only subscribe when it can succeed.
-      val scan = if (permission.granted && !bluetoothOff) {
-        scanVm.state.collectAsStateWithLifecycle().value
-      } else {
-        ScanUiState.Idle
-      }
-
-      when (val ui = deviceStepUi(permission.granted, bluetoothOff, scan)) {
-        DeviceStepUi.PermissionNeeded -> DeviceStatusScreen(
+      if (!permission.granted) {
+        DeviceStatusScreen(
           title = strings.bluetoothPermissionTitle,
           body = strings.bluetoothPermissionBody,
           buttonLabel = strings.bluetoothPermissionAllow,
           showChevron = false,
+          progress = state.step.progress,
           onButton = permission::request,
           onBack = back,
           onCancel = onExit,
         )
-        DeviceStepUi.BluetoothOff -> DeviceStatusScreen(
-          title = strings.bluetoothOffTitle,
-          body = strings.bluetoothOffBody,
-          buttonLabel = strings.next,
-          onButton = radio::requestEnable,
-          onBack = back,
-          onCancel = onExit,
-        )
-        is DeviceStepUi.Devices -> DevicePickerScreen(
-          state = ui,
-          selected = state.form.device,
-          onSelect = vm::selectDevice,
-          onRescan = scanVm::rescan,
-          onBack = back,
-          onCancel = onExit,
-          onNext = {
-            state.form.device?.let(recorder::connect)
-            vm.next()
-          },
-        )
+      } else when (state.step) {
+        // The view model leaves this step by itself once the radio reports Bluetooth on.
+        NewSessionStep.Bluetooth -> {
+          val radio = koinInject<BluetoothRadio>()
+          DeviceStatusScreen(
+            title = strings.bluetoothOffTitle,
+            body = strings.bluetoothOffBody,
+            buttonLabel = strings.next,
+            progress = NewSessionStep.Bluetooth.progress,
+            onButton = radio::requestEnable,
+            onBack = back,
+            onCancel = onExit,
+          )
+        }
+        NewSessionStep.PowerOn -> PowerOnScreen(onBack = back, onCancel = onExit, onNext = vm::next)
+        else -> {
+          // Subscribing starts the scan (WhileSubscribed), so it runs only while the picker shows.
+          val scanVm = koinViewModel<ScanViewModel>()
+          val scan by scanVm.state.collectAsStateWithLifecycle()
+          DevicePickerScreen(
+            state = deviceStepUi(scan),
+            selected = state.form.device,
+            onSelect = vm::selectDevice,
+            onRescan = scanVm::rescan,
+            onBack = back,
+            onCancel = onExit,
+            onNext = {
+              state.form.device?.let(recorder::connect)
+              vm.next()
+            },
+          )
+        }
       }
     }
   }

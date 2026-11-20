@@ -175,6 +175,11 @@ Paths below are under legacy `app/src/main/java/pl/llp/aircasting/`.
 - Before the device picker, every AirBeam method (mobile and fixed) shows *Power on your AirBeam*,
   so the device is advertising when the scan starts (legacy `connect_airbeam/TurnOnAirBeamViewMvcImpl`;
   rewrite `NewSessionStep.PowerOn`, `PowerOnScreen`). The phone mic skips it along with the device step.
+  *Turn on Bluetooth* is its own step (`NewSessionStep.Bluetooth`), walked only when the radio is
+  off. `NewSessionViewModel` watches the radio once an AirBeam method is picked, so the route is
+  decided at Next, with no screen shown and then swapped. Turning Bluetooth on moves to power-on;
+  turning it off on power-on or the picker goes back to it. The Bluetooth permission screen still
+  gates those three steps (read synchronously; Android's enable request needs BLUETOOTH_CONNECT).
 - Indoor is the default placement.
 - Indoor sends the placeholder `(200, 200)` plus `time_zone`.
 - Outdoor uses the map's camera target. The map starts at the current location, or New York

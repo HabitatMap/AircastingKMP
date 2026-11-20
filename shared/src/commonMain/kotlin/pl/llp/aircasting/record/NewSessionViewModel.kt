@@ -5,8 +5,12 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import pl.llp.aircasting.bluetooth.BluetoothRadio
 import pl.llp.aircasting.bluetooth.DiscoveredAirBeam
 import pl.llp.aircasting.domain.GeoLocation
 import pl.llp.aircasting.recording.PhoneLocation
@@ -15,12 +19,15 @@ data class NewSessionState(
   val step: NewSessionStep = NewSessionStep.Method,
   val form: NewSessionForm = NewSessionForm(),
   val recentTags: List<String> = emptyList(),
+  /** Watched only once an AirBeam method is picked; decides whether the Bluetooth step is walked. */
+  val bluetoothOff: Boolean = false,
 ) {
   val canContinue: Boolean
     get() = when (step) {
       NewSessionStep.Method -> form.method != null
       NewSessionStep.Device -> form.device != null
       NewSessionStep.Location -> form.placement != null
+      NewSessionStep.Bluetooth -> !bluetoothOff
       NewSessionStep.PowerOn, NewSessionStep.Confirm -> true
       NewSessionStep.Details -> form.name.isNotBlank() &&
         (form.method != RecordingMethod.AirBeamFixed || form.cellular || form.hasWifi)
@@ -37,7 +44,10 @@ private val TagSeparators = Regex("[\\s,]+")
 private fun List<String>.plusTags(words: List<String>) =
   (this + words.map { it.trim() }.filter { it.isNotEmpty() }).distinct()
 
-class NewSessionViewModel(private val location: PhoneLocation) : ViewModel() {
+class NewSessionViewModel(
+  private val location: PhoneLocation,
+  private val radio: BluetoothRadio,
+) : ViewModel() {
   private val _state = MutableStateFlow(NewSessionState())
   val state: StateFlow<NewSessionState> = _state.asStateFlow()
 
@@ -45,6 +55,26 @@ class NewSessionViewModel(private val location: PhoneLocation) : ViewModel() {
     // Warm the GPS while the user fills the wizard, as legacy `startNewSessionWizard` did,
     // so Start usually finds a fix ready. Stops with the wizard.
     viewModelScope.launch { location.track() }
+    // Known before Next is tapped, so the wizard routes to the Bluetooth step instead of showing
+    // the next screen and swapping it out. Not watched for the phone mic: on iOS the first
+    // CBCentralManager is what raises the Bluetooth permission prompt.
+    viewModelScope.launch {
+      _state.map { it.form.usesAirBeam }.distinctUntilChanged().collectLatest { airBeam ->
+        if (airBeam) radio.isOff.collect(::onBluetoothOff)
+      }
+    }
+  }
+
+  /**
+   * Turned on while on the Bluetooth step: carry on to power-on. Turned off before a device is
+   * picked: back to the Bluetooth step, since the scan can't run without it.
+   */
+  private fun onBluetoothOff(off: Boolean) = _state.update { state ->
+    when {
+      !off && state.step == NewSessionStep.Bluetooth -> state.copy(bluetoothOff = false, step = NewSessionStep.PowerOn)
+      off && state.step in NeedsBluetooth -> state.copy(bluetoothOff = true, step = NewSessionStep.Bluetooth)
+      else -> state.copy(bluetoothOff = off)
+    }
   }
 
   fun select(method: RecordingMethod) = edit { it.copy(method = method) }
@@ -90,7 +120,7 @@ class NewSessionViewModel(private val location: PhoneLocation) : ViewModel() {
   }
 
   private fun NewSessionState.moveBy(offset: Int): NewSessionState {
-    val steps = form.steps
+    val steps = form.steps(bluetoothOff)
     return copy(step = steps.getOrElse(steps.indexOf(step) + offset) { step })
   }
 
@@ -103,3 +133,5 @@ private val NewSessionForm.hasWifi: Boolean
   get() = wifi.ssid.isNotBlank() && wifi.password.isNotEmpty()
 
 private val NewYork = GeoLocation(40.7128, -74.0060)
+
+private val NeedsBluetooth = setOf(NewSessionStep.PowerOn, NewSessionStep.Device)

@@ -541,8 +541,10 @@ graph/map.
 - **Rendering** (spike `spike/map-dot-rendering`): every dot and the path are drawn by one shared
   Compose Canvas over a plain Google map (`PlatformMap`, expect/actual), positioned by our own
   Web-Mercator transform — native markers can't hold a full session. Dots are drawn oldest →
-  newest (consecutive same-level dots batched into one `drawPoints`); per screen pixel only the
-  newest is drawn. Overlaps match the web frontend (`StreamMarkers.tsx`): one dot per location,
+  newest (consecutive same-level dots batched into one `drawPoints`); per 4 dp screen cell (a
+  quarter of a dot) only the newest is drawn. The path is drawn only for segments not wholly
+  beyond one edge of the view, skipping vertices within half a line width (4 dp) of the last
+  drawn one. Overlaps match the web frontend (`StreamMarkers.tsx`): one dot per location,
   the newest; stacked oldest → newest; a click hits the topmost dot. The Canvas is clipped to the
   map's bounds.
 - **Tap a dot (full-screen session map) → tooltip** with the reading's time and value (Figma

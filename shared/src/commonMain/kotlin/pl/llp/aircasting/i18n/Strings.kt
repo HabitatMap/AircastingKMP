@@ -381,7 +381,6 @@ interface Strings {
   val startFailedNotConnected: String
   val startFailedGeneric: String
   val startFailedMicBusy: String
-  val wifiNearbyHeader: String
   val wifiPermissionHint: String
   val wifiSearching: String
 

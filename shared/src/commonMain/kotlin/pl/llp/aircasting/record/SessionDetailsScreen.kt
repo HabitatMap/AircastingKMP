@@ -430,42 +430,38 @@ private fun Hint(text: String) {
 @Composable
 private fun NetworkList(names: List<String>, selected: String, onSelect: (String) -> Unit) {
   val colors = MaterialTheme.colorScheme
-  Column {
-    Text(LocalStrings.current.wifiNearbyHeader, style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant)
-    Spacer(Modifier.height(4.dp))
-    Surface(
-      shape = RoundedCornerShape(12.dp),
-      color = colors.surfaceContainerLowest,
-      border = BorderStroke(1.dp, colors.outlineVariant),
-    ) {
-      // 224dp ≈ 4½ rows: the cut-off row shows there's more to scroll.
-      Column(Modifier.fillMaxWidth().heightIn(max = 224.dp).verticalScroll(rememberScrollState()).selectableGroup()) {
-        names.forEachIndexed { index, name ->
-          if (index > 0) HorizontalDivider(color = colors.outlineVariant)
-          val isSelected = name == selected
-          Row(
-            Modifier
-              .fillMaxWidth()
-              .selectable(selected = isSelected, role = Role.RadioButton, onClick = { onSelect(name) })
-              .padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-          ) {
-            Text(
-              name,
-              modifier = Modifier.weight(1f),
-              style = MaterialTheme.typography.bodyLarge,
-              color = colors.onSurface,
-              maxLines = 1,
-              overflow = TextOverflow.Ellipsis,
+  Surface(
+    shape = RoundedCornerShape(12.dp),
+    color = colors.surfaceContainerLowest,
+    border = BorderStroke(1.dp, colors.outlineVariant),
+  ) {
+    // 224dp ≈ 4½ rows: the cut-off row shows there's more to scroll.
+    Column(Modifier.fillMaxWidth().heightIn(max = 224.dp).verticalScroll(rememberScrollState()).selectableGroup()) {
+      names.forEachIndexed { index, name ->
+        if (index > 0) HorizontalDivider(color = colors.outlineVariant)
+        val isSelected = name == selected
+        Row(
+          Modifier
+            .fillMaxWidth()
+            .selectable(selected = isSelected, role = Role.RadioButton, onClick = { onSelect(name) })
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+          verticalAlignment = Alignment.CenterVertically,
+        ) {
+          Text(
+            name,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.bodyLarge,
+            color = colors.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+          )
+          if (isSelected) {
+            Icon(
+              painterResource(Res.drawable.ic_check),
+              contentDescription = null,
+              modifier = Modifier.size(20.dp),
+              tint = colors.primaryContainer,
             )
-            if (isSelected) {
-              Icon(
-                painterResource(Res.drawable.ic_check),
-                contentDescription = null,
-                modifier = Modifier.size(20.dp),
-                tint = colors.primaryContainer,
-              )
-            }
           }
         }
       }

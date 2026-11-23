@@ -410,6 +410,15 @@ interface Strings {
   val activeStartMic: String
   val activeTagPhoneMic: String
   val activeNoMicDataBody: String
+  val myDataPastSessions: String
+  val myDataViewAll: String
+  val myDataNoSessionsTitle: String
+  val myDataNoSessionsBody: String
+  val myDataSessionAverage: String
+  val pastSessionsTitle: String
+  val pastSessionsAvg: String
+  val pastSessionsMin: String
+  val pastSessionsMax: String
   val streamTemperature: String
   val streamHumidity: String
   val networkHeader: String

@@ -497,6 +497,9 @@ shared ViewModels + Compose Multiplatform.
 `FOLLOWING(0)`, `MOBILE_ACTIVE(1)`, `MOBILE_DORMANT(2)`, `FIXED(3)`. Each = Fragment → list
 ViewMvc → RecyclerView → session card → `SessionPresenter`, driven by a Controller + a DB
 observer. Pull-to-refresh triggers backend sync. Cards reorderable.
+**Rewrite (2026-11-23):** `MOBILE_DORMANT` → My Data → **Past Sessions** (finished MOBILE rows,
+phone mic included); `MOBILE_ACTIVE` → Active tab; `FOLLOWING` → My Data → Favorites (not built).
+Rules: [`design/MY_DATA_SCREEN.md`](./design/MY_DATA_SCREEN.md).
 
 ### `SessionPresenter` — **KEEP** (the prime portable presentation state)
 Pure state model (no Android imports): holds session + selected stream + thresholds +

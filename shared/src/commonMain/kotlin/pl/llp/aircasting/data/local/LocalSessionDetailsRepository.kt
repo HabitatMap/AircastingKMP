@@ -64,6 +64,8 @@ private fun Session.toDetails(stats: List<SelectSessionStreamStats>) = StationDe
   tags = tags,
   isIndoor = isIndoor,
   location = location,
+  startTime = startTime,
+  endTime = endTime,
 )
 
 private fun SelectSessionStreamStats.toStream() = StationStream(

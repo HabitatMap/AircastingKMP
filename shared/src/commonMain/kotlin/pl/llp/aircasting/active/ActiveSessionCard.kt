@@ -59,12 +59,15 @@ fun activeSessionCard(
     },
     lastSeen = lastSeen,
     streams = streams,
-    // Legacy SessionPresenter.selectStream: saved → PM2.5 → first.
-    selected = streams.firstOrNull { it.sensorName == savedSensor }
-      ?: streams.firstOrNull { it.sensorName.detailedType == PM2_5 }
-      ?: streams.firstOrNull(),
+    selected = streams.preferred(savedSensor) { it.sensorName },
   )
 }
+
+/** Legacy SessionPresenter.selectStream: saved → PM2.5 → first. */
+internal fun <T> List<T>.preferred(savedSensor: String?, sensorName: (T) -> String): T? =
+  firstOrNull { sensorName(it) == savedSensor }
+    ?: firstOrNull { sensorName(it).detailedType == PM2_5 }
+    ?: firstOrNull()
 
 private fun LatestReading.toCardStream(thresholds: Thresholds) = CardStream(
   sensorName = sensorName,

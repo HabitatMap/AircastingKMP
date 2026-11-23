@@ -118,3 +118,21 @@ selectSessionStreamTrack:
     -- De Morgan of NOT (lat = 200 AND lng = 200): SQLDelight's 3.18 grammar rejects a bare NOT (…).
     AND (m.latitude != 200.0 OR m.longitude != 200.0)
   ORDER BY m.time;
+
+selectPastMobile:
+SELECT *
+FROM sessions
+WHERE type = 'MOBILE' AND end_time IS NOT NULL
+ORDER BY start_time DESC;
+
+-- Whole-session aggregates per stream of every finished mobile session. A stream with no
+-- measurements still comes back (LEFT JOIN), its aggregates null.
+selectPastMobileStreamStats:
+SELECT st.session_uuid, st.sensor_name, st.unit_symbol,
+       AVG(m.value) AS avg_value, MIN(m.value) AS min_value, MAX(m.value) AS max_value
+FROM measurement_streams st
+JOIN sessions se ON se.uuid = st.session_uuid
+LEFT JOIN measurements m ON m.stream_id = st.id
+WHERE se.type = 'MOBILE' AND se.end_time IS NOT NULL
+GROUP BY st.id
+ORDER BY st.id;

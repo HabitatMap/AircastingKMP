@@ -25,6 +25,10 @@ data class StationDetails(
    * indoor / unknown → no map. Mobile sessions draw their track instead.
    */
   val location: GeoLocation? = null,
+  /** Our own sessions only; null = an Explore station. */
+  val startTime: Instant? = null,
+  /** Our own sessions only: set once finished. Null = live (or an Explore station). */
+  val endTime: Instant? = null,
 )
 
 /**

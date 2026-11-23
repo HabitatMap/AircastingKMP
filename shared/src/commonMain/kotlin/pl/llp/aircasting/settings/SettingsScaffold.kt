@@ -12,10 +12,13 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
 import org.jetbrains.compose.resources.painterResource
 import pl.llp.aircasting.i18n.LocalStrings
 
+/**
+ * Back-arrow screen frame. The bar is opaque, in the screen's own background: scrolled content
+ * passes under it (Scaffold draws topBar above the body) instead of showing through it.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScaffold(
@@ -23,8 +26,9 @@ fun SettingsScaffold(
   onBack: () -> Unit,
   content: @Composable (PaddingValues) -> Unit,
 ) {
+  val background = MaterialTheme.colorScheme.background
   Scaffold(
-    containerColor = MaterialTheme.colorScheme.background,
+    containerColor = background,
     topBar = {
       TopAppBar(
         title = { Text(title, style = MaterialTheme.typography.titleLarge) },
@@ -37,7 +41,7 @@ fun SettingsScaffold(
           }
         },
         colors = TopAppBarDefaults.topAppBarColors(
-          containerColor = Color.Transparent,
+          containerColor = background,
           titleContentColor = MaterialTheme.colorScheme.onSurface,
           navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
         ),

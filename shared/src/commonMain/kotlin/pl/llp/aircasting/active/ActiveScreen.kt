@@ -54,12 +54,15 @@ import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
 import pl.llp.aircasting.i18n.LocalStrings
+import pl.llp.aircasting.ui.components.CardButton
+import pl.llp.aircasting.ui.components.CountBadge
 import pl.llp.aircasting.ui.components.DotSeparatedRow
 import pl.llp.aircasting.ui.components.LevelBadge
 import pl.llp.aircasting.ui.components.LevelDot
 import pl.llp.aircasting.ui.components.SectionHeader
 import pl.llp.aircasting.ui.components.StreamChip
 import pl.llp.aircasting.ui.components.TintedTag
+import pl.llp.aircasting.ui.components.UserTag
 import pl.llp.aircasting.ui.theme.LocalAqColors
 import kotlin.time.Clock
 import kotlin.time.Instant
@@ -172,18 +175,7 @@ private fun SectionHeader(title: String, count: Int, expanded: Boolean, onToggle
         style = MaterialTheme.typography.titleLarge,
         color = MaterialTheme.colorScheme.onSurfaceVariant
       )
-      val empty = count == 0
-      Text(
-        count.toString(),
-        Modifier.clip(CircleShape)
-          .background(
-            if (empty) MaterialTheme.colorScheme.surfaceContainerHigh
-            else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.08f),
-          )
-          .padding(horizontal = 8.dp, vertical = 2.dp),
-        style = MaterialTheme.typography.labelLargeEmphasized,
-        color = if (empty) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onPrimaryContainer,
-      )
+      CountBadge(count)
     }
     Icon(
       painterResource(Res.drawable.ic_arrow_forward_ios),
@@ -296,18 +288,6 @@ private fun ConnectionLostBadge() {
       color = red
     )
   }
-}
-
-/** Figma "UserTag": hairline-outlined pill. */
-@Composable
-private fun UserTag(tag: String) {
-  Text(
-    tag,
-    Modifier.border(0.65.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
-      .padding(horizontal = 8.dp, vertical = 2.dp),
-    style = MaterialTheme.typography.labelSmall,
-    color = MaterialTheme.colorScheme.onSurfaceVariant,
-  )
 }
 
 /** Stream chips, then the selected stream's newest value with its level dot. */
@@ -455,35 +435,6 @@ private fun Footer(state: CardState, onFinish: () -> Unit, onSeeDetails: () -> U
         )
       }
     }
-  }
-}
-
-@Composable
-private fun CardButton(
-  label: String,
-  onClick: () -> Unit,
-  borderColor: Color,
-  contentColor: Color,
-  modifier: Modifier = Modifier,
-  icon: DrawableResource? = null,
-) {
-  OutlinedButton(
-    onClick = onClick,
-    modifier = modifier,
-    shape = RoundedCornerShape(12.dp),
-    border = BorderStroke(1.2.dp, borderColor),
-    colors = ButtonDefaults.outlinedButtonColors(
-      containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
-      contentColor = contentColor,
-    ),
-
-    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
-  ) {
-    icon?.let {
-      Icon(painterResource(it), contentDescription = null, Modifier.size(16.dp))
-      Spacer(Modifier.width(6.dp))
-    }
-    Text(label, style = MaterialTheme.typography.labelLarge, maxLines = 1)
   }
 }
 

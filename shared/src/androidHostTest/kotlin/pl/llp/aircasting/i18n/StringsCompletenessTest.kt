@@ -41,6 +41,8 @@ class StringsCompletenessTest {
     "micDecibels",
     "thresholdMin", // "Min"/"Max" are the French labels too
     "thresholdMax",
+    "pastSessionsMin", // "Min." / "Max." are French too
+    "pastSessionsMax",
     "customServerUrlLabel",
     "customServerPortLabel",
     "newSessionDeviceAirBeamHeader",

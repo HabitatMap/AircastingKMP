@@ -106,8 +106,8 @@ fun StationDetailsScreen(
               verticalAlignment = Alignment.CenterVertically
             ) {
               TintedTag(details.tag(strings))
-              // NOW value's level; hidden when the sensor has no local threshold.
-              selected?.let { state.levelOf(it.value) }
+              // First stat's level (NOW, or AVG. once finished); hidden without a local threshold.
+              selected?.let { state.levelOf(details.stats(it, strings).first().value) }
                 ?.let { LevelBadge(it) }
             }
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -118,7 +118,11 @@ fun StationDetailsScreen(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
               )
-              // Design's "Location name" line needs reverse geocoding — later slice.
+              // Own sessions: their time range in the design's "Location name" slot (1138:28732).
+              // Explore stations' location name needs reverse geocoding — later slice.
+              details.timeRange()?.let {
+                Text(it, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface)
+              }
               val clock = koinInject<Clock>()
               // One reading per loaded state, like NearbyStations: the label doesn't tick while open.
               val now = remember(state) { clock.now() }
@@ -126,7 +130,8 @@ fun StationDetailsScreen(
                 listOfNotNull(
                   if (details.isIndoor) strings.placementIndoor else strings.stationOutdoor,
                   details.deviceModel?.let(::deviceDisplayName) ?: details.provider,
-                  selected?.measuredAt?.let { ageLabel(it, now, strings) },
+                  // A finished session's range already says when; "4 d ago" would only repeat it.
+                  selected?.measuredAt?.takeIf { details.endTime == null }?.let { ageLabel(it, now, strings) },
                 ),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onBackground,
@@ -146,24 +151,9 @@ fun StationDetailsScreen(
             }
             selected?.let { stream ->
               Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Stat(
-                  strings.stationNow,
-                  stream.value,
-                  stream.unitSymbol,
-                  state.levelOf(stream.value)
-                )
-                Stat(
-                  strings.stationMin24h,
-                  stream.min,
-                  stream.unitSymbol,
-                  state.levelOf(stream.min)
-                )
-                Stat(
-                  strings.stationMax24h,
-                  stream.max,
-                  stream.unitSymbol,
-                  state.levelOf(stream.max)
-                )
+                details.stats(stream, strings).forEach {
+                  Stat(it.label, it.value, stream.unitSymbol, state.levelOf(it.value))
+                }
               }
               // Picker hugs the graph/map it switches: 8 dp, not the column's 16.
               Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {

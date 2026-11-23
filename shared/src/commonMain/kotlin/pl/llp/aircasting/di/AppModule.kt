@@ -15,6 +15,7 @@ import org.koin.core.qualifier.named
 import org.koin.dsl.KoinAppDeclaration
 import org.koin.dsl.module
 import pl.llp.aircasting.active.ActiveViewModel
+import pl.llp.aircasting.mydata.PastSessionsViewModel
 import pl.llp.aircasting.active.SessionDetailsRepository
 import pl.llp.aircasting.active.SessionGraphViewModel
 import pl.llp.aircasting.active.SessionMapViewModel
@@ -136,6 +137,7 @@ val recordModule = module {
       register = get<FixedSessionRegistrar>()::register,
     )
   }
+  viewModelOf(::PastSessionsViewModel)
   viewModelOf(::NewSessionViewModel)
   viewModelOf(::PinPickerViewModel)
   viewModel { RecordingViewModel(get(), get(), get(), get(), get()) }

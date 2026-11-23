@@ -6,6 +6,7 @@ import pl.llp.aircasting.active.SessionDetailsRepository
 import pl.llp.aircasting.data.local.LocalActiveSessionsRepository
 import pl.llp.aircasting.data.local.LocalMeasurementRepository
 import pl.llp.aircasting.data.local.LocalMeasurementStreamRepository
+import pl.llp.aircasting.data.local.LocalPastSessionsRepository
 import pl.llp.aircasting.data.local.LocalSessionDetailsRepository
 import pl.llp.aircasting.data.local.LocalSessionRepository
 import pl.llp.aircasting.data.local.LocalUploadOutbox
@@ -17,6 +18,7 @@ import pl.llp.aircasting.domain.session.MeasurementRepository
 import pl.llp.aircasting.domain.session.MeasurementStreamRepository
 import pl.llp.aircasting.domain.session.SessionRepository
 import pl.llp.aircasting.domain.session.UploadOutbox
+import pl.llp.aircasting.mydata.PastSessionsRepository
 
 val databaseModule = module {
   single { createDatabase(get()) }
@@ -34,4 +36,5 @@ val databaseModule = module {
   single<UploadOutbox> { LocalUploadOutbox(get()) }
   single<ActiveSessionsRepository> { LocalActiveSessionsRepository(get()) }
   single<SessionDetailsRepository> { LocalSessionDetailsRepository(get()) }
+  single<PastSessionsRepository> { LocalPastSessionsRepository(get()) }
 }

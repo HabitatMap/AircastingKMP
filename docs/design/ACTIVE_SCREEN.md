@@ -92,7 +92,14 @@ rather than a copy (*decided 2026-11-14*):
 - Koin: the session's ViewModel is the `SessionDetailsQualifier` definition.
 
 Header shows user tags and Indoor/Outdoor; stats are **Now · Avg. · Min. · Max.** over the whole
-session (rule in `DOMAIN_KNOWLEDGE.md` → *Own mobile session details*). Not built yet, like on the
+session (rule in `DOMAIN_KNOWLEDGE.md` → *Own mobile session details*); Explore keeps
+NOW · MIN. 24H · MAX. 24H, a finished session drops NOW — see `DetailsStats.kt`.
+
+**Time line under the title** (*decided 2026-11-23*), Figma `1138:28732` — the "Location name"
+slot, bodyLarge / onSurface. Same for live and finished own sessions, like legacy
+`DurationStringHelper`: live `23/11/26, 13:34`, finished `23/11/26, 13:34 - 23/11/26, 19:34`.
+The meta row's "1 min ago" stays while live, is dropped once finished. Explore stations have no
+such line (their location name needs reverse geocoding). Not built yet, like on the
 station screen: Map tab, app-bar actions (favourite, alert, notes), location name.
 
 ## Open (parked) questions

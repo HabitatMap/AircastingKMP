@@ -34,8 +34,8 @@ android {
       .toInt()
     targetSdk = libs.versions.android.targetSdk.get()
       .toInt()
-    versionCode = 308
-    versionName = "5.2.0-exp"
+    versionCode = 309
+    versionName = "5.2.1-exp"
     val localProperties = Properties().apply {
       rootProject.file("local.properties")
         .takeIf { it.exists() }

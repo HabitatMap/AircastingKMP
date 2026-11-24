@@ -80,12 +80,19 @@ and does nothing until sync exists.
   `GET /api/v3/fixed_sessions` (user token) at once, every 60 s (the AirBeam uploads about once a minute)
   and on `refresh()`. The sync writes the session row (`type = FIXED`, `last_reported_at` =
   `last_measurement_at`), its streams and each stream's newest reading. Signed out → no request. A failed
-  sync is only logged; the stored rows stay. **One page of the newest 50** (*decided 2026-11-24*): 500 took
-  11 s for an account with 212 fixed sessions, past the client's 10 s timeout. Interim until the backend
-  adds a dedicated active-fixed-sessions endpoint (TODO in `FixedSessionsSync.syncList`).
-- **Rows are never deleted** (*decided 2026-11-24*): a session the server reports with `finished_at` is
-  stored `FINISHED` with that end; an active row missing from the answer is marked `FINISHED`, ending at
-  its `last_reported_at` (now if it never reported). No migration for the new columns: testers reinstall.
+  sync is only logged; the stored rows stay. No migration for the new columns: testers reinstall.
+- **TEMPORARY: newest 50, filtered client-side** (*decided 2026-11-24*): there is no active-only endpoint
+  (nor a not-finished filter) yet, so the sync asks for one page of the newest 50 and keeps those with
+  `finished_at == null`. 500 took 11 s for an account with 212 fixed sessions, past the client's 10 s
+  timeout. Once the backend endpoint exists, call it and drop the paging and the filter (marked in
+  `FixedSessionsSync.syncList`).
+- **Finished only by the backend's `finished_at`** (*decided 2026-11-24*): a row's `end_time` (status
+  `FINISHED`) is always a `finished_at` from the backend — from the answer to the user's own Finish
+  (`POST .../finish`), or from a list / details sync that reports a stored session finished (e.g. on the
+  web). Either way the DB flow drops its card from Active. A finished session is never inserted, only an
+  already stored one updated. A `finished_at: null` never reopens a row (the sync doesn't touch
+  status/`end_time` otherwise, so a list answered just before a finish can't undo it), and a row missing
+  from the answer just stays.
 - **Sign-out** (*decided 2026-11-24*): `FixedSessionsSync.clearWhenSignedOut` (started with Koin, runs for
   the process's life) deletes every fixed row, cascading to streams and measurements, whenever no one is
   signed in — at launch too — so the next account never sees them. Mobile rows stay. Legacy
@@ -95,20 +102,21 @@ and does nothing until sync exists.
   without saying when; a `/fixed_sessions` entry without one is skipped by `FixedSessionsSync`, logged.)
   A created session with no measurements yet — older AirBeams don't send one during setup — is stored and
   shows **No data yet**.
-- **Active fixed session** = `finished_at == null` on the backend, the only source of truth. It stays on Active, Offline or not, until the user finishes it (*decided 2026-11-24*). Legacy
-  has no "finish" for fixed, so every legacy-created session has `finished_at: null` — the backend is to
-  clean those up (finish by inactivity) and offer an active-only endpoint; until then old sessions among
+- **Active fixed session** = `finished_at == null` on the backend, the only source of truth. Sessions from
+  the new app are finished manually by the user; it stays on Active, Offline or not, until then
+  (*decided 2026-11-24*). Legacy has no "finish" for fixed, so every legacy-created session has
+  `finished_at: null` — the backend is to finish those by its own criteria later; until then old ones among
   the newest 50 show as Offline.
 - **Card states** (`activeFixedSessionCard`):
 
 | State | When | Body | Footer |
 |-------|------|------|--------|
-| **Live** | heard from within `FixedOfflineAfter` | value + chips | Finish recording · See details |
+| **Live** | last measurement within `FixedOfflineAfter` | value + chips | Finish recording · See details |
 | **No data yet** | never reported (`last_measurement_at` and every reading null) — e.g. an older AirBeam's session, created on the backend, before its first upload | spinner, "No data yet" | Finish recording · See details |
 | **Offline** | `now - last_measurement_at > FixedOfflineAfter` | spinner, "Reconnecting to your AirBeam", **Reconnect** | Finish recording anyway |
 
-- **Offline threshold** — `FixedOfflineAfter = 10 min` in `ActiveSessionCard.kt` (*decided 2026-11-24*, a
-  TWEAK HERE constant). Not from legacy (it has no such state). The backend's own `is_active`
+- **Offline threshold** — `FixedOfflineAfter = 30 min` in `ActiveSessionCard.kt` (*decided 2026-11-24*, a
+  TWEAK HERE constant): Offline once the fetched last measurement is more than 30 min old. Not from legacy (it has no such state). The backend's own `is_active`
   (Explore station details) means "reported in the last 24 h and not finished" — too slow for the
   "lost its Wi-Fi" card, and `/fixed_sessions` doesn't expose it anyway. Judged on `last_measurement_at`
   (when the AirBeam last reached the server), falling back to the newest reading's time.

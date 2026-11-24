@@ -31,7 +31,6 @@ import pl.llp.aircasting.domain.session.SessionStatus
 import pl.llp.aircasting.domain.session.SessionType
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.time.Clock
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
@@ -84,9 +83,8 @@ class FixedSessionsSyncTest {
   }
 
   @Test
-  fun a_session_the_server_finished_is_marked_finished_not_deleted() = runTest {
+  fun a_session_finished_on_the_server_is_stored_as_finished_and_not_active() = runTest {
     auth.start("user-token", PROFILE)
-    sync().syncList()
     listJson = LIST_JSON.replace(""""finished_at":null""", """"finished_at":$FINISHED_AT""")
 
     sync().syncList()
@@ -94,20 +92,61 @@ class FixedSessionsSyncTest {
     val row = db.sessionQueries.selectSessionByUuid("f1").executeAsOne()
     assertEquals(SessionStatus.FINISHED, row.status)
     assertEquals(Instant.fromEpochMilliseconds(FINISHED_AT), row.end_time)
-    assertEquals(emptyList(), repository().observeFixed().first())
+    assertEquals(emptyList(), db.fixedSessionQueries.selectActiveFixed().executeAsList())
   }
 
   @Test
-  fun a_stored_session_missing_from_the_answer_is_marked_finished_at_its_last_report() = runTest {
+  fun a_session_finished_elsewhere_gets_the_backends_finished_at_and_leaves_the_active_tab() = runTest {
+    auth.start("user-token", PROFILE)
+    val repository = repository()
+
+    repository.observeFixed().test {
+      skipItems(1) // the empty DB, before the first sync answers
+      assertEquals(listOf(LIVING_ROOM), awaitItem())
+
+      listJson = LIST_JSON.replace(""""finished_at":null""", """"finished_at":$FINISHED_AT""")
+      repository.refresh()
+
+      assertEquals(emptyList(), awaitItem())
+    }
+    val row = db.sessionQueries.selectSessionByUuid("f1").executeAsOne()
+    assertEquals(SessionStatus.FINISHED, row.status)
+    assertEquals(Instant.fromEpochMilliseconds(FINISHED_AT), row.end_time)
+  }
+
+  @Test
+  fun opening_details_of_a_session_finished_elsewhere_finishes_it() = runTest {
+    auth.start("user-token", PROFILE)
+    sync().syncList()
+    sessionJson = SESSION_JSON.replace(""""finished_at":null""", """"finished_at":$FINISHED_AT""")
+
+    sync().syncSession("f1")
+
+    assertEquals(Instant.fromEpochMilliseconds(FINISHED_AT), db.sessionQueries.selectSessionByUuid("f1").executeAsOne().end_time)
+  }
+
+  @Test
+  fun a_stored_session_missing_from_the_answer_stays_active() = runTest {
     auth.start("user-token", PROFILE)
     sync().syncList()
     listJson = EMPTY_LIST_JSON
 
     sync().syncList()
 
+    assertEquals(listOf(LIVING_ROOM), repository().observeFixed().first())
+  }
+
+  @Test
+  fun a_list_fetched_before_the_finish_answer_does_not_reopen_the_session() = runTest {
+    auth.start("user-token", PROFILE)
+    sync().syncList()
+    sync().finish("f1")
+
+    sync().syncList() // still says finished_at null, e.g. answered just before the finish
+
     val row = db.sessionQueries.selectSessionByUuid("f1").executeAsOne()
     assertEquals(SessionStatus.FINISHED, row.status)
-    assertEquals(LIVING_ROOM.lastReportedAt, row.end_time)
+    assertEquals(Instant.fromEpochMilliseconds(FINISHED_AT), row.end_time)
   }
 
   @Test
@@ -315,7 +354,7 @@ class FixedSessionsSyncTest {
       },
     )
     return FixedSessionsSync(
-      FixedSessionsApi(createAircastingHttpClient(engine)), auth, db, NOW_CLOCK, UnconfinedTestDispatcher(testScheduler),
+      FixedSessionsApi(createAircastingHttpClient(engine)), auth, db, UnconfinedTestDispatcher(testScheduler),
     )
   }
 
@@ -333,9 +372,6 @@ class FixedSessionsSyncTest {
     val NEWEST: Instant = Instant.fromEpochMilliseconds(1786706940000)
     val PROFILE = AccountProfile("u", "u@example.com")
     const val FINISHED_AT = 1786707060000
-    val NOW_CLOCK = object : Clock {
-      override fun now() = Instant.fromEpochMilliseconds(1786707120000)
-    }
     val LIVING_ROOM = ActiveFixedSession(
       uuid = "f1",
       name = "Living room",

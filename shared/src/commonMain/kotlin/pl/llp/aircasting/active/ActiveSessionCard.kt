@@ -21,17 +21,17 @@ enum class CardState {
   NoDataYet,
   /** Mobile: the AirBeam's Bluetooth link dropped. */
   ConnectionLost,
-  /** Fixed: the AirBeam hasn't reached the server for longer than [FixedOfflineAfter]. */
+  /** Fixed: its last measurement is older than [FixedOfflineAfter]. */
   Offline,
 }
 
 /**
- * TWEAK HERE: how long a fixed AirBeam may stay silent before its card says "Offline".
- * It uploads about once a minute, so 10 min ≈ ten missed uploads (*decided 2026-11-24*). The backend's
+ * TWEAK HERE: how old a fixed AirBeam's last measurement may get before its card says "Offline".
+ * It uploads about once a minute, so 30 min ≈ thirty missed uploads (*decided 2026-11-24*). The backend's
  * own `is_active` (Explore) uses 24 h, too slow for the "lost its Wi-Fi" card. Lower = flags a dead
  * station sooner but flickers on spotty Wi-Fi; higher = calmer but slower to notice.
  */
-internal val FixedOfflineAfter = 10.minutes
+internal val FixedOfflineAfter = 30.minutes
 
 data class CardStream(
   val sensorName: String,

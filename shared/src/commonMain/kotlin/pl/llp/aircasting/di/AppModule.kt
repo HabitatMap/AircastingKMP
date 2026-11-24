@@ -185,7 +185,7 @@ val networkModule = module {
   // Modern v3 APIs
   single { MobileSessionsApi(get()) }
   single { FixedSessionsApi(get()) }
-  single { FixedSessionsSync(get(), get(), get(), get()) }
+  single { FixedSessionsSync(get(), get(), get()) }
   single<ActiveFixedSessionsRepository> { LocalActiveFixedSessionsRepository(get(), get()) }
   // Search & Regional Exploration (Home screen)
   single { FixedStationsApi(get()) }

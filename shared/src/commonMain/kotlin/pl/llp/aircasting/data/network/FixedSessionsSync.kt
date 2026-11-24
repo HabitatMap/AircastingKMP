@@ -15,8 +15,6 @@ import kotlinx.coroutines.withContext
 import pl.llp.aircasting.data.auth.AuthSession
 import pl.llp.aircasting.data.auth.tokenOrNull
 import pl.llp.aircasting.data.local.db.AppDatabase
-import pl.llp.aircasting.domain.session.SessionStatus
-import kotlin.time.Clock
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Instant
@@ -30,26 +28,26 @@ class FixedSessionsSync(
   private val api: FixedSessionsApi,
   private val auth: AuthSession,
   private val db: AppDatabase,
-  private val clock: Clock,
   private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
-  /** `GET /fixed_sessions`: stores each session; an active one missing from the answer is marked finished. */
+  /**
+   * `GET /fixed_sessions`: stores each session; one the backend reports finished (e.g. on the web) is
+   * stored as finished, so its card leaves Active and it shows in Past Sessions through the DB flow.
+   */
   suspend fun syncList() = withToken("fixed_sessions sync") { token ->
-    // TODO: replace with the backend's dedicated active-fixed-sessions endpoint once it exists, and
-    //  drop this paging. Until then: one page of the newest sessions. The full list (500) took 11 s for
-    //  an account with 212 sessions, past the 10 s timeout, and every legacy session has finished_at
-    //  null, so an active session older than the newest 50 is missed (and marked finished here).
+    // TEMPORARY until the backend offers an active-fixed-sessions endpoint (or a not-finished filter):
+    //  then call that and drop the paging and this split. Until then: one page of the newest sessions.
+    //  The full list (500) took 11 s for an account with 212 sessions, past the 10 s timeout, so an
+    //  active session older than the newest 50 is missed. Legacy sessions all have finished_at null;
+    //  the backend is to finish those itself.
     val sessions = api.listSessions(token, perPage = ONE_PAGE).sessions
-    write {
-      sessions.forEach { store(it) }
-      fixedSessionQueries.finishFixedMissingFrom(clock.now().toEpochMilliseconds(), sessions.map { it.uuid })
-    }
+    write { sessions.forEach { sync(it) } }
   }
 
-  /** `GET /fixed_sessions/{uuid}`: refreshes one session (details opened). */
+  /** `GET /fixed_sessions/{uuid}`: refreshes one session (details opened); finished there → finished here. */
   suspend fun syncSession(uuid: String) = withToken("$uuid: sync") { token ->
     val session = api.getSession(token, uuid)
-    write { store(session) }
+    write { sync(session) }
   }
 
   /**
@@ -89,7 +87,10 @@ class FixedSessionsSync(
       .flatten()
   }
 
-  /** Decommissions the session on the server; marked finished here once the answer has finished_at. */
+  /**
+   * The user's Finish button: decommissions the session on the server. The answer's finished_at is the
+   * only thing that finishes the row here (the backend is the source of truth for it).
+   */
   suspend fun finish(uuid: String) = withToken("$uuid: finish") { token ->
     val finishedAt = api.finishSession(token, uuid).finishedAt ?: return@withToken
     write { fixedSessionQueries.finishFixed(Instant.fromEpochMilliseconds(finishedAt), uuid) }
@@ -125,25 +126,34 @@ class FixedSessionsSync(
    * none yet → "No data yet"). The backend sets start_time at creation; the spec still marks it nullable,
    * so an entry without one is skipped rather than stored.
    */
+  /**
+   * Stores the session either way; one the backend reports finished goes straight to Past Sessions.
+   * The backend's finished_at is the only thing that finishes a row (here or from [finish]). A null
+   * finished_at never reopens a row: [store] doesn't touch status/end_time.
+   */
+  private fun AppDatabase.sync(dto: FixedSessionDto) {
+    store(dto)
+    val finishedAt = dto.finishedAt ?: return
+    fixedSessionQueries.finishFixed(Instant.fromEpochMilliseconds(finishedAt), dto.uuid)
+  }
+
   private fun AppDatabase.store(dto: FixedSessionDto) {
     val start = dto.startTime?.let(Instant::fromEpochMilliseconds) ?: run {
       log.w { "${dto.uuid}: no start_time; not stored" }
       return
     }
-    val status = if (dto.finishedAt == null) SessionStatus.RECORDING else SessionStatus.FINISHED
     val tags = dto.tagList.split(',', ' ').filter { it.isNotBlank() }
-    val end = dto.finishedAt?.let(Instant::fromEpochMilliseconds)
     // Indoor sessions carry the 200, 200 placeholder: no place to store.
     val latitude = dto.latitude.takeUnless { dto.isIndoor }
     val longitude = dto.longitude.takeUnless { dto.isIndoor }
     val reported = dto.lastMeasurementAt?.let(Instant::fromEpochMilliseconds)
     fixedSessionQueries.insertFixedIfAbsent(
-      dto.uuid, status, dto.title, tags, dto.device?.model, start, end, latitude, longitude, dto.isIndoor,
-      dto.timeZone, reported,
+      dto.uuid, dto.title, tags, dto.device?.model, start, latitude, longitude, dto.isIndoor, dto.timeZone,
+      reported,
     )
     fixedSessionQueries.updateFixed(
-      status, dto.title, tags, dto.device?.model, start, end, latitude, longitude, dto.isIndoor, dto.timeZone,
-      reported, dto.uuid,
+      dto.title, tags, dto.device?.model, start, latitude, longitude, dto.isIndoor, dto.timeZone, reported,
+      dto.uuid,
     )
     dto.streams.values.forEach { stream ->
       measurementStreamQueries.insertStreamIfAbsent(dto.uuid, stream.sensorName, stream.unitSymbol, null)

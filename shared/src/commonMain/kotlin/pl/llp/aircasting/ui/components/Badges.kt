@@ -17,7 +17,7 @@ import pl.llp.aircasting.domain.MeasurementLevel
 import pl.llp.aircasting.i18n.LocalStrings
 import pl.llp.aircasting.ui.aqStatus
 import pl.llp.aircasting.ui.theme.LocalAqColors
-import pl.llp.aircasting.ui.theme.LocalAqTextColors
+import pl.llp.aircasting.ui.theme.LocalAqBadgeColors
 
 /** Brand-tinted source tag, e.g. `GOV MONITOR`, `AIRBEAM FIXED` (Figma "Tag"). */
 @Composable
@@ -34,16 +34,16 @@ fun TintedTag(text: String) {
 /** Air-quality level pill, e.g. `Moderate` (Figma "StatusBadge"). */
 @Composable
 fun LevelBadge(level: MeasurementLevel) {
-  val fill = LocalAqColors.current.forLevel(level)
+  val colors = LocalAqBadgeColors.current
   Box(
     Modifier.clip(RoundedCornerShape(100.dp))
-      .background(fill.copy(alpha = 0.12f))
+      .background(colors.container.forLevel(level))
       .padding(horizontal = 8.dp, vertical = 2.dp),
   ) {
     Text(
       level.aqStatus(LocalStrings.current).label,
       style = MaterialTheme.typography.labelSmall,
-      color = LocalAqTextColors.current.forLevel(level),
+      color = colors.content.forLevel(level),
     )
   }
 }

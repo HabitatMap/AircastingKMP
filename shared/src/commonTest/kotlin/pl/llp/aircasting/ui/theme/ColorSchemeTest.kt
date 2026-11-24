@@ -60,6 +60,15 @@ class ColorSchemeTest {
     }
   }
 
+  @Test
+  fun `light badge labels are legible on their own container`() {
+    // Figma's tightest pair is moderate (#86711D on #FFF3CD, 4.3:1); no level may fall below it.
+    MeasurementLevel.entries.forEach { level ->
+      val ratio = contrastRatio(AqBadgePaletteLight.content.forLevel(level), AqBadgePaletteLight.container.forLevel(level))
+      assertTrue(ratio >= 4.3, "badge $level contrast ${ratio.format()} < 4.3:1")
+    }
+  }
+
   private fun assertRaised(name: String, scheme: ColorScheme, minRatio: Double) = with(scheme) {
     // The card is the lightest of the three in both schemes. `surface` vs `background` is
     // deliberately *not* asserted: light's blue page tint (#F5FAFF) is lighter than the warm

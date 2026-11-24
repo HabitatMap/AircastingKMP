@@ -119,7 +119,7 @@ Sections repeat across states → natural composables:
 | `on-background` | `#171C20` |
 | `on-secondary-fixed` (info title) | `#001E2B` |
 | `on-secondary` (button label) | `#003547` |
-| green (Good badge/dot) | Figma `#006E02`, badge bg `#E8F5E9`. Dots/borders/badge fills use `AqPalette` `#96D788` (since 2026-11-18); level **text** uses the darker `AqTextPaletteLight` (`#006E02`, moderate `#86711D`, orange `#E8720C`, red `#C62828`) in light theme (2026-11-24) |
+| green (Good badge/dot) | Figma `#006E02`, badge bg `#E8F5E9`. Dots/borders/badge fills use `AqPalette` `#96D788` (since 2026-11-18); level **text** (Home status line) uses the darker `AqTextPaletteLight` (`#006E02`, moderate `#86711D`, orange `#E8720C`, red `#C62828`) in light theme (2026-11-24). **Level badges** use Figma's solid badge pairs, `AqBadgePaletteLight` (2026-11-24): good `#003E01` on `#E8F5E9`, moderate `#86711D` on `#FFF3CD`, unhealthy `#C62828` on `#FFEBEE`; orange has no Figma badge → `#B45309` on `#FFF3E0`. Dark theme: 12 % tint of the bright colour, lettered in it |
 | gov-tag border | `#00B2EF`, bg `rgba(10,125,163,0.08)` |
 
 ### Typography (Roboto)

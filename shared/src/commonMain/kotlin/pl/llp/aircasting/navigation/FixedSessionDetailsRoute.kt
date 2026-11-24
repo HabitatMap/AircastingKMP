@@ -6,14 +6,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.serialization.Serializable
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
+import pl.llp.aircasting.active.SessionGraph
 import pl.llp.aircasting.di.FixedSessionDetailsQualifier
 import pl.llp.aircasting.explore.StationDetailsScreen
 import pl.llp.aircasting.explore.StationDetailsViewModel
-import pl.llp.aircasting.explore.StationGraph
 import pl.llp.aircasting.map.StationMap
 
 /**
- * One of our own fixed sessions, read from the backend (nothing fixed is stored locally). Same screen
+ * One of our own fixed sessions: the DB, synced from the backend while open. Same screen
  * as an Explore station (Figma 1138:28153: one dot on the map); [sensorName] = the Active card's chip.
  */
 @Serializable
@@ -29,7 +29,7 @@ fun FixedSessionDetailsDestination(route: FixedSessionDetailsRoute, onBack: () -
     state, onBack = onBack, onRetry = vm::load, onSelectStream = vm::selectStream,
     onThresholdChange = vm::saveThreshold,
     graph = { details, stream, threshold, modifier ->
-      StationGraph(details, stream, threshold, modifier, FixedSessionDetailsQualifier)
+      SessionGraph(details, stream, threshold, modifier, FixedSessionDetailsQualifier)
     },
     map = { details, stream, threshold, fullScreen, modifier ->
       StationMap(details, stream, threshold, interactive = fullScreen, modifier)

@@ -82,7 +82,7 @@ fun ActiveScreen(
   onStartFixedSession: () -> Unit,
   onStartMicSession: () -> Unit,
   onSeeDetails: (uuid: String, sensorName: String?) -> Unit,
-  /** Fixed sessions live on the backend, not the DB: their details are a different destination. */
+  /** Fixed sessions' details sync from the backend and map one dot: a different destination. */
   onSeeFixedDetails: (uuid: String, sensorName: String?) -> Unit,
   onReconnect: () -> Unit,
 ) {

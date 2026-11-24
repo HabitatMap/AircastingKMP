@@ -6,7 +6,6 @@ import pl.llp.aircasting.domain.Thresholds
 import pl.llp.aircasting.i18n.EnStrings
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNull
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
@@ -36,7 +35,6 @@ class FixedSessionCardTest {
     val card = activeFixedSessionCard(fixed(reportedAgo = null), thresholds, now = now)
 
     assertEquals(CardState.NoDataYet, card.state)
-    assertNull(card.startTime)
   }
 
   @Test
@@ -55,7 +53,7 @@ class FixedSessionCardTest {
     deviceModel = "AirBeamMini",
     isIndoor = true,
     timeZone = "America/New_York",
-    startTime = reportedAgo?.let { now - 60.minutes },
+    startTime = now - 60.minutes,
     lastReportedAt = reportedAgo?.let { now - it },
     readings = listOf(
       LatestReading("AirBeam3-PM1", "µg/m³", reportedAgo?.let { 3.0 }, reportedAgo?.let { now - it }),

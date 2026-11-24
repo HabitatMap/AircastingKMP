@@ -16,7 +16,7 @@ import kotlin.time.Clock
 
 data class ActiveUiState(
   val mobile: List<ActiveSessionCard> = emptyList(),
-  /** From the backend, not the DB: nothing about fixed sessions is stored locally. */
+  /** Mirrored from the backend into the DB (`FixedSessionsSync`); the backend is their source of truth. */
   val fixed: List<ActiveSessionCard> = emptyList(),
   /** Phone-mic sessions: also MOBILE rows, told apart by [PhoneMicDeviceId]. */
   val microphone: List<ActiveSessionCard> = emptyList(),
@@ -37,8 +37,8 @@ class ActiveViewModel(
 
   val state: StateFlow<ActiveUiState> = combine(
     sessions.observeMobile(),
-    // Starts empty: combine waits for every source's first value, and the network flow emits nothing
-    // until a fetch succeeds (or ever, if the server times out). Mobile cards must not wait on it.
+    // Starts empty: combine waits for every source's first value, and mobile cards must not wait on
+    // the fixed source (a fake or a slow first DB read).
     fixedSessions.observeFixed().onStart { emit(emptyList()) },
     thresholds.observe(),
     selectedSensors,

@@ -201,6 +201,10 @@ class RecordingEngine(
 ### Persistence — SQLDelight (`:data:db`)
 - **Raw measurements are immutable** — never averaged/down-sampled/deleted by the app
   (only by session deletion cascade). No `averaging_frequency` column.
+  **Exception (*decided 2026-11-25*): our own fixed sessions' rows**, which are a mirror of the backend
+  (the only source of truth), not readings the phone recorded. `FixedSessionsSync.syncMeasurements` keeps
+  only the 24 h before each stream's newest reading, like legacy `RemoveOldMeasurementsService`; nothing
+  is lost, the backend still has it. Sign-out deletes them entirely (`clearWhenSignedOut`).
 - Port the Room schema (v38) to `.sq` files — as a redesign, not a copy. Preserve the
   measurements dedup key, now `PRIMARY KEY (stream_id, time)` on `measurements` (the legacy
   `session_id` in that index was redundant — a stream belongs to one session — and v3 dedups
@@ -217,6 +221,10 @@ class RecordingEngine(
 - Migrations → `.sqm`. Decide whether to carry the old Room migration history or start the
   KMP DB fresh at a new baseline (recommended: fresh baseline = current schema, since the
   rewrite is a new install target — but confirm the upgrade story for existing users).
+  **Experimental phase (*decided 2026-11-24*): no `.sqm` migrations** — schema changes edit the `.sq`
+  `CREATE TABLE` directly and testers reinstall. Revisit before a production release; the first real
+  migration must cope with iOS opening the DB with foreign keys ON (a table rebuild's `DROP` would
+  cascade-delete child rows).
 
 ### Networking — Ktor + kotlinx.serialization (`:data:network`)
 - One `HttpClient` (OkHttp engine Android, Darwin iOS) with `ContentNegotiation(json)`,

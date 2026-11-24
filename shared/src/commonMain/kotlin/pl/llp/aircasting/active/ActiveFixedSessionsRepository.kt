@@ -15,8 +15,8 @@ data class ActiveFixedSession(
   val isIndoor: Boolean,
   /** IANA zone at the sensor. */
   val timeZone: String,
-  /** Null until the server has a first measurement. */
-  val startTime: Instant?,
+  /** Set by the backend when the session is created, before any measurement. */
+  val startTime: Instant,
   /** When the AirBeam last reached the server; null = never. Drives the "Offline" state. */
   val lastReportedAt: Instant?,
   val readings: List<LatestReading>,

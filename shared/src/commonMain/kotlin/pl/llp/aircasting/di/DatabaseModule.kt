@@ -27,6 +27,7 @@ val databaseModule = module {
   single { get<AppDatabase>().sessionQueries }
   single { get<AppDatabase>().measurementStreamQueries }
   single { get<AppDatabase>().measurementQueries }
+  single { get<AppDatabase>().fixedSessionQueries }
 
   single<ThresholdsRepository> { LocalThresholdsRepository(get()) }
   single<SessionRepository> { LocalSessionRepository(get()) }

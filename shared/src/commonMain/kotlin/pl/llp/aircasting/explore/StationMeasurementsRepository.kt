@@ -19,9 +19,7 @@ interface StationMeasurementsRepository {
 }
 
 /**
- * Reads the 24 h as two 12 h windows (the endpoints' max). [fetchWindow] is the only thing that differs
- * between an Explore station (public) and our own fixed session (authenticated): same window rules,
- * same `{time, value}` answer.
+ * Reads the 24 h as two 12 h windows (the endpoint's max).
  */
 class NetworkStationMeasurementsRepository(
   private val fetchWindow: suspend (uuid: String, sensorName: String, start: Instant, end: Instant) -> List<StationMeasurementDto>,

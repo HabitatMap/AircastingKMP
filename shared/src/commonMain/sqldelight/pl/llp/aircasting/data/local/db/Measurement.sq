@@ -26,3 +26,8 @@ FROM measurements
 WHERE stream_id = :streamId
 ORDER BY time DESC
 LIMIT 1;
+
+-- Fixed sessions keep only the 24 h before their newest reading (legacy RemoveOldMeasurementsService).
+deleteOlderThan:
+DELETE FROM measurements
+WHERE stream_id = :streamId AND time < :before;

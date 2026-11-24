@@ -6,6 +6,7 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
+import org.koin.core.qualifier.Qualifier
 import pl.llp.aircasting.domain.SensorThreshold
 import pl.llp.aircasting.domain.StationDetails
 import pl.llp.aircasting.domain.StationStream
@@ -14,13 +15,15 @@ import pl.llp.aircasting.explore.GraphContent
 import pl.llp.aircasting.ui.chart.MIN_VISIBLE_SECONDS
 import pl.llp.aircasting.ui.chart.MOBILE_MIN_VISIBLE_SECONDS
 
-/** The selected stream's whole-session graph, updating with every reading. */
+/** The selected stream's stored readings (a fixed session keeps its last 24 h), updating with every reading. */
 @Composable
 fun SessionGraph(
   session: StationDetails, stream: StationStream, threshold: SensorThreshold?, modifier: Modifier = Modifier,
+  /** Null = mobile, straight from the DB; our own fixed session passes its qualifier (DB + backend sync). */
+  source: Qualifier? = null,
 ) {
   // One ViewModel per stream id: switching chips keeps each stream's subscription.
-  val vm = koinViewModel<SessionGraphViewModel>(key = "session-graph-${stream.id}") {
+  val vm = koinViewModel<SessionGraphViewModel>(qualifier = source, key = "session-graph-${stream.id}") {
     parametersOf(session.uuid, stream.sensorName, session.timeZone)
   }
   val state by vm.state.collectAsStateWithLifecycle()

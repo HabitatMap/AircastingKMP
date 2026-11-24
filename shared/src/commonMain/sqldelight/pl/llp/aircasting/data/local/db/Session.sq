@@ -22,7 +22,9 @@ CREATE TABLE sessions (
     time_zone TEXT NOT NULL,
     measurement_interval_millis INTEGER NOT NULL,
     session_token TEXT,
-    is_finished_on_server INTEGER AS Boolean NOT NULL DEFAULT 0
+    is_finished_on_server INTEGER AS Boolean NOT NULL DEFAULT 0,
+    -- Fixed only: when the AirBeam last reached the server (/fixed_sessions last_measurement_at).
+    last_reported_at INTEGER AS Instant
 );
 
 insertSession:

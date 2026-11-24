@@ -19,9 +19,11 @@ class DetailsStatsTest {
   private val dates = DateFormatter(RegionalFormat.UK)
   private val stream = StationStream(1, "AirBeamMini-PM2.5", "µg/m³", value = 7, min = 3, max = 40, measuredAt = start, avg = 12)
 
-  private fun details(startTime: Instant? = null, endTime: Instant? = null) = StationDetails(
+  private fun details(
+    startTime: Instant? = null, endTime: Instant? = null, streams: List<StationStream> = listOf(stream),
+  ) = StationDetails(
     uuid = "u", type = SessionType.MOBILE, source = DataSource.AirBeam, title = "Walk", provider = "",
-    deviceModel = "AirBeamMini", timeZone = TimeZone.of("Europe/Warsaw"), streams = listOf(stream),
+    deviceModel = "AirBeamMini", timeZone = TimeZone.of("Europe/Warsaw"), streams = streams,
     startTime = startTime, endTime = endTime,
   )
 
@@ -50,13 +52,27 @@ class DetailsStatsTest {
   }
 
   @Test
-  fun finished_session_shows_its_range_on_its_own_wall_clock() {
-    assertEquals("23/11/26, 13:34 - 23/11/26, 19:34", details(start, start + 6.hours).timeRange(dates))
+  fun live_session_runs_from_its_start_to_its_newest_measurement_across_streams() {
+    val streams = listOf(
+      stream.copy(id = 1, measuredAt = start + 2.hours),
+      stream.copy(id = 2, measuredAt = start + 3.hours),
+      stream.copy(id = 3, measuredAt = null),
+    )
+    assertEquals("23/11/26, 13:34 - 23/11/26, 16:34", details(startTime = start, streams = streams).timeRange(dates))
   }
 
   @Test
-  fun live_session_shows_only_its_start_like_legacy_DurationStringHelper() {
-    assertEquals("23/11/26, 13:34", details(startTime = start).timeRange(dates))
+  fun finished_session_ends_at_its_last_measurement_not_at_the_finish_tap() {
+    val streams = listOf(stream.copy(measuredAt = start + 5.hours))
+    assertEquals(
+      "23/11/26, 13:34 - 23/11/26, 18:34",
+      details(start, endTime = start + 6.hours, streams = streams).timeRange(dates),
+    )
+  }
+
+  @Test
+  fun session_without_measurements_shows_only_its_start() {
+    assertEquals("23/11/26, 13:34", details(startTime = start, streams = listOf(stream.copy(measuredAt = null))).timeRange(dates))
   }
 
   @Test

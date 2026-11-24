@@ -63,6 +63,7 @@ import pl.llp.aircasting.ui.components.SectionHeader
 import pl.llp.aircasting.ui.components.StreamChip
 import pl.llp.aircasting.ui.components.TintedTag
 import pl.llp.aircasting.ui.components.UserTag
+import pl.llp.aircasting.ui.format.LocalDateFormatter
 import pl.llp.aircasting.ui.theme.LocalAqColors
 import pl.llp.aircasting.ui.theme.LocalAqTextColors
 import kotlin.time.Clock
@@ -247,6 +248,12 @@ private fun CardHeader(card: ActiveSessionCard, now: Instant, tag: String) {
           card.name,
           style = MaterialTheme.typography.titleSmallEmphasized,
           color = MaterialTheme.colorScheme.onSurface
+        )
+        // Same start - newest measurement line as the details screen, its own row (2026-11-24).
+        Text(
+          LocalDateFormatter.current.range(card.startTime, card.lastSeen, card.timeZone),
+          style = MaterialTheme.typography.bodySmall,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         DotSeparatedRow(
           card.meta(now, strings),

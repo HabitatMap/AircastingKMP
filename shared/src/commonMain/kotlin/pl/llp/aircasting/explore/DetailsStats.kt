@@ -28,10 +28,12 @@ internal fun StationDetails.stats(stream: StationStream, strings: Strings): List
 }
 
 /**
- * Own sessions' line under the title (Figma 1138:28732, the "Location name" slot): start only while
- * live, start - end once finished, like legacy `DurationStringHelper`. Null for Explore stations.
+ * Own sessions' line under the title (Figma 1138:28732, the "Location name" slot): start - newest
+ * measurement, live or finished (*decided 2026-11-24*; legacy `DurationStringHelper` showed the
+ * start alone while live and used the finish tap as the end). The start alone until the first
+ * measurement. Null for Explore stations.
  */
 internal fun StationDetails.timeRange(dates: DateFormatter): String? {
   val start = startTime ?: return null
-  return endTime?.let { dates.range(start, it, timeZone) } ?: dates.dateTime(start, timeZone)
+  return dates.range(start, streams.mapNotNull { it.measuredAt }.maxOrNull(), timeZone)
 }

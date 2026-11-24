@@ -50,6 +50,11 @@ class DateFormatterTest {
   }
 
   @Test
+  fun range_without_an_end_is_just_the_start() {
+    assertEquals("03/11/26, 09:05", DateFormatter(RegionalFormat.UK).range(start, end = null, warsaw))
+  }
+
+  @Test
   fun times_are_on_the_given_zones_wall_clock() {
     assertEquals("03/11/26, 08:05", DateFormatter(RegionalFormat.UK).dateTime(start, TimeZone.UTC))
   }

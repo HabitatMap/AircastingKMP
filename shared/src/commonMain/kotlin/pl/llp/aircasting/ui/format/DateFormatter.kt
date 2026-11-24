@@ -42,9 +42,9 @@ class DateFormatter(regionalFormat: RegionalFormat) {
   /** e.g. `23/11/26, 13:34` or `11/23/26, 1:34 PM`, on [zone]'s wall clock. */
   fun dateTime(instant: Instant, zone: TimeZone): String = format.format(instant.toLocalDateTime(zone))
 
-  /** Both dates always: a session can cross midnight. */
-  fun range(start: Instant, end: Instant, zone: TimeZone): String =
-    "${dateTime(start, zone)} - ${dateTime(end, zone)}"
+  /** Both dates always: a session can cross midnight. No [end] yet (no measurement) → the start alone. */
+  fun range(start: Instant, end: Instant?, zone: TimeZone): String =
+    end?.let { "${dateTime(start, zone)} - ${dateTime(it, zone)}" } ?: dateTime(start, zone)
 }
 
 private fun shortDate(order: DateOrder, separator: Char) = LocalDate.Format {

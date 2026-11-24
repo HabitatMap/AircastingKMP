@@ -34,7 +34,9 @@ legacy's `MOBILE_DORMANT` tab).
   thresholds / no value = grey dot and `--`.
 - **Chips:** same order and default as Active (PM1, PM2.5, PM10, F, RH; saved → PM2.5 → first).
   Selection is in memory per screen.
-- **Time range:** `DD/MM/YY, HH:mm - DD/MM/YY, HH:mm`, both dates always (*decided 2026-11-23*): a
+- **Time range:** `<date>, <time> - <date>, <time>`, date and clock (US `1:34 PM`, others `13:34`) in the user's Regional format with a
+  short year (UK `23/11/26`, US `11/23/26` — see *User-facing dates* in `KMP_ARCHITECTURE.md` §6),
+  both dates always (*decided 2026-11-23*): a
   mobile session can cross midnight, and one format reads the same on every card.
   On the session's own time zone, like the details screen.
 - **See details** opens the existing session details; the track map frames the whole track

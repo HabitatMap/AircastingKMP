@@ -29,6 +29,7 @@ import pl.llp.aircasting.ui.components.LevelDot
 import pl.llp.aircasting.ui.components.StreamChip
 import pl.llp.aircasting.ui.components.TintedTag
 import pl.llp.aircasting.ui.components.UserTag
+import pl.llp.aircasting.ui.format.LocalDateFormatter
 
 /**
  * A finished session. [summaryOnly] = the My Data overview card (Figma 925:18415, "Session
@@ -55,7 +56,9 @@ fun PastSessionCardView(
       Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
           Text(card.name, style = MaterialTheme.typography.titleSmallEmphasized, color = colors.onSurface, maxLines = 1)
-          Text(card.timeRange, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+          Text(
+            LocalDateFormatter.current.range(card.startTime, card.endTime, card.timeZone),
+            style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
         }
         if (card.tags.isNotEmpty()) {
           FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {

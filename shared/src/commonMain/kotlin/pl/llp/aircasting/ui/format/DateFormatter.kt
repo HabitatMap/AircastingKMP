@@ -1,0 +1,69 @@
+package pl.llp.aircasting.ui.format
+
+import androidx.compose.runtime.staticCompositionLocalOf
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.format.Padding
+import kotlinx.datetime.format.char
+import kotlinx.datetime.toLocalDateTime
+import pl.llp.aircasting.settings.app.DateOrder
+import pl.llp.aircasting.settings.app.RegionalFormat
+import kotlin.time.Instant
+
+/**
+ * The one place user-facing dates are formatted, in the order and separator of the user's
+ * Settings → Regional formats choice, with its clock. Short year, as the designs show it:
+ * US `11/23/26, 1:34 PM`, UK `23/11/26, 13:34`, Central European `23.11.26, 13:34`,
+ * East Asian `26/11/23, 13:34`.
+ *
+ * Models and ViewModels carry [Instant]s + the zone, never preformatted dates; composables format
+ * through [LocalDateFormatter], which `App` provides from the stored preference — so a change in
+ * Settings re-renders every date without any ViewModel knowing about it.
+ */
+class DateFormatter(regionalFormat: RegionalFormat) {
+
+  private val format = LocalDateTime.Format {
+    date(shortDate(regionalFormat.dateOrder, regionalFormat.dateSeparator))
+    chars(", ")
+    if (regionalFormat.use24HourClock) {
+      hour()
+      char(':')
+      minute()
+    } else {
+      amPmHour(padding = Padding.NONE)
+      char(':')
+      minute()
+      char(' ')
+      amPmMarker(am = "AM", pm = "PM")
+    }
+  }
+
+  /** e.g. `23/11/26, 13:34` or `11/23/26, 1:34 PM`, on [zone]'s wall clock. */
+  fun dateTime(instant: Instant, zone: TimeZone): String = format.format(instant.toLocalDateTime(zone))
+
+  /** Both dates always: a session can cross midnight. */
+  fun range(start: Instant, end: Instant, zone: TimeZone): String =
+    "${dateTime(start, zone)} - ${dateTime(end, zone)}"
+}
+
+private fun shortDate(order: DateOrder, separator: Char) = LocalDate.Format {
+  val parts = when (order) {
+    DateOrder.MonthDayYear -> listOf(Part.Month, Part.Day, Part.Year)
+    DateOrder.DayMonthYear -> listOf(Part.Day, Part.Month, Part.Year)
+    DateOrder.YearMonthDay -> listOf(Part.Year, Part.Month, Part.Day)
+  }
+  parts.forEachIndexed { i, part ->
+    if (i > 0) char(separator)
+    when (part) {
+      Part.Day -> day()
+      Part.Month -> monthNumber()
+      Part.Year -> yearTwoDigits(baseYear = 2000)
+    }
+  }
+}
+
+private enum class Part { Day, Month, Year }
+
+/** Provided by `App` from the stored [RegionalFormat]; the default matches the preference default. */
+val LocalDateFormatter = staticCompositionLocalOf { DateFormatter(RegionalFormat.US) }

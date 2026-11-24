@@ -23,17 +23,36 @@ enum class TemperatureUnit { Fahrenheit, Celsius }
 
 enum class DistanceUnit { Miles, Kilometers }
 
+enum class DateOrder { MonthDayYear, DayMonthYear, YearMonthDay }
+
+/** Formatting presets. Dates are rendered by [pl.llp.aircasting.ui.format.DateFormatter]. */
 enum class RegionalFormat(
-  val datePattern: String,
+  val dateOrder: DateOrder,
+  val dateSeparator: Char,
   val groupingSeparator: Char,
   val decimalSeparator: Char,
   val distanceUnit: DistanceUnit,
+  /** 24-hour `13:34`, or 12-hour `1:34 PM` — CLDR's usual clock for the region (only the US is 12-hour). */
+  val use24HourClock: Boolean,
 ) {
-  US("MM/DD/YYYY", ',', '.', DistanceUnit.Miles),
-  UK("DD/MM/YYYY", ',', '.', DistanceUnit.Miles),
-  CentralEuropean("DD.MM.YYYY", '.', ',', DistanceUnit.Kilometers),
-  Nordic("DD.MM.YYYY", ' ', ',', DistanceUnit.Kilometers),
-  EastAsian("YYYY/MM/DD", ',', '.', DistanceUnit.Kilometers),
+  US(DateOrder.MonthDayYear, '/', ',', '.', DistanceUnit.Miles, use24HourClock = false),
+  UK(DateOrder.DayMonthYear, '/', ',', '.', DistanceUnit.Miles, use24HourClock = true),
+  CentralEuropean(DateOrder.DayMonthYear, '.', '.', ',', DistanceUnit.Kilometers, use24HourClock = true),
+  Nordic(DateOrder.DayMonthYear, '.', ' ', ',', DistanceUnit.Kilometers, use24HourClock = true),
+  EastAsian(DateOrder.YearMonthDay, '/', ',', '.', DistanceUnit.Kilometers, use24HourClock = true),
+  ;
+
+  /** `MM/DD/YYYY` — the human-readable pattern shown in the Settings picker. */
+  val datePattern: String
+    get() = when (dateOrder) {
+      DateOrder.MonthDayYear -> listOf("MM", "DD", "YYYY")
+      DateOrder.DayMonthYear -> listOf("DD", "MM", "YYYY")
+      DateOrder.YearMonthDay -> listOf("YYYY", "MM", "DD")
+    }.joinToString(dateSeparator.toString())
+
+  /** `h:mm AM` or `HH:mm` — the clock pattern shown in the Settings picker. */
+  val timePattern: String
+    get() = if (use24HourClock) "HH:mm" else "h:mm AM"
 }
 
 enum class MapType { Default, Satellite }

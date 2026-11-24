@@ -6,6 +6,8 @@ import pl.llp.aircasting.domain.StationDetails
 import pl.llp.aircasting.domain.StationStream
 import pl.llp.aircasting.domain.session.SessionType
 import pl.llp.aircasting.i18n.EnStrings
+import pl.llp.aircasting.settings.app.RegionalFormat
+import pl.llp.aircasting.ui.format.DateFormatter
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -14,6 +16,7 @@ import kotlin.time.Instant
 
 class DetailsStatsTest {
   private val start = Instant.parse("2026-11-23T12:34:00Z")
+  private val dates = DateFormatter(RegionalFormat.UK)
   private val stream = StationStream(1, "AirBeamMini-PM2.5", "µg/m³", value = 7, min = 3, max = 40, measuredAt = start, avg = 12)
 
   private fun details(startTime: Instant? = null, endTime: Instant? = null) = StationDetails(
@@ -48,16 +51,16 @@ class DetailsStatsTest {
 
   @Test
   fun finished_session_shows_its_range_on_its_own_wall_clock() {
-    assertEquals("23/11/26, 13:34 - 23/11/26, 19:34", details(start, start + 6.hours).timeRange())
+    assertEquals("23/11/26, 13:34 - 23/11/26, 19:34", details(start, start + 6.hours).timeRange(dates))
   }
 
   @Test
   fun live_session_shows_only_its_start_like_legacy_DurationStringHelper() {
-    assertEquals("23/11/26, 13:34", details(startTime = start).timeRange())
+    assertEquals("23/11/26, 13:34", details(startTime = start).timeRange(dates))
   }
 
   @Test
   fun explore_station_has_no_time_range() {
-    assertNull(details().timeRange())
+    assertNull(details().timeRange(dates))
   }
 }

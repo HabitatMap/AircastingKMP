@@ -50,21 +50,6 @@ class PastSessionCardTest {
   )
 
   @Test
-  fun same_day_range_still_shows_both_dates() {
-    assertEquals("23/11/26, 13:34 - 23/11/26, 19:34", timeRangeLabel(start, start + 6.hours, warsaw))
-  }
-
-  @Test
-  fun range_over_midnight_shows_both_dates() {
-    assertEquals("23/11/26, 13:34 - 24/11/26, 12:39", timeRangeLabel(start, start + 23.hours + 5.minutes, warsaw))
-  }
-
-  @Test
-  fun range_is_on_the_sessions_own_wall_clock() {
-    assertEquals("23/11/26, 12:34 - 23/11/26, 18:34", timeRangeLabel(start, start + 6.hours, TimeZone.UTC))
-  }
-
-  @Test
   fun streams_come_in_chip_order_with_pm25_selected_and_each_aggregate_graded() {
     val card = pastSessionCard(
       past(

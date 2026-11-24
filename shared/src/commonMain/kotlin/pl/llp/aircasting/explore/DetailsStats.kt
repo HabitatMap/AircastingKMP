@@ -3,8 +3,7 @@ package pl.llp.aircasting.explore
 import pl.llp.aircasting.domain.StationDetails
 import pl.llp.aircasting.domain.StationStream
 import pl.llp.aircasting.i18n.Strings
-import pl.llp.aircasting.mydata.dateTimeLabel
-import pl.llp.aircasting.mydata.timeRangeLabel
+import pl.llp.aircasting.ui.format.DateFormatter
 
 /** One stat column on the details screen. */
 internal data class DetailsStat(val label: String, val value: Int?)
@@ -32,7 +31,7 @@ internal fun StationDetails.stats(stream: StationStream, strings: Strings): List
  * Own sessions' line under the title (Figma 1138:28732, the "Location name" slot): start only while
  * live, start - end once finished, like legacy `DurationStringHelper`. Null for Explore stations.
  */
-internal fun StationDetails.timeRange(): String? {
+internal fun StationDetails.timeRange(dates: DateFormatter): String? {
   val start = startTime ?: return null
-  return endTime?.let { timeRangeLabel(start, it, timeZone) } ?: dateTimeLabel(start, timeZone)
+  return endTime?.let { dates.range(start, it, timeZone) } ?: dates.dateTime(start, timeZone)
 }

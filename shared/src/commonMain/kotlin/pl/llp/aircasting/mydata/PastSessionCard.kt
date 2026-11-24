@@ -1,9 +1,6 @@
 package pl.llp.aircasting.mydata
 
-import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
-import kotlinx.datetime.number
-import kotlinx.datetime.toLocalDateTime
 import pl.llp.aircasting.active.chipRank
 import pl.llp.aircasting.active.preferred
 import pl.llp.aircasting.domain.MeasurementLevel
@@ -28,8 +25,10 @@ data class PastSessionCard(
   val tags: List<String>,
   /** Phone-mic sessions are MOBILE rows too, told apart by [PhoneMicDeviceId]: they get their own tag. */
   val isPhoneMic: Boolean,
-  /** `23/11/26, 13:34 - 20:00`, on the session's own wall clock. */
-  val timeRange: String,
+  /** Formatted by the view with `LocalDateFormatter`, on the session's own wall clock. */
+  val startTime: Instant,
+  val endTime: Instant,
+  val timeZone: TimeZone,
   /** In chip order. */
   val streams: List<SummaryStream>,
   val selected: SummaryStream?,
@@ -45,8 +44,10 @@ fun pastSessionCard(past: PastSession, thresholds: Thresholds, savedSensor: Stri
     name = session.name,
     tags = session.tags,
     isPhoneMic = session.deviceId == PhoneMicDeviceId,
+    startTime = session.startTime,
     // A past session always has an end; fall back to the start rather than crash on a bad row.
-    timeRange = timeRangeLabel(session.startTime, session.endTime ?: session.startTime, TimeZone.of(session.timeZone)),
+    endTime = session.endTime ?: session.startTime,
+    timeZone = TimeZone.of(session.timeZone),
     streams = streams,
     selected = streams.preferred(savedSensor) { it.sensorName },
   )
@@ -57,16 +58,3 @@ private fun StreamSummary.graded(thresholds: Thresholds): SummaryStream {
   fun grade(value: Double?) = SummaryValue(value, value?.let { threshold?.levelFor(it) })
   return SummaryStream(sensorName, unitSymbol, grade(avg), grade(min), grade(max))
 }
-
-/** `DD/MM/YY, HH:mm - DD/MM/YY, HH:mm`, both dates always: a mobile session can cross midnight. */
-internal fun timeRangeLabel(start: Instant, end: Instant, zone: TimeZone): String =
-  "${dateTimeLabel(start, zone)} - ${dateTimeLabel(end, zone)}"
-
-/** `DD/MM/YY, HH:mm` on [zone]'s wall clock. */
-internal fun dateTimeLabel(instant: Instant, zone: TimeZone): String = instant.toLocalDateTime(zone).label()
-
-private fun LocalDateTime.label() = "${date()}, ${time()}"
-
-private fun LocalDateTime.date() = "${day.twoDigits()}/${month.number.twoDigits()}/${(year % 100).twoDigits()}"
-private fun LocalDateTime.time() = "${hour.twoDigits()}:${minute.twoDigits()}"
-private fun Int.twoDigits() = toString().padStart(2, '0')

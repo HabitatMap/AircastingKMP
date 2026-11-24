@@ -97,7 +97,8 @@ NOW · MIN. 24H · MAX. 24H, a finished session drops NOW — see `DetailsStats.
 
 **Time line under the title** (*decided 2026-11-23*), Figma `1138:28732` — the "Location name"
 slot, bodyLarge / onSurface. Same for live and finished own sessions, like legacy
-`DurationStringHelper`: live `23/11/26, 13:34`, finished `23/11/26, 13:34 - 23/11/26, 19:34`.
+`DurationStringHelper`: live `23/11/26, 13:34`, finished `23/11/26, 13:34 - 23/11/26, 19:34`
+(UK shown; the date follows the user's Regional format).
 The meta row's "1 min ago" stays while live, is dropped once finished. Explore stations have no
 such line (their location name needs reverse geocoding). Not built yet, like on the
 station screen: Map tab, app-bar actions (favourite, alert, notes), location name.

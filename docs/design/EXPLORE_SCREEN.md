@@ -85,9 +85,11 @@ Endpoints: `API_V3.md` → *Explore session details*.
   (`FollowNewestPoint`, as legacy); panned back into history, it stays put until scrolled to the end again.
   *Zoom:* pinch zooms in to at most 2 min (an active **mobile** session: 30 s, its readings are 1 Hz),
   but never past the zoom where the whole series fits. 
-  *Tooltip:* follows the finger until the chart starts panning (48 dp sideways) or the page scrolls.
-   Fully zoomed out there is nothing to pan, so it follows the finger across the whole width
-   (`ScrubUntilPanController`, `canPan` = `VicoScrollState.maxValue ≥ 1 px`).
+  *Tooltip* (*changed 2026-11-24*; `ScrubUntilPanController`, `canPan` = `VicoScrollState.maxValue ≥ 1 px`):
+   **zoomed in**, a drag pans (from the system 8 dp slop) and never scrubs; **press and hold** shows the
+   measurement, and pulling sideways from the hold pans the graph and hides the tooltip.
+   **Fully zoomed out** there is nothing to pan: the tooltip shows on press and follows the finger
+   across the whole width (the chart's slop is then 48 dp); scrolling the page hides it.
   A quiet station can send a series only seconds long, and that fits without any zoom. Vico throws
   if `maxZoom < minZoom`, so `MeasurementChart` uses `maxZoom = Zoom.max(Zoom.x(minVisibleSeconds), Zoom.Content)`.
   A series shorter than that limit therefore can't be zoomed.

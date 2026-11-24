@@ -7,6 +7,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -66,7 +68,7 @@ import kotlin.math.roundToInt
 /** Seconds visible at first: the design frame spans ~8 h (19:00–03:00). Open with design: see EXPLORE_SCREEN.md. */
 private const val INITIAL_VISIBLE_SECONDS = 8 * 3_600.0
 
-/** How far sideways (from where the finger landed) the tooltip scrubs before the chart pans. System default: 8 dp. */
+/** Fully zoomed out: how far sideways the tooltip scrubs before the chart's drag owns the gesture. Zoomed in the chart uses the system slop (8 dp). */
 private val PanSlop = 48.dp
 /** The system configuration with the chart's own touch slop. */
 private class ChartViewConfiguration(system: ViewConfiguration, override val touchSlop: Float) :
@@ -126,8 +128,13 @@ fun MeasurementChart(
   val labelColor = colors.onSurfaceVariant
   val system = LocalViewConfiguration.current
   val panSlop = with(LocalDensity.current) { PanSlop.toPx() }
-  val chartConfiguration = remember(system, panSlop) { ChartViewConfiguration(system, panSlop) }
   val scrollState = rememberVicoScrollState(initialScroll = Scroll.Absolute.End)
+  val canPan by remember(scrollState) { derivedStateOf { scrollState.maxValue >= 1f } }
+  // Zoomed in, a drag pans from the system slop like any scrolling view; fully zoomed out the
+  // large slop leaves room to scrub (see ScrubUntilPanController).
+  val chartConfiguration = remember(system, panSlop, canPan) {
+    ChartViewConfiguration(system, if (canPan) system.touchSlop else panSlop)
+  }
   FollowNewestPoint(scrollState)
   val markerController = remember(panSlop, system.touchSlop, scrollState) {
     ScrubUntilPanController(panSlop, system.touchSlop, canPan = { scrollState.maxValue >= 1f })

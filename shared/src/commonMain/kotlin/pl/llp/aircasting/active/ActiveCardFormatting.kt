@@ -17,8 +17,9 @@ internal fun chipLabel(sensorName: String, strings: Strings): String = when (sen
 /** Rounded the way [pl.llp.aircasting.domain.SensorThreshold.levelFor] rounds, so number and colour agree. */
 internal fun valueText(value: Double?): String = value?.let { round(it).toInt().toString() } ?: NO_VALUE
 
-/** `AirBeam Mini • 1 min ago`; the age appears with the first reading. */
+/** `AirBeam Mini • 1 min ago` (fixed: `Indoor • …`); the age appears with the first reading. */
 internal fun ActiveSessionCard.meta(now: Instant, strings: Strings): List<String> = listOfNotNull(
+  isIndoor?.let { if (it) strings.placementIndoor else strings.placementOutdoor },
   deviceModel?.let(::deviceDisplayName),
   lastSeen?.let { ageLabel(it, now, strings) },
 )

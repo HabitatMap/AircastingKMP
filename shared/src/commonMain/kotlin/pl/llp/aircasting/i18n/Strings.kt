@@ -404,6 +404,16 @@ interface Strings {
   val activeFinishBody: String
   val activeKeepRecording: String
   val activeFinishSession: String
+  val activeFixedSessions: String
+  val activeNoFixedTitle: String
+  val activeNoFixedBody: String
+  val activeStartFixed: String
+  val activeTagAirBeamFixed: String
+  val activeOffline: String
+  val activeReconnectingTitle: String
+  val activeReconnectingBody: String
+  val activeReconnect: String
+  val activeFinishAnyway: String
   val activePhoneMicrophone: String
   val activeNoMicTitle: String
   val activeNoMicBody: String

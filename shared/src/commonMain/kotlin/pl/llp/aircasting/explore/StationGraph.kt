@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
+import org.koin.core.qualifier.Qualifier
 import pl.llp.aircasting.domain.SensorThreshold
 import pl.llp.aircasting.domain.StationDetails
 import pl.llp.aircasting.domain.StationStream
@@ -22,9 +23,11 @@ import pl.llp.aircasting.ui.components.LoadingSpinner
 @Composable
 fun StationGraph(
   station: StationDetails, stream: StationStream, threshold: SensorThreshold?, modifier: Modifier = Modifier,
+  /** Which measurements source: null = Explore's public one; our own fixed session passes its qualifier. */
+  source: Qualifier? = null,
 ) {
   // One ViewModel per stream id: switching chips keeps each stream's loaded points.
-  val vm = koinViewModel<StationGraphViewModel>(key = "graph-${stream.id}") {
+  val vm = koinViewModel<StationGraphViewModel>(qualifier = source, key = "graph-${stream.id}") {
     parametersOf(station.uuid, stream, station.timeZone)
   }
   val state by vm.state.collectAsStateWithLifecycle()

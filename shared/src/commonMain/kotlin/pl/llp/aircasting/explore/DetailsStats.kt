@@ -2,6 +2,7 @@ package pl.llp.aircasting.explore
 
 import pl.llp.aircasting.domain.StationDetails
 import pl.llp.aircasting.domain.StationStream
+import pl.llp.aircasting.domain.session.SessionType
 import pl.llp.aircasting.i18n.Strings
 import pl.llp.aircasting.ui.format.DateFormatter
 
@@ -11,6 +12,7 @@ internal data class DetailsStat(val label: String, val value: Int?)
 /**
  * - Explore station: NOW · MIN. 24H · MAX. 24H, the server's last 24 h.
  * - Our live session: NOW · AVG. · MIN. · MAX. over the whole session (Figma 859:7216).
+ * - Our own fixed session: NOW only (see below).
  * - Our finished session: AVG. · MIN. · MAX.: nothing is "now" any more. Legacy hides the stats
  *   for dormant sessions entirely; the redesign's past session card shows these three.
  */
@@ -19,6 +21,9 @@ internal fun StationDetails.stats(stream: StationStream, strings: Strings): List
   if (startTime == null) {
     return listOf(now, DetailsStat(strings.stationMin24h, stream.min), DetailsStat(strings.stationMax24h, stream.max))
   }
+  // Our own fixed session: the server sends no avg/min/max (/fixed_sessions has only the last reading),
+  // and a fixed session can run for months, so they'd need a server-side aggregate. NOW until then.
+  if (type == SessionType.FIXED) return listOf(now)
   val wholeSession = listOf(
     DetailsStat(strings.pastSessionsAvg.uppercase(), stream.avg),
     DetailsStat(strings.pastSessionsMin.uppercase(), stream.min),

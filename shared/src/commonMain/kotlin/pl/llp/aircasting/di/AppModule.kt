@@ -14,6 +14,7 @@ import org.koin.core.module.dsl.viewModelOf
 import org.koin.core.qualifier.named
 import org.koin.dsl.KoinAppDeclaration
 import org.koin.dsl.module
+import pl.llp.aircasting.active.ActiveFixedSessionsRepository
 import pl.llp.aircasting.active.ActiveViewModel
 import pl.llp.aircasting.mydata.PastSessionsViewModel
 import pl.llp.aircasting.active.SessionDetailsRepository
@@ -39,6 +40,9 @@ import pl.llp.aircasting.data.network.FixedStationsApi
 import pl.llp.aircasting.data.network.FixedStationsRepository
 import pl.llp.aircasting.data.network.HttpServerProbe
 import pl.llp.aircasting.data.network.MobileSessionsApi
+import pl.llp.aircasting.data.network.NetworkActiveFixedSessionsRepository
+import pl.llp.aircasting.data.network.NetworkFixedSessionDetailsRepository
+import pl.llp.aircasting.data.network.fixedSessionMeasurements
 import pl.llp.aircasting.data.network.ServerProbe
 import pl.llp.aircasting.data.network.ThresholdAlertsApi
 import pl.llp.aircasting.data.network.ThresholdSetsApi
@@ -86,6 +90,8 @@ import kotlin.time.Clock
 val MicrophoneHost = named("microphone")
 /** StationDetailsViewModel fed by our own session's live DB flow, not Explore's network fetch. */
 val SessionDetailsQualifier = named("sessionDetails")
+/** StationDetailsViewModel + StationGraphViewModel for our own fixed session, read from /fixed_sessions. */
+val FixedSessionDetailsQualifier = named("fixedSessionDetails")
 
 val recordModule = module {
   single {
@@ -117,7 +123,7 @@ val recordModule = module {
   viewModel {
     val mic = get<MicrophoneRecorder>()
     val engine = get<RecordingEngine>()
-    ActiveViewModel(get(), get(), finish = { uuid -> if (!mic.finish(uuid)) engine.finish(uuid) })
+    ActiveViewModel(get(), get(), get(), get(), finish = { uuid -> if (!mic.finish(uuid)) engine.finish(uuid) })
   }
   viewModel(SessionDetailsQualifier) { (uuid: String, sensorName: String?) ->
     StationDetailsViewModel(get<SessionDetailsRepository>().observe(uuid), get(), preferredSensor = sensorName)
@@ -126,6 +132,13 @@ val recordModule = module {
     SessionGraphViewModel(uuid, sensorName, timeZone, get())
   }
   viewModel { (uuid: String, sensorName: String) -> SessionMapViewModel(uuid, sensorName, get()) }
+  viewModel(FixedSessionDetailsQualifier) { (uuid: String, sensorName: String?) ->
+    val details = NetworkFixedSessionDetailsRepository(get(), get())
+    StationDetailsViewModel(details.observe(uuid), get(), preferredSensor = sensorName)
+  }
+  viewModel(FixedSessionDetailsQualifier) { (uuid: String, stream: StationStream, timeZone: TimeZone) ->
+    StationGraphViewModel(uuid, stream, timeZone, fixedSessionMeasurements(get(), get()))
+  }
   single { FixedSessionRegistrar(get(), get(), TimeZone.currentSystemDefault()) }
   single {
     FixedSessionStarter(
@@ -172,6 +185,7 @@ val networkModule = module {
   // Modern v3 APIs
   single { MobileSessionsApi(get()) }
   single { FixedSessionsApi(get()) }
+  single<ActiveFixedSessionsRepository> { NetworkActiveFixedSessionsRepository(get(), get()) }
   // Search & Regional Exploration (Home screen)
   single { FixedStationsApi(get()) }
   single { FixedStationsRepository(get(), get()) }
@@ -203,7 +217,7 @@ val exploreModule = module {
   viewModelOf(::ExploreViewModel)
   single<StationDetailsRepository> { NetworkStationDetailsRepository(get()) }
   viewModel { (uuid: String) -> StationDetailsViewModel(get<StationDetailsRepository>().observe(uuid), get()) }
-  single<StationMeasurementsRepository> { NetworkStationMeasurementsRepository(get()) }
+  single<StationMeasurementsRepository> { NetworkStationMeasurementsRepository(get<ExploreMapApi>()) }
   viewModel { (uuid: String, stream: StationStream, timeZone: TimeZone) ->
     StationGraphViewModel(uuid, stream, timeZone, get())
   }

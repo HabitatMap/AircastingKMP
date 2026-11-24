@@ -29,6 +29,7 @@ object ApiEndpoints {
   const val V3FixedSessions = "/api/v3/fixed_sessions"
   fun v3FixedSession(uuid: String) = "/api/v3/fixed_sessions/$uuid"
   fun v3FixedSessionMeasurements(uuid: String) = "/api/v3/fixed_sessions/$uuid/measurements"
+  fun v3FixedSessionFinish(uuid: String) = "/api/v3/fixed_sessions/$uuid/finish"
 
   // =========================================================================
   // Mobile app: Threshold alerts (HTTP Bearer Auth: Bearer <user_token>)

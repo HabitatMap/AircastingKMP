@@ -27,6 +27,7 @@ fun TabContent(
   onOpenStation: (uuid: String) -> Unit = {},
   onOpenSession: (uuid: String, sensorName: String?) -> Unit = { _, _ -> },
   onOpenPastSessions: () -> Unit = {},
+  onOpenFixedSession: (uuid: String, sensorName: String?) -> Unit = { _, _ -> },
 ) {
   when (tab) {
     AppTab.Home -> HomeRoute(onRequestLocation, onOpenSettings)
@@ -35,7 +36,7 @@ fun TabContent(
       onRecoverData = { /* TODO: recover & sync flow */ },
     )
     AppTab.Explore -> ExploreRoute(onOpenStation)
-    AppTab.Active -> ActiveRoute(onStartNewSession, onOpenSession)
+    AppTab.Active -> ActiveRoute(onStartNewSession, onOpenSession, onOpenFixedSession)
     AppTab.MyData -> MyDataRoute(onOpenPastSessions, onOpenSession)
   }
 }
@@ -48,7 +49,11 @@ private fun MyDataRoute(onViewAllPast: () -> Unit, onOpenSession: (String, Strin
 }
 
 @Composable
-private fun ActiveRoute(onStartNewSession: () -> Unit, onOpenSession: (String, String?) -> Unit) {
+private fun ActiveRoute(
+  onStartNewSession: () -> Unit,
+  onOpenSession: (String, String?) -> Unit,
+  onOpenFixedSession: (String, String?) -> Unit,
+) {
   val vm = koinViewModel<ActiveViewModel>()
   val state by vm.state.collectAsStateWithLifecycle()
   ActiveScreen(
@@ -58,8 +63,11 @@ private fun ActiveRoute(onStartNewSession: () -> Unit, onOpenSession: (String, S
     onConfirmFinish = vm::confirmFinish,
     onDismissFinish = vm::dismissFinish,
     onStartMobileSession = onStartNewSession,
+    onStartFixedSession = onStartNewSession,
     onStartMicSession = onStartNewSession,
     onSeeDetails = onOpenSession,
+    onSeeFixedDetails = onOpenFixedSession,
+    onReconnect = vm::reconnect,
   )
 }
 

@@ -44,6 +44,14 @@ class DetailsStatsTest {
   }
 
   @Test
+  fun own_fixed_session_shows_only_now_until_the_server_sends_stats() {
+    assertEquals(
+      listOf(DetailsStat("NOW", 7)),
+      details(startTime = start).copy(type = SessionType.FIXED).stats(stream, EnStrings),
+    )
+  }
+
+  @Test
   fun finished_session_has_no_now() {
     assertEquals(
       listOf(DetailsStat("AVG.", 12), DetailsStat("MIN.", 3), DetailsStat("MAX.", 40)),

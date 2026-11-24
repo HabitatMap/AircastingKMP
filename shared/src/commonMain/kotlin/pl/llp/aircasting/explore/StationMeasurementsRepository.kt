@@ -18,15 +18,24 @@ interface StationMeasurementsRepository {
   suspend fun measurements(uuid: String, sensorName: String, newest: Instant, timeZone: TimeZone): List<ChartPoint>
 }
 
-class NetworkStationMeasurementsRepository(private val api: ExploreMapApi) : StationMeasurementsRepository {
+/**
+ * Reads the 24 h as two 12 h windows (the endpoints' max). [fetchWindow] is the only thing that differs
+ * between an Explore station (public) and our own fixed session (authenticated): same window rules,
+ * same `{time, value}` answer.
+ */
+class NetworkStationMeasurementsRepository(
+  private val fetchWindow: suspend (uuid: String, sensorName: String, start: Instant, end: Instant) -> List<StationMeasurementDto>,
+) : StationMeasurementsRepository {
+  constructor(api: ExploreMapApi) : this(api::stationMeasurements)
+
   override suspend fun measurements(
     uuid: String, sensorName: String, newest: Instant, timeZone: TimeZone,
   ): List<ChartPoint> = coroutineScope {
     val split = newest - WINDOW
     // 12 h is the endpoint's max, and it includes both bounds: the older window stops 1 ms short
     // of the newer one, or the reading on the boundary would come back twice.
-    val newer = async { api.stationMeasurements(uuid, sensorName, split, newest) }
-    val older = async { api.stationMeasurements(uuid, sensorName, newest - WINDOW * 2, split - 1.milliseconds) }
+    val newer = async { fetchWindow(uuid, sensorName, split, newest) }
+    val older = async { fetchWindow(uuid, sensorName, newest - WINDOW * 2, split - 1.milliseconds) }
     (older.await() + newer.await()).map { it.toChartPoint(timeZone) }
   }
   private companion object {

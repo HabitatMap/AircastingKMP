@@ -14,6 +14,8 @@
 | Card — "No data yet" | `1009:28154` | https://www.figma.com/design/8AQfUtkIu9qgd4CAVNPbXB/Air-Casting-app-re-design?node-id=1009-28154 |
 | Finish confirmation dialog | `1136:18936` | https://www.figma.com/design/8AQfUtkIu9qgd4CAVNPbXB/Air-Casting-app-re-design?node-id=1136-18936 |
 | Tab icon `sensors` | `1001:26037` | committed as `composeResources/drawable/ic_sensors.xml` |
+| Fixed section (Live + Offline cards) | `1107:16828` | https://www.figma.com/design/8AQfUtkIu9qgd4CAVNPbXB/Air-Casting-app-re-design?node-id=1107-16828 |
+| Fixed session details (one dot on the map) | `1138:28153` | https://www.figma.com/design/8AQfUtkIu9qgd4CAVNPbXB/Air-Casting-app-re-design?node-id=1138-28153 |
 | Empty tab (all three sections empty) | `1137:27447` | https://www.figma.com/design/8AQfUtkIu9qgd4CAVNPbXB/Air-Casting-app-re-design?node-id=1137-27447 |
 
 
@@ -22,8 +24,8 @@
 Only the user's **own, running** sessions, in three collapsible sections with a count:
 **Mobile sessions**, **Fixed sessions**, **Phone Microphone**. Not favourites, not dormant.
 
-**Scope now: Mobile and Phone Microphone.** Fixed (needs `GET /api/v3/fixed_sessions` — nothing stored locally
-for fixed, see `FixedSessionStarter`) and Phone Microphone (no mic recording yet) are parked.
+**All three sections are built** (Fixed added 2026-11-24). Fixed comes from the backend, not the DB —
+nothing about fixed sessions is stored locally (see `FixedSessionStarter`).
 
 Phone Microphone — a MOBILE session with device_id = "Builtin" (legacy MicrophoneDeviceItem.DEFAULT_ID); ActiveViewModel splits these out of observeMobile(). Same card, tag PHONE MICROPHONE, one dB chip. Never DISCONNECTED. Empty card (Figma 1137:27447) opens the new-session flow.
 
@@ -68,11 +70,47 @@ and does nothing until sync exists.
 - **Level / colour** — the selected stream's latest value through `Thresholds.forSensor()`
   (aliases resolve `AirBeamMini-PM2.5` → `AirBeam-PM2.5`).
 
+## Fixed sessions (*added 2026-11-24*)
+
+- **Data source** — `NetworkActiveFixedSessionsRepository`: `GET /api/v3/fixed_sessions` (user token), polled
+  every 60 s while the tab is subscribed (the AirBeam uploads about once a minute), plus `refresh()`.
+  Signed out → empty, no request. A failed fetch keeps the last list. **One page of the newest 50**
+  (*decided 2026-11-24*): 500 took 11 s for an account with 212 fixed sessions, past the client's 10 s
+  timeout. Interim until the backend adds a dedicated active-fixed-sessions endpoint (TODO in
+  `NetworkActiveFixedSessionsRepository.fetch`).
+- **Active fixed session** = `finished_at == null` on the backend, the only source of truth (no local
+  state). It stays on Active, Offline or not, until the user finishes it (*decided 2026-11-24*). Legacy
+  has no "finish" for fixed, so every legacy-created session has `finished_at: null` — the backend is to
+  clean those up (finish by inactivity) and offer an active-only endpoint; until then old sessions among
+  the newest 50 show as Offline.
+- **Card states** (`activeFixedSessionCard`):
+
+| State | When | Body | Footer |
+|-------|------|------|--------|
+| **Live** | heard from within `FixedOfflineAfter` | value + chips | Finish recording · See details |
+| **No data yet** | never reported (`last_measurement_at` and every reading null) | spinner, "No data yet" | Finish recording · See details |
+| **Offline** | `now - last_measurement_at > FixedOfflineAfter` | spinner, "Reconnecting to your AirBeam", **Reconnect** | Finish recording anyway |
+
+- **Offline threshold** — `FixedOfflineAfter = 10 min` in `ActiveSessionCard.kt` (*decided 2026-11-24*, a
+  TWEAK HERE constant). Not from legacy (it has no such state). The backend's own `is_active`
+  (Explore station details) means "reported in the last 24 h and not finished" — too slow for the
+  "lost its Wi-Fi" card, and `/fixed_sessions` doesn't expose it anyway. Judged on `last_measurement_at`
+  (when the AirBeam last reached the server), falling back to the newest reading's time.
+- **Reconnect** (*decided 2026-11-24*): re-configuring Wi-Fi over BLE isn't built, so it re-fetches the list
+  now (`ActiveViewModel.reconnect`); a station that came back flips to Live without waiting for the poll.
+- **Finish** (*added 2026-11-24*): same confirmation dialog, then `POST /api/v3/fixed_sessions/{uuid}/finish`
+  (server stamps `finished_at`, drops later uploads). The answer carries `finished_at`, so the card is
+  dropped from it directly — no re-fetch. Nothing
+  local to stop. A failed call is only logged; the card stays and Finish can be tapped again. Note the
+  dialog's "moves it to Past Sessions" copy is mobile-only today: My Data doesn't list fixed sessions yet.
+- **Meta row** leads with the placement: `Indoor • AirBeam Mini • 1 min ago` (Outdoor likewise).
+- **Time row** — start - newest reading, like mobile; omitted while `start_time` is null.
+
 ## Empty state
 
 Each section keeps its header (count `0`, grey `surfaceContainerHigh` badge) and shows one card:
-title, one line, outlined **Start … session** button. Mobile's button opens the new-session flow
-(`NewSessionRoute`) at the method step. Fixed / Phone Microphone empty cards wait with their sections.
+title, one line, outlined **Start … session** button. Every section's button opens the new-session flow
+(`NewSessionRoute`) at the method step.
 
 ## Session details ("See details")
 
@@ -110,8 +148,20 @@ station screen: Map tab, app-bar actions (favourite, alert, notes), location nam
 current measurement — gets a 2 dp white ring (*decided 2026-11-24*). The path is 4 dp wide at
 50 % alpha `Primary Container` — half Figma's 8 dp opaque stroke (*decided 2026-11-24*).
 
+### Fixed session details (*added 2026-11-24*, Figma `1138:28153`)
+
+Same `StationDetailsScreen`, its own route `FixedSessionDetailsRoute` (the DB-backed `SessionDetailsRoute`
+can't serve it: nothing fixed is stored locally). Koin definitions under `FixedSessionDetailsQualifier`:
+- Header: `NetworkFixedSessionDetailsRepository` → `GET /api/v3/fixed_sessions/{uuid}` (user token), one
+  shot + Retry, like Explore. Streams in chip order; id = chip-order index (the wire keys streams by name).
+- Graph: `StationGraph` with that qualifier → `fixedSessionMeasurements` — Explore's two 12 h windows,
+  read from `GET /fixed_sessions/{uuid}/measurements` instead of the public Explore endpoint.
+- Map: `StationMap`, one dot at the session's location. Indoor (placeholder `200, 200`) → no location
+  → no Map tab.
+- **Stats: NOW only** for now. Figma shows Now · Avg · Min · Max, but `/fixed_sessions` sends only the
+  last reading and a fixed session can run for months, so whole-session avg/min/max need a server
+  aggregate — open question for the backend.
+
 ## Open (parked) questions
 
-- Fixed: when is a session "Offline"? Network-only vs local cache?
-- Fixed "Reconnect": hidden, disabled or no-op?
 - Process death leaves a `RECORDING` row with nothing feeding it — check legacy handling.

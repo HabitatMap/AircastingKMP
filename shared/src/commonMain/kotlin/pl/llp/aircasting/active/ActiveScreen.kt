@@ -4,6 +4,7 @@ import aircasting.shared.generated.resources.Res
 import aircasting.shared.generated.resources.ic_arrow_forward_ios
 import aircasting.shared.generated.resources.ic_bluetooth_disabled
 import aircasting.shared.generated.resources.ic_stop_circle
+import aircasting.shared.generated.resources.ic_wifi_alert
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -78,14 +79,19 @@ fun ActiveScreen(
   onConfirmFinish: () -> Unit,
   onDismissFinish: () -> Unit,
   onStartMobileSession: () -> Unit,
+  onStartFixedSession: () -> Unit,
   onStartMicSession: () -> Unit,
   onSeeDetails: (uuid: String, sensorName: String?) -> Unit,
+  /** Fixed sessions live on the backend, not the DB: their details are a different destination. */
+  onSeeFixedDetails: (uuid: String, sensorName: String?) -> Unit,
+  onReconnect: () -> Unit,
 ) {
   val strings = LocalStrings.current
   val clock = koinInject<Clock>()
   // Re-read on every state: a recording session re-emits each second, so "x min ago" stays fresh.
   val now = remember(state) { clock.now() }
   var mobileExpanded by rememberSaveable { mutableStateOf(true) }
+  var fixedExpanded by rememberSaveable { mutableStateOf(true) }
   var micExpanded by rememberSaveable { mutableStateOf(true) }
   LazyColumn(
     Modifier.fillMaxSize(),
@@ -107,11 +113,34 @@ fun ActiveScreen(
         )
       },
     ) { card ->
-      MobileSessionCard(
+      SessionCard(
         card, now, strings.activeTagAirBeamMobile, strings.activeNoDataBody,
         onSelectStream = { onSelectStream(card.uuid, it) },
         onFinish = { onFinish(card.uuid) },
         onSeeDetails = { onSeeDetails(card.uuid, card.selected?.sensorName) },
+      )
+    }
+    sessionSection(
+      key = "fixed",
+      title = strings.activeFixedSessions,
+      cards = state.fixed,
+      expanded = fixedExpanded,
+      onToggle = { fixedExpanded = !fixedExpanded },
+      empty = {
+        EmptySectionCard(
+          strings.activeNoFixedTitle,
+          strings.activeNoFixedBody,
+          strings.activeStartFixed,
+          onStartFixedSession
+        )
+      },
+    ) { card ->
+      SessionCard(
+        card, now, strings.activeTagAirBeamFixed, strings.activeNoDataBody,
+        onSelectStream = { onSelectStream(card.uuid, it) },
+        onFinish = { onFinish(card.uuid) },
+        onSeeDetails = { onSeeFixedDetails(card.uuid, card.selected?.sensorName) },
+        onReconnect = onReconnect,
       )
     }
     sessionSection(
@@ -129,7 +158,7 @@ fun ActiveScreen(
         )
       },
     ) { card ->
-      MobileSessionCard(
+      SessionCard(
         card, now, strings.activeTagPhoneMic, strings.activeNoMicDataBody,
         onSelectStream = { onSelectStream(card.uuid, it) },
         onFinish = { onFinish(card.uuid) },
@@ -191,8 +220,9 @@ private fun SectionHeader(title: String, count: Int, expanded: Boolean, onToggle
 }
 
 
+/** Mobile, fixed and phone-mic cards share one anatomy; [tag] and [card]'s state set them apart. */
 @Composable
-private fun MobileSessionCard(
+private fun SessionCard(
   card: ActiveSessionCard,
   now: Instant,
   tag: String,
@@ -200,6 +230,7 @@ private fun MobileSessionCard(
   onSelectStream: (sensorName: String) -> Unit,
   onFinish: () -> Unit,
   onSeeDetails: () -> Unit,
+  onReconnect: () -> Unit = {},
 ) {
   val strings = LocalStrings.current
   Column(
@@ -222,6 +253,12 @@ private fun MobileSessionCard(
         strings.activeLookingBody,
         spinner = 32.dp
       )
+
+      // Figma 1107:16828: the wait box gains a Reconnect button.
+      CardState.Offline -> Waiting(strings.activeReconnectingTitle, strings.activeReconnectingBody, spinner = 32.dp) {
+        val colors = MaterialTheme.colorScheme
+        CardButton(strings.activeReconnect, onReconnect, colors.primary, colors.onSurface, Modifier.fillMaxWidth())
+      }
     }
     Footer(card.state, onFinish, onSeeDetails)
   }
@@ -239,7 +276,8 @@ private fun CardHeader(card: ActiveSessionCard, now: Instant, tag: String) {
       when (card.state) {
         CardState.Live -> card.selected?.level?.let { LevelBadge(it) }
         CardState.NoDataYet -> Unit // Figma 1009:28154: nothing to grade yet
-        CardState.ConnectionLost -> ConnectionLostBadge()
+        CardState.ConnectionLost -> AlertBadge(Res.drawable.ic_bluetooth_disabled, strings.activeConnectionLost)
+        CardState.Offline -> AlertBadge(Res.drawable.ic_wifi_alert, strings.activeOffline)
       }
     }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -250,11 +288,13 @@ private fun CardHeader(card: ActiveSessionCard, now: Instant, tag: String) {
           color = MaterialTheme.colorScheme.onSurface
         )
         // Same start - newest measurement line as the details screen, its own row (2026-11-24).
-        Text(
-          LocalDateFormatter.current.range(card.startTime, card.lastSeen, card.timeZone),
-          style = MaterialTheme.typography.bodySmall,
-          color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        card.startTime?.let { start ->
+          Text(
+            LocalDateFormatter.current.range(start, card.lastSeen, card.timeZone),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+          )
+        }
         DotSeparatedRow(
           card.meta(now, strings),
           MaterialTheme.typography.bodySmall,
@@ -273,9 +313,9 @@ private fun CardHeader(card: ActiveSessionCard, now: Instant, tag: String) {
   }
 }
 
-/** Same pill shape as [LevelBadge], in the "unhealthy" red, with the Bluetooth-off glyph. */
+/** Same pill shape as [LevelBadge], in the "unhealthy" red: "Connection lost" (mobile), "Offline" (fixed). */
 @Composable
-private fun ConnectionLostBadge() {
+private fun AlertBadge(icon: DrawableResource, text: String) {
   val red = LocalAqTextColors.current.unhealthy
   Row(
     Modifier.clip(RoundedCornerShape(100.dp))
@@ -285,13 +325,13 @@ private fun ConnectionLostBadge() {
     verticalAlignment = Alignment.CenterVertically,
   ) {
     Icon(
-      painterResource(Res.drawable.ic_bluetooth_disabled),
+      painterResource(icon),
       contentDescription = null,
       Modifier.size(12.dp),
       tint = red
     )
     Text(
-      LocalStrings.current.activeConnectionLost,
+      text,
       style = MaterialTheme.typography.labelSmall,
       color = red
     )
@@ -349,7 +389,7 @@ private fun StreamPicker(card: ActiveSessionCard, onSelectStream: (String) -> Un
 }
 
 @Composable
-private fun Waiting(title: String, body: String, spinner: Dp) {
+private fun Waiting(title: String, body: String, spinner: Dp, action: @Composable () -> Unit = {}) {
   Column(
     Modifier.fillMaxWidth()
       .clip(RoundedCornerShape(8.dp))
@@ -377,6 +417,7 @@ private fun Waiting(title: String, body: String, spinner: Dp) {
         textAlign = TextAlign.Center
       )
     }
+    action()
   }
 }
 
@@ -407,7 +448,16 @@ private fun Footer(state: CardState, onFinish: () -> Unit, onSeeDetails: () -> U
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
     HorizontalDivider(color = colors.surfaceContainerHighest)
-    if (state == CardState.ConnectionLost) {
+    if (state == CardState.Offline) {
+      CardButton(
+        strings.activeFinishAnyway,
+        onFinish,
+        colors.error,
+        colors.error,
+        Modifier.fillMaxWidth(),
+        Res.drawable.ic_stop_circle
+      )
+    } else if (state == CardState.ConnectionLost) {
       // No SD sync yet: the button is there, and does nothing (decided 2026-11-08).
       CardButton(
         strings.activeFinishAndSync,

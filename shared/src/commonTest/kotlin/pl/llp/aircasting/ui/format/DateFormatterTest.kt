@@ -6,6 +6,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 
 class DateFormatterTest {
@@ -39,6 +40,14 @@ class DateFormatterTest {
     val midnight = Instant.parse("2026-11-03T00:00:00Z")
     assertEquals("11/03/26, 12:00 AM", DateFormatter(RegionalFormat.US).dateTime(midnight, TimeZone.UTC))
     assertEquals("11/03/26, 12:00 PM", DateFormatter(RegionalFormat.US).dateTime(midnight + 12.hours, TimeZone.UTC))
+  }
+
+  @Test
+  fun time_with_seconds_follows_the_regional_clock() {
+    val afternoon = start + 4.hours + 29.minutes + 7.seconds // 13:34:07 in Warsaw
+    assertEquals("1:34:07 PM", DateFormatter(RegionalFormat.US).timeWithSeconds(afternoon, warsaw))
+    assertEquals("13:34:07", DateFormatter(RegionalFormat.UK).timeWithSeconds(afternoon, warsaw))
+    assertEquals("09:05:00", DateFormatter(RegionalFormat.CentralEuropean).timeWithSeconds(start, warsaw))
   }
 
   @Test

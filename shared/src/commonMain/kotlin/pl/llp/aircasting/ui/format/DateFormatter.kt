@@ -3,6 +3,7 @@ package pl.llp.aircasting.ui.format
 import androidx.compose.runtime.staticCompositionLocalOf
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.format.Padding
 import kotlinx.datetime.format.char
@@ -26,21 +27,17 @@ class DateFormatter(regionalFormat: RegionalFormat) {
   private val format = LocalDateTime.Format {
     date(shortDate(regionalFormat.dateOrder, regionalFormat.dateSeparator))
     chars(", ")
-    if (regionalFormat.use24HourClock) {
-      hour()
-      char(':')
-      minute()
-    } else {
-      amPmHour(padding = Padding.NONE)
-      char(':')
-      minute()
-      char(' ')
-      amPmMarker(am = "AM", pm = "PM")
-    }
+    time(clock(regionalFormat.use24HourClock, withSeconds = false))
   }
+
+  private val timeWithSecondsFormat = clock(regionalFormat.use24HourClock, withSeconds = true)
 
   /** e.g. `23/11/26, 13:34` or `11/23/26, 1:34 PM`, on [zone]'s wall clock. */
   fun dateTime(instant: Instant, zone: TimeZone): String = format.format(instant.toLocalDateTime(zone))
+
+  /** e.g. `13:34:07` or `1:34:07 PM` — graph and map tooltips, where 1 s readings need the seconds. */
+  fun timeWithSeconds(instant: Instant, zone: TimeZone): String =
+    timeWithSecondsFormat.format(instant.toLocalDateTime(zone).time)
 
   /** Both dates always: a session can cross midnight. No [end] yet (no measurement) → the start alone. */
   fun range(start: Instant, end: Instant?, zone: TimeZone): String =
@@ -64,6 +61,21 @@ private fun shortDate(order: DateOrder, separator: Char) = LocalDate.Format {
 }
 
 private enum class Part { Day, Month, Year }
+
+/** `HH:mm[:ss]`, or US-style `h:mm[:ss] AM` (no leading zero on the hour). */
+private fun clock(use24HourClock: Boolean, withSeconds: Boolean) = LocalTime.Format {
+  if (use24HourClock) hour() else amPmHour(padding = Padding.NONE)
+  char(':')
+  minute()
+  if (withSeconds) {
+    char(':')
+    second()
+  }
+  if (!use24HourClock) {
+    char(' ')
+    amPmMarker(am = "AM", pm = "PM")
+  }
+}
 
 /** Provided by `App` from the stored [RegionalFormat]; the default matches the preference default. */
 val LocalDateFormatter = staticCompositionLocalOf { DateFormatter(RegionalFormat.US) }

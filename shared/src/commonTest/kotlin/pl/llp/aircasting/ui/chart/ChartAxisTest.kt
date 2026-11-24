@@ -1,6 +1,8 @@
 package pl.llp.aircasting.ui.chart
 
 import pl.llp.aircasting.domain.SensorThreshold
+import pl.llp.aircasting.settings.app.RegionalFormat
+import pl.llp.aircasting.ui.format.DateFormatter
 import kotlin.collections.emptyList
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -9,12 +11,19 @@ class ChartAxisTest {
 
   // 2026-10-27T01:00:00Z — a local-as-UTC epoch whose numerals are the station's 01:00.
   private val oneAm = 1_793_062_800.0
+  private val uk = DateFormatter(RegionalFormat.UK)
 
   @Test
   fun times_are_formatted_as_UTC_so_the_station_wall_clock_shows_unchanged() {
     // Never converted to the device zone: that would shift a New York station by the viewer's offset.
-    assertEquals("01:00:00", hourMinuteSecondUtc(oneAm))
-    assertEquals("01:05:59", hourMinuteSecondUtc(oneAm + 5 * 60 + 59.9)) // fractions are dropped, not rounded
+    assertEquals("01:00:00", uk.chartTime(oneAm))
+    assertEquals("01:05:59", uk.chartTime(oneAm + 5 * 60 + 59.9)) // fractions are dropped, not rounded
+  }
+
+  @Test
+  fun times_follow_the_regional_clock() {
+    assertEquals("1:00:00 AM", DateFormatter(RegionalFormat.US).chartTime(oneAm))
+    assertEquals("1:00:00 PM", DateFormatter(RegionalFormat.US).chartTime(oneAm + 12 * 3_600))
   }
 
   @Test
@@ -32,7 +41,7 @@ class ChartAxisTest {
     val visible = (oneAm + 90)..(oneAm + 8 * 3_600 + 90)
     val labels = timeAxisLabels(visible, labelWidth = 1_800.0)
 
-    assertEquals(listOf("01:16:30", "08:46:30"), labels.keys.map { hourMinuteSecondUtc(it) })
+    assertEquals(listOf("01:16:30", "08:46:30"), labels.keys.map { uk.chartTime(it) })
   }
 
   @Test

@@ -23,14 +23,16 @@ import androidx.compose.ui.unit.dp
 import kotlinx.datetime.TimeZone
 import pl.llp.aircasting.domain.TrackPoint
 import pl.llp.aircasting.i18n.LocalStrings
-import pl.llp.aircasting.ui.chart.hourMinuteSecondUtc
+import pl.llp.aircasting.ui.chart.chartTime
 import pl.llp.aircasting.ui.chart.wallClockPoint
+import pl.llp.aircasting.ui.format.DateFormatter
+import pl.llp.aircasting.ui.format.LocalDateFormatter
 import kotlin.math.roundToInt
 import kotlin.time.Instant
 
 /** Same wall-clock x the graph builds, through the same formatter: map and graph tooltips agree. */
-internal fun tooltipTime(time: Instant, timeZone: TimeZone): String =
-  hourMinuteSecondUtc(wallClockPoint(time, value = 0.0, timeZone).x)
+internal fun tooltipTime(time: Instant, timeZone: TimeZone, dates: DateFormatter): String =
+  dates.chartTime(wallClockPoint(time, value = 0.0, timeZone).x)
 
 @Composable
 internal fun MapTooltip(
@@ -38,6 +40,7 @@ internal fun MapTooltip(
   modifier: Modifier = Modifier,
 ) {
   val strings = LocalStrings.current
+  val dates = LocalDateFormatter.current
   val muted = MaterialTheme.colorScheme.onSurfaceVariant
   Surface(
     modifier,
@@ -55,7 +58,7 @@ internal fun MapTooltip(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
       ) {
-        Text(point.time?.let { tooltipTime(it, timeZone) }
+        Text(point.time?.let { tooltipTime(it, timeZone, dates) }
           .orEmpty(), style = MaterialTheme.typography.labelSmall, color = muted)
         Text("×", style = MaterialTheme.typography.labelMedium, color = muted)
       }

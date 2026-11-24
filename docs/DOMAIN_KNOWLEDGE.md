@@ -548,7 +548,7 @@ graph/map.
   the newest; stacked oldest → newest; a click hits the topmost dot. The Canvas is clipped to the
   map's bounds.
 - **Tap a dot (full-screen session map) → tooltip** with the reading's time and value (Figma
-  `609:13295`). Time is `HH:mm:ss` on the session's wall clock, same formatter as the graph's
+  `609:13295`). Time is `HH:mm:ss` (US `h:mm:ss AM` — Regional format clock) on the session's wall clock, same formatter as the graph's
   marker (Figma shows `HH:mm`, but 1-second mobile readings need the seconds). The map reports
   the tap; `hitTest` picks the newest dot whose 8 dp disk covers the tap (the one drawn on top),
   else the nearest within 16 dp, newest wins on a tie. Tapping the bubble

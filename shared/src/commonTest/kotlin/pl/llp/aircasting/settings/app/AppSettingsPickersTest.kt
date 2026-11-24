@@ -36,7 +36,7 @@ class AppSettingsPickersTest {
   }
 
   @Test
-  fun `each regional preset previews its own date, clock, separators and distance unit`() {
+  fun `each regional preset previews its own date and clock and separators and distance unit`() {
     // The whole reason RegionalFormat carries its separators: this line is computed from them,
     // so a preset can never advertise a format it does not produce.
     assertEquals(

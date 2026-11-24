@@ -41,7 +41,7 @@ class ActiveSessionCardTest {
   )
 
   @Test
-  fun `card carries the session start and zone, to date its time row`() {
+  fun `card carries the session start and zone to date its time row`() {
     val card = activeSessionCard(session(), miniWithData, thresholds)
 
     assertEquals(t0, card.startTime)

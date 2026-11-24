@@ -79,6 +79,28 @@ Follow **test-driven development**: write the unit tests *before* the implementa
 State the expected red/green transition when you present each step, so the developer sees
 what the tests prove and how the implementation satisfies them.
 
+### Naming tests: no punctuation in backtick names
+
+Backtick test names in `commonTest` are compiled for iOS too, and **Kotlin/Native rejects
+many characters the JVM accepts**. So the Android job and the IDE stay green while
+`:shared:iosSimulatorArm64Test` fails at `compileTestKotlinIosSimulatorArm64` with
+`Name contains illegal characters: ","`. This has broken iOS CI more than once.
+
+**Rule: letters, digits, spaces and hyphens only** in `commonTest` and `ios*Test`.
+JVM-only `androidHostTest` tolerates commas, but follow the same rule there so tests can move to
+`commonTest` without renaming. Checked on iOS (2026-11-24):
+- **Rejected:** `, . : ; / \ < > [ ] ( ) % $ & * ? # @`
+- **Accepted, but avoid for consistency:** `' + = ! " →`
+
+How to rephrase:
+- Commas: use "and", or drop them: `` `card carries the session start and zone to date its time row` ``.
+- Decimals and pollutants: `2 point 5 min`, `PM25` or `pm2 5`, not `2.5 min` / `PM2.5`.
+- Asides in parentheses: make them a clause, e.g. `` `uses the session zone not the device zone` ``.
+- Percentages: `50 percent alpha`, not `50% alpha`.
+
+Before committing a new or renamed test, run `./gradlew :shared:iosSimulatorArm64Test`
+(or at least `:shared:compileTestKotlinIosSimulatorArm64`), not only the Android tests.
+
 ## What this means in practice
 
 - **Propose code in chat, don't apply it.** For anything that shapes the codebase, never

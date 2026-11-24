@@ -1,8 +1,8 @@
 package pl.llp.aircasting.ui.chart
 
 import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 import pl.llp.aircasting.domain.SensorThreshold
+import pl.llp.aircasting.ui.format.DateFormatter
 import kotlin.time.Instant
 
 private const val SECONDS_PER_DAY = 86_400
@@ -17,13 +17,12 @@ internal fun midnightsBetween(fromX: Double, toX: Double): List<Double> {
 }
 
 /**
- * `HH:mm:ss` of an epoch-seconds x, for the axis labels and the marker tooltip. UTC on purpose:
- * Explore times are local-as-UTC (DOMAIN_KNOWLEDGE.md).
+ * The time of an epoch-seconds x (`13:34:07` / `1:34:07 PM`, per Regional format), for the axis
+ * labels and the marker tooltip. UTC on purpose: x is already the wall clock (local-as-UTC, see
+ * DOMAIN_KNOWLEDGE.md and [wallClockPoint]).
  */
-internal fun hourMinuteSecondUtc(x: Double): String {
-  val time = Instant.fromEpochSeconds(x.toLong()).toLocalDateTime(TimeZone.UTC)
-  return "${time.hour.twoDigits()}:${time.minute.twoDigits()}:${time.second.twoDigits()}"
-}
+internal fun DateFormatter.chartTime(x: Double): String =
+  timeWithSeconds(Instant.fromEpochSeconds(x.toLong()), TimeZone.UTC)
 
 /**
  * The x-axis labels for [visible], as label-centre x → the time that label shows. [labelWidth] is
@@ -49,5 +48,3 @@ internal fun yRange(points: List<ChartPoint>, threshold: SensorThreshold?): Clos
   val min = points.minOf { it.y }
   return if (min == max) (min - 1)..(max + 1) else min..max
 }
-
-private fun Int.twoDigits() = toString().padStart(2, '0')

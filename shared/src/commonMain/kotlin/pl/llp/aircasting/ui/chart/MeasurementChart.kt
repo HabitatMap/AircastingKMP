@@ -61,6 +61,8 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.withContext
 import pl.llp.aircasting.domain.MeasurementLevel
 import pl.llp.aircasting.domain.SensorThreshold
+import pl.llp.aircasting.ui.format.DateFormatter
+import pl.llp.aircasting.ui.format.LocalDateFormatter
 import pl.llp.aircasting.ui.theme.AqColors
 import pl.llp.aircasting.ui.theme.LocalAqColors
 import kotlin.math.roundToInt
@@ -124,7 +126,8 @@ fun MeasurementChart(
       visibleRange
   }
   val firstX = points.first().x
-  val timeLabels = remember { TimeAxisLabels() }
+  val dates = LocalDateFormatter.current
+  val timeLabels = remember(dates) { TimeAxisLabels(dates) }
   val labelColor = colors.onSurfaceVariant
   val system = LocalViewConfiguration.current
   val panSlop = with(LocalDensity.current) { PanSlop.toPx() }
@@ -191,8 +194,9 @@ fun MeasurementChart(
               )
             },
           ),
-          valueFormatter = remember(unit, threshold, aq, typography, colors) {
+          valueFormatter = remember(unit, threshold, aq, typography, colors, dates) {
             MarkerFormatter(
+              dates,
               unit,
               threshold,
               aq,
@@ -285,7 +289,7 @@ private class UnderLayers(private val delegate: Decoration) : Decoration {
  *
  * Reserves no layer padding (unlike Vico's aligned placer), so the line runs edge to edge.
  */
-private class TimeAxisLabels : HorizontalAxis.ItemPlacer, CartesianValueFormatter {
+private class TimeAxisLabels(private val dates: DateFormatter) : HorizontalAxis.ItemPlacer, CartesianValueFormatter {
   /** From the latest [getLabelValues], which Vico calls just before formatting what it returns. */
   private var shownTimes = emptyMap<Double, Double>()
 
@@ -301,10 +305,14 @@ private class TimeAxisLabels : HorizontalAxis.ItemPlacer, CartesianValueFormatte
   }
 
   override fun format(context: CartesianMeasuringContext, value: Double, verticalAxisPosition: Axis.Position.Vertical?) =
-    hourMinuteSecondUtc(shownTimes[value] ?: value)
+    dates.chartTime(shownTimes[value] ?: value)
 
-  /** `00:00:00`, `01:01:01` … `09:09:09`: every digit in each last place, so the widest label whatever the font. */
-  private val measuredValues = List(10) { it * 3_661.0 }
+  /**
+   * One label per hour of the day (`00:00:00`, `01:01:01` … `23:03:03`, or `12:00:00 AM` …
+   * `11:03:03 PM`): every hour, both AM and PM, and every digit in the last places, so the widest
+   * label whatever the font or clock.
+   */
+  private val measuredValues = List(24) { h -> h * 3_600.0 + (h % 10) * 61 }
 
   override fun getWidthMeasurementLabelValues(
     context: CartesianMeasuringContext,
@@ -341,6 +349,7 @@ val ElevationLight1 = listOf(
 )
 
 private class MarkerFormatter(
+  private val dates: DateFormatter,
   private val unit: String,
   private val threshold: SensorThreshold?,
   private val aq: AqColors,
@@ -349,7 +358,7 @@ private class MarkerFormatter(
   override fun format(context: CartesianDrawingContext, targets: List<CartesianMarker.Target>): CharSequence {
     val entry = (targets.first() as LineCartesianLayerMarkerTarget).points.first().entry
     return buildAnnotatedString {
-      append(hourMinuteSecondUtc(entry.x))
+      append(dates.chartTime(entry.x))
       append('\n')
       threshold?.let { withStyle(SpanStyle(color = aq.forLevel(it.levelFor(entry.y)))) { append("● ") } }
       withStyle(valueStyle) { append("${entry.y.roundToInt()}") }

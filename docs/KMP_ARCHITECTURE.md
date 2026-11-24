@@ -402,7 +402,8 @@ Every date the user sees follows Settings → Regional formats (`RegionalFormat.
   `LocalStrings` from the language preference. Changing the setting recomposes every date; no
   ViewModel has to observe the preference.
 - New date shapes go on `DateFormatter` (one place, unit-tested per region), not into ad-hoc
-  `padStart` helpers. Times-only labels (graph axis, map tooltip `HH:mm:ss`) aren't region-dependent.
+  `padStart` helpers. Time-only labels (graph axis and tooltip, map tooltip) follow the clock too,
+  through `DateFormatter.timeWithSeconds` (`13:34:07` / `1:34:07 PM`; chart x via `chartTime`).
 
 ## 7. Decisions to Make Before Building (open questions)
 

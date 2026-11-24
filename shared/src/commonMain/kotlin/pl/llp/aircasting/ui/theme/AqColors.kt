@@ -38,4 +38,23 @@ internal val AqPalette = AqColors(
   hazardous = Color(0xFFE85E60),
 )
 
+/**
+ * Darker AQ shades for *text* on light surfaces (badge labels, the Home status line) — the bright
+ * [AqPalette] is well under 3:1 on white, so the designs letter level text in these instead (Figma:
+ * `Extended Colors/Green`, `Custom/Badge/On Moderate Container`, `Custom/Badge/On Unhealthy
+ * Container`; the orange has no Figma token and keeps the app's earlier darker shade). Fills —
+ * dots, borders, badge backgrounds, graph bands — stay on [AqPalette]. Dark theme letters text in
+ * [AqPalette] itself, which already clears 3:1 on the dark card.
+ */
+internal val AqTextPaletteLight = AqColors(
+  good = Color(0xFF006E02),
+  moderate = Color(0xFF86711D),
+  unhealthySensitive = Color(0xFFE8720C),
+  unhealthy = Color(0xFFC62828),
+  hazardous = Color(0xFFC62828),
+)
+
 val LocalAqColors = staticCompositionLocalOf { AqPalette }
+
+/** AQ colours for text; see [AqTextPaletteLight]. */
+val LocalAqTextColors = staticCompositionLocalOf { AqTextPaletteLight }

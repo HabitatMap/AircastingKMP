@@ -102,6 +102,10 @@ The meta row's "1 min ago" stays while live, is dropped once finished. Explore s
 such line (their location name needs reverse geocoding). Not built yet, like on the
 station screen: Map tab, app-bar actions (favourite, alert, notes), location name.
 
+**Track map** (`TrackMap` → `MapDotsOverlay`): while the session is live the newest dot — the
+current measurement — gets a 2 dp white ring (*decided 2026-11-24*). The path is 4 dp wide at
+50 % alpha `Primary Container` — half Figma's 8 dp opaque stroke (*decided 2026-11-24*).
+
 ## Open (parked) questions
 
 - Fixed: when is a session "Offline"? Network-only vs local cache?

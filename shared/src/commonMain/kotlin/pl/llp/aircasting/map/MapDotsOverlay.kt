@@ -30,8 +30,10 @@ fun MapDotsOverlay(
   uncoloured: Color,
   lineColour: Color,
   modifier: Modifier = Modifier,
+  /** Ring the newest dot in white — the live session's current measurement. */
+  markNewest: Boolean = false,
   dotDiameter: Dp = 16.dp, // Figma dot-6
-  lineWidth: Dp = 8.dp,    // Figma path-overlay stroke
+  lineWidth: Dp = 4.dp,    // half Figma's 8 dp path-overlay stroke (2026-11-24)
 ) {
   // Per-frame scratch, reused: no allocation per dot while the map moves.
   val xs = remember(dots) { FloatArray(dots.size) }
@@ -79,8 +81,20 @@ fun MapDotsOverlay(
       run.add(Offset(xs[i], ys[i]))
     }
     if (run.isNotEmpty()) flush(runLevel)
+
+    // Newest dot is drawn last above, so the ring sits on top of everything. Stroke centred on the
+    // dot's edge; skipped when the newest reading is off-screen.
+    val newest = dots.size - 1
+    if (markNewest && count > 0 && order[0] == newest) {
+      drawCircle(
+        Color.White, radius = diameter / 2, center = Offset(xs[newest], ys[newest]),
+        style = Stroke(CurrentDotStroke.toPx()),
+      )
+    }
   }
 }
+
+private val CurrentDotStroke = 2.dp
 
 /**
  * The dots worth drawing, newest first: those within [margin] of the view, and per screen cell of

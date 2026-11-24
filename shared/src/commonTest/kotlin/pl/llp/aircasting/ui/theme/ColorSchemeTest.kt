@@ -50,6 +50,16 @@ class ColorSchemeTest {
     }
   }
 
+  @Test
+  fun `air quality text colors are legible on the light card`() {
+    // Level text (badges, the Home status line) uses the darker design shades in light theme,
+    // precisely because the bright fill palette can't be read on white.
+    MeasurementLevel.entries.forEach { level ->
+      val ratio = contrastRatio(AqTextPaletteLight.forLevel(level), LightColors.surfaceContainerLowest)
+      assertTrue(ratio >= 3.0, "light text $level contrast ${ratio.format()} < 3.0:1")
+    }
+  }
+
   private fun assertRaised(name: String, scheme: ColorScheme, minRatio: Double) = with(scheme) {
     // The card is the lightest of the three in both schemes. `surface` vs `background` is
     // deliberately *not* asserted: light's blue page tint (#F5FAFF) is lighter than the warm

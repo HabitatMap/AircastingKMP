@@ -64,6 +64,7 @@ import pl.llp.aircasting.ui.components.StreamChip
 import pl.llp.aircasting.ui.components.TintedTag
 import pl.llp.aircasting.ui.components.UserTag
 import pl.llp.aircasting.ui.theme.LocalAqColors
+import pl.llp.aircasting.ui.theme.LocalAqTextColors
 import kotlin.time.Clock
 import kotlin.time.Instant
 import pl.llp.aircasting.ui.components.LoadingSpinner
@@ -268,10 +269,10 @@ private fun CardHeader(card: ActiveSessionCard, now: Instant, tag: String) {
 /** Same pill shape as [LevelBadge], in the "unhealthy" red, with the Bluetooth-off glyph. */
 @Composable
 private fun ConnectionLostBadge() {
-  val red = LocalAqColors.current.unhealthy
+  val red = LocalAqTextColors.current.unhealthy
   Row(
     Modifier.clip(RoundedCornerShape(100.dp))
-      .background(red.copy(alpha = 0.12f))
+      .background(LocalAqColors.current.unhealthy.copy(alpha = 0.12f))
       .padding(horizontal = 8.dp, vertical = 2.dp),
     horizontalArrangement = Arrangement.spacedBy(4.dp),
     verticalAlignment = Alignment.CenterVertically,

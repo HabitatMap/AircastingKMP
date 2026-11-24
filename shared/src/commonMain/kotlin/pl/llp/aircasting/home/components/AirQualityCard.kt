@@ -39,6 +39,7 @@ import pl.llp.aircasting.ui.AqStatus
 import pl.llp.aircasting.ui.aqStatus
 import pl.llp.aircasting.ui.theme.AircastingTheme
 import pl.llp.aircasting.ui.theme.LocalAqColors
+import pl.llp.aircasting.ui.theme.LocalAqTextColors
 import org.jetbrains.compose.resources.painterResource
 import kotlin.time.Instant
 
@@ -76,7 +77,7 @@ internal fun AirQualityCard(aq: HomeUiState.AirQuality, onRequestLocation: () ->
 
 @Composable
 private fun AirQualityHeader(status: AqStatus, level: MeasurementLevel) {
-  val aqColor = LocalAqColors.current.forLevel(level)
+  val aqColor = LocalAqTextColors.current.forLevel(level)
   Row(
     horizontalArrangement = Arrangement.spacedBy(12.dp),
     verticalAlignment = Alignment.CenterVertically,

@@ -274,7 +274,7 @@ object EnStrings : Strings {
   override val aqGoodDescription = "The air outside is clean. A great time to enjoy activities outside."
   override val aqModerateLabel = "Moderate"
   override val aqModerateDescription = "Air quality is acceptable for most people."
-  override val aqUnhealthySensitiveLabel = "Unhealthy for sensitive groups"
+  override val aqUnhealthySensitiveLabel = "Poor"
   override val aqUnhealthySensitiveDescription = "Sensitive groups should limit outdoor exertion."
   override val aqUnhealthyLabel = "Unhealthy"
   override val aqUnhealthyDescription = "Everyone may begin to feel effects. Limit outdoor time."

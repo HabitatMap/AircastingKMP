@@ -95,12 +95,20 @@ Header shows user tags and Indoor/Outdoor; stats are **Now · Avg. · Min. · Ma
 session (rule in `DOMAIN_KNOWLEDGE.md` → *Own mobile session details*); Explore keeps
 NOW · MIN. 24H · MAX. 24H, a finished session drops NOW — see `DetailsStats.kt`.
 
-**Time line under the title** (*decided 2026-11-23*), Figma `1138:28732` — the "Location name"
-slot, bodyLarge / onSurface. Same for live and finished own sessions, like legacy
-`DurationStringHelper`: live `23/11/26, 13:34`, finished `23/11/26, 13:34 - 23/11/26, 19:34`.
+**Time line under the title** (*decided 2026-11-23, end rule changed 2026-11-24*), Figma
+`1138:28732` — the "Location name" slot, bodyLarge / onSurface. Live and finished own sessions
+both show **start - newest measurement** (max `measuredAt` over the streams), e.g.
+`23/11/26, 13:34 - 23/11/26, 19:34` (UK shown; the date follows the user's Regional format); just
+the start until the first measurement. This departs from legacy `DurationStringHelper` (start only
+while live, finish tap as the end). The **Active tab card** shows the same line as its own row
+under the name (bodySmall / onSurfaceVariant), ending at the card's `lastSeen`.
 The meta row's "1 min ago" stays while live, is dropped once finished. Explore stations have no
 such line (their location name needs reverse geocoding). Not built yet, like on the
 station screen: Map tab, app-bar actions (favourite, alert, notes), location name.
+
+**Track map** (`TrackMap` → `MapDotsOverlay`): while the session is live the newest dot — the
+current measurement — gets a 2 dp white ring (*decided 2026-11-24*). The path is 4 dp wide at
+50 % alpha `Primary Container` — half Figma's 8 dp opaque stroke (*decided 2026-11-24*).
 
 ## Open (parked) questions
 

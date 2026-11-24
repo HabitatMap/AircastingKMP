@@ -1,5 +1,6 @@
 package pl.llp.aircasting.active
 
+import kotlinx.datetime.TimeZone
 import pl.llp.aircasting.domain.MeasurementLevel
 import pl.llp.aircasting.domain.SensorThreshold
 import pl.llp.aircasting.domain.Thresholds
@@ -38,6 +39,14 @@ class ActiveSessionCardTest {
     reading("AirBeamMini-PM1", 3.0, t0 + 5.seconds),
     reading("AirBeamMini-PM2.5", 12.0, t0 + 6.seconds),
   )
+
+  @Test
+  fun `card carries the session start and zone to date its time row`() {
+    val card = activeSessionCard(session(), miniWithData, thresholds)
+
+    assertEquals(t0, card.startTime)
+    assertEquals(TimeZone.of("Europe/Warsaw"), card.timeZone)
+  }
 
   @Test
   fun `recording session with readings is live and last seen at its newest reading`() {

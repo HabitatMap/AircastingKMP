@@ -391,6 +391,20 @@ without repricing the app.
 
 ---
 
+### User-facing dates (*decided 2026-11-24*)
+
+Every date the user sees follows Settings → Regional formats (`RegionalFormat.dateOrder` +
+`dateSeparator`), and so does the time next to it (`use24HourClock`: only US is 12-hour,
+`1:34 PM`, per CLDR; no separate 24-hour switch as legacy had — *decided 2026-11-24*). The rule:
+- **Models and ViewModels carry `Instant` + `TimeZone`, never a formatted date string.**
+- **Composables format through `LocalDateFormatter.current`** (`ui/format/DateFormatter.kt`),
+  which `App` provides from `AppSettingsRepository.preferences`, the same way it provides
+  `LocalStrings` from the language preference. Changing the setting recomposes every date; no
+  ViewModel has to observe the preference.
+- New date shapes go on `DateFormatter` (one place, unit-tested per region), not into ad-hoc
+  `padStart` helpers. Time-only labels (graph axis and tooltip, map tooltip) follow the clock too,
+  through `DateFormatter.timeWithSeconds` (`13:34:07` / `1:34:07 PM`; chart x via `chartTime`).
+
 ## 7. Decisions to Make Before Building (open questions)
 
 These change the skeleton — resolve early:

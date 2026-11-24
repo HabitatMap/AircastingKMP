@@ -7,25 +7,26 @@ import com.patrykandpatrick.vico.compose.common.Point
 import kotlin.math.abs
 
 /**
- * Vico's show-on-press, plus one rule: once the finger has travelled past the slop the chart pans
- * at, the tooltip hides until the finger lifts. Within it the tooltip follows the finger (scrub).
+ * When the tooltip shows, which depends on whether the chart can pan (read once per press: one
+ * finger can't change the zoom mid-gesture).
  *
- * When the chart can't pan (fully zoomed out, the whole series fits), sideways travel never hides
- * it: the finger scrubs across the whole width. Up/down travel still hides it, unless the finger
- * has already gone past the pan slop sideways: the chart's drag then owns the gesture, so the page
- * can't scroll.
+ * **Zoomed in** (the chart can pan): a drag pans, it never scrubs through measurements. A press
+ * alone shows nothing; **press and hold** shows the measurement under the finger, and pulling
+ * sideways from there pans the graph, hiding the tooltip, as does scrolling the page. The chart's
+ * touch slop is then the system's [touchSlop] (see MeasurementChart), so panning starts as in any
+ * scrolling view.
  *
- * The same slop must be the chart's touch slop (see MeasurementChart), so "scrubbing" and
- * "panning" switch at the same distance. Speed plays no part: Compose's drag starts on distance.
+ * **Fully zoomed out** (the whole series fits, nothing to pan): the tooltip shows on press and
+ * follows the finger across the whole width (scrub). Up/down travel past [touchSlop] hides it — the
+ * page is scrolling — unless the finger has already gone [panSlop] sideways: the chart's drag then
+ * owns the gesture, so the page can't scroll. The chart's touch slop is [panSlop] in this mode.
  *
- * @param panSlop sideways distance in px, where the chart starts to pan.
- * @param verticalSlop up/down distance in px, where the page around the chart starts to scroll.
- * @param canPan read once per press: one finger can't change the zoom mid-gesture.
+ * @param panSlop the chart's touch slop when fully zoomed out, in px.
+ * @param touchSlop the system touch slop in px: where the page scrolls, and the zoomed-in chart pans.
  */
-
 internal class ScrubUntilPanController(
   private val panSlop: Float,
-  private val verticalSlop: Float,
+  private val touchSlop: Float,
   private val canPan: () -> Boolean,
 ) : CartesianMarkerController {
   private var down: Point? = null
@@ -33,8 +34,11 @@ internal class ScrubUntilPanController(
   private var scrubOnly = false
   /** [scrubOnly] and past [panSlop] sideways: the chart's drag owns the gesture. */
   private var scrubbing = false
+  /** Zoomed in: the finger was held long enough to ask for the tooltip. */
+  private var held = false
 
-  override val acceptsLongPress = false
+  // Vico sends LongPress only when asked; it's how "hold" reaches us when zoomed in.
+  override val acceptsLongPress = true
   // The tooltip stays under the finger, as Vico's show-on-press.
   override val lock = CartesianMarkerController.Lock.Position
 
@@ -44,7 +48,7 @@ internal class ScrubUntilPanController(
   ) =
     when (interaction) {
       is Interaction.Press -> true
-      is Interaction.Move, is Interaction.Release -> down != null
+      is Interaction.Move, is Interaction.Release, is Interaction.LongPress -> down != null
       else -> false
     }
 
@@ -58,24 +62,28 @@ internal class ScrubUntilPanController(
         panning = false
         scrubOnly = !canPan()
         scrubbing = false
+        held = false
       }
+
+      is Interaction.LongPress -> held = true
 
       is Interaction.Release -> {
         down = null
         return false
       }
+
       else -> {
         val start = down ?: return false
-        val sideways = abs(interaction.point.x - start.x) > panSlop
-        val upOrDown = abs(interaction.point.y - start.y) > verticalSlop
+        val upOrDown = abs(interaction.point.y - start.y) > touchSlop
         if (scrubOnly) {
+          val sideways = abs(interaction.point.x - start.x) > panSlop
           if (!scrubbing && upOrDown) panning = true
           if (!panning && sideways) scrubbing = true
-        } else if (sideways || upOrDown) {
+        } else if (upOrDown || abs(interaction.point.x - start.x) > touchSlop) {
           panning = true
         }
       }
     }
-    return !panning
+    return !panning && (scrubOnly || held)
   }
 }

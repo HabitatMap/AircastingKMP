@@ -13,9 +13,9 @@ fun Strings.mapTypeOptions(): List<ChoiceOption<MapType>> =
 fun Strings.regionalFormatOptions(): List<ChoiceOption<RegionalFormat>> =
   RegionalFormat.entries.map { ChoiceOption(it, display(it), preview(it)) }
 
-/** "MM/DD/YYYY • 1,234.5 • Miles" — assembled from the preset, not written per locale. */
+/** "MM/DD/YYYY • h:mm AM • 1,234.5 • Miles" — assembled from the preset, not written per locale. */
 fun Strings.preview(format: RegionalFormat): String =
-  "${format.datePattern} • 1${format.groupingSeparator}234${format.decimalSeparator}5 • " +
+  "${format.datePattern} • ${format.timePattern} • 1${format.groupingSeparator}234${format.decimalSeparator}5 • " +
     display(format.distanceUnit)
 
 /**

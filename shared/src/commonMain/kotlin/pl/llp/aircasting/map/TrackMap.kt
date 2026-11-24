@@ -57,7 +57,8 @@ fun TrackMap(
     val aq = LocalAqColors.current
     val levelColours = remember(aq) { MeasurementLevel.entries.map(aq::forLevel) }
     val uncoloured = MaterialTheme.colorScheme.primary
-    val line = MaterialTheme.colorScheme.primaryContainer
+    // Half-transparent so the map's streets show through the path (2026-11-24).
+    val line = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
     var selected by remember { mutableStateOf<Int?>(null) }
     val shown = selected?.takeIf { it < dots.size }
 
@@ -78,7 +79,7 @@ fun TrackMap(
         )
       },
     ) { liveCamera ->
-      MapDotsOverlay(dots, liveCamera, levelColours, uncoloured, line, Modifier.fillMaxSize())
+      MapDotsOverlay(dots, liveCamera, levelColours, uncoloured, line, Modifier.fillMaxSize(), markNewest = live)
       shown?.let { i ->
         MapTooltip(
           points[i], unit, timeZone,

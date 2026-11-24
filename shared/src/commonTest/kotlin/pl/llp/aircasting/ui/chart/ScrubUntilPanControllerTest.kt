@@ -8,20 +8,110 @@ import kotlin.test.assertTrue
 
 class ScrubUntilPanControllerTest {
 
-  // Slops in px: 60 sideways (the chart's pan slop), 20 up/down (the page's scroll slop).
-  private val controller = ScrubUntilPanController(panSlop = 60f, verticalSlop = 20f, canPan = { true })
+  // Slops in px: 60 = the chart's slop when fully zoomed out, 20 = the system touch slop.
+  /** Zoomed in: there is history to pan to. */
+  private val zoomedIn = ScrubUntilPanController(panSlop = 60f, touchSlop = 20f, canPan = { true })
 
   /** Fully zoomed out: the whole series fits, so there is nothing to pan. */
-  private val zoomedOut = ScrubUntilPanController(panSlop = 60f, verticalSlop = 20f, canPan = { false })
+  private val zoomedOut = ScrubUntilPanController(panSlop = 60f, touchSlop = 20f, canPan = { false })
+
+  /** What the zoomed-in controller says for [interaction], when it takes it at all. */
+  private fun shows(interaction: Interaction): Boolean {
+    assertTrue(zoomedIn.shouldAcceptInteraction(interaction, emptyList()))
+    return zoomedIn.shouldShowMarker(interaction, emptyList())
+  }
+
   private fun zoomedOutShows(interaction: Interaction): Boolean {
     assertTrue(zoomedOut.shouldAcceptInteraction(interaction, emptyList()))
     return zoomedOut.shouldShowMarker(interaction, emptyList())
   }
 
-  /** What the controller says for [interaction], when it takes it at all. */
-  private fun shows(interaction: Interaction): Boolean {
-    assertTrue(controller.shouldAcceptInteraction(interaction, emptyList()))
-    return controller.shouldShowMarker(interaction, emptyList())
+  // --- Zoomed in: drag pans, hold shows ---
+
+  @Test
+  fun zoomed_in_a_press_alone_shows_nothing() {
+    assertFalse(shows(Interaction.Press(Point(100f, 50f))))
+  }
+
+  @Test
+  fun zoomed_in_dragging_without_holding_never_scrubs() {
+    shows(Interaction.Press(Point(100f, 50f)))
+
+    assertFalse(shows(Interaction.Move(Point(110f, 50f))))
+    assertFalse(shows(Interaction.Move(Point(300f, 50f))))
+  }
+
+  @Test
+  fun zoomed_in_press_and_hold_shows_the_measurement() {
+    shows(Interaction.Press(Point(100f, 50f)))
+
+    assertTrue(shows(Interaction.LongPress(Point(100f, 50f))))
+  }
+
+  @Test
+  fun zoomed_in_a_held_finger_may_wobble_within_the_touch_slop() {
+    shows(Interaction.Press(Point(100f, 50f)))
+    shows(Interaction.LongPress(Point(100f, 50f)))
+
+    assertTrue(shows(Interaction.Move(Point(119f, 60f))))
+  }
+
+  @Test
+  fun zoomed_in_hold_then_pull_sideways_pans_and_hides_it() {
+    shows(Interaction.Press(Point(100f, 50f)))
+    shows(Interaction.LongPress(Point(100f, 50f)))
+
+    assertFalse(shows(Interaction.Move(Point(121f, 50f))))
+    // Still panning, even back over the start.
+    assertFalse(shows(Interaction.Move(Point(100f, 50f))))
+  }
+
+  @Test
+  fun zoomed_in_scrolling_the_page_up_or_down_hides_it() {
+    shows(Interaction.Press(Point(100f, 50f)))
+    shows(Interaction.LongPress(Point(100f, 50f)))
+
+    assertFalse(shows(Interaction.Move(Point(100f, 71f))))
+  }
+
+  @Test
+  fun zoomed_in_a_hold_after_the_drag_started_shows_nothing() {
+    shows(Interaction.Press(Point(100f, 50f)))
+    shows(Interaction.Move(Point(200f, 50f)))
+
+    assertFalse(shows(Interaction.LongPress(Point(200f, 50f))))
+  }
+
+  @Test
+  fun lifting_the_finger_hides_it() {
+    shows(Interaction.Press(Point(100f, 50f)))
+    shows(Interaction.LongPress(Point(100f, 50f)))
+
+    assertFalse(shows(Interaction.Release(Point(100f, 50f))))
+  }
+
+  @Test
+  fun a_new_press_forgets_the_last_hold() {
+    shows(Interaction.Press(Point(100f, 50f)))
+    shows(Interaction.LongPress(Point(100f, 50f)))
+    shows(Interaction.Release(Point(100f, 50f)))
+
+    assertFalse(shows(Interaction.Press(Point(300f, 50f))))
+    assertTrue(shows(Interaction.LongPress(Point(300f, 50f))))
+  }
+
+  @Test
+  fun moves_and_holds_without_a_press_are_ignored() {
+    // A mouse hovering, or the second finger of a pinch after Vico sent Release.
+    assertFalse(zoomedIn.shouldAcceptInteraction(Interaction.Move(Point(1f, 1f)), emptyList()))
+    assertFalse(zoomedIn.shouldAcceptInteraction(Interaction.LongPress(Point(1f, 1f)), emptyList()))
+  }
+
+  // --- Fully zoomed out: press shows, drag scrubs ---
+
+  @Test
+  fun fully_zoomed_out_the_tooltip_shows_as_soon_as_the_finger_lands() {
+    assertTrue(zoomedOutShows(Interaction.Press(Point(100f, 50f))))
   }
 
   @Test
@@ -48,59 +138,9 @@ class ScrubUntilPanControllerTest {
   }
 
   @Test
-  fun the_tooltip_shows_as_soon_as_the_finger_lands() {
-    assertTrue(shows(Interaction.Press(Point(100f, 50f))))
-  }
+  fun fully_zoomed_out_holding_keeps_it() {
+    zoomedOutShows(Interaction.Press(Point(100f, 50f)))
 
-  @Test
-  fun moving_within_the_pan_slop_scrubs() {
-    shows(Interaction.Press(Point(100f, 50f)))
-
-    assertTrue(shows(Interaction.Move(Point(159f, 50f))))
-    assertTrue(shows(Interaction.Move(Point(41f, 50f))))
-  }
-
-  @Test
-  fun moving_past_the_pan_slop_hides_it_as_the_chart_starts_panning() {
-    shows(Interaction.Press(Point(100f, 50f)))
-
-    assertFalse(shows(Interaction.Move(Point(161f, 50f))))
-  }
-
-  @Test
-  fun once_panning_it_stays_hidden_even_back_inside_the_slop() {
-    shows(Interaction.Press(Point(100f, 50f)))
-    shows(Interaction.Move(Point(200f, 50f)))
-
-    assertFalse(shows(Interaction.Move(Point(100f, 50f))))
-  }
-
-  @Test
-  fun scrolling_the_page_up_or_down_hides_it() {
-    shows(Interaction.Press(Point(100f, 50f)))
-
-    assertFalse(shows(Interaction.Move(Point(100f, 71f))))
-  }
-
-  @Test
-  fun lifting_the_finger_hides_it() {
-    shows(Interaction.Press(Point(100f, 50f)))
-
-    assertFalse(shows(Interaction.Release(Point(100f, 50f))))
-  }
-
-  @Test
-  fun a_new_press_starts_over_after_a_pan() {
-    shows(Interaction.Press(Point(100f, 50f)))
-    shows(Interaction.Move(Point(300f, 50f)))
-    shows(Interaction.Release(Point(300f, 50f)))
-
-    assertTrue(shows(Interaction.Press(Point(300f, 50f))))
-  }
-
-  @Test
-  fun moves_without_a_press_are_ignored() {
-    // A mouse hovering, or the second finger of a pinch after Vico sent Release.
-    assertFalse(controller.shouldAcceptInteraction(Interaction.Move(Point(1f, 1f)), emptyList()))
+    assertTrue(zoomedOutShows(Interaction.LongPress(Point(100f, 50f))))
   }
 }

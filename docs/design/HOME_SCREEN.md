@@ -119,7 +119,7 @@ Sections repeat across states → natural composables:
 | `on-background` | `#171C20` |
 | `on-secondary-fixed` (info title) | `#001E2B` |
 | `on-secondary` (button label) | `#003547` |
-| green (Good badge/dot) | Figma `#006E02`, badge bg `#E8F5E9` — app uses `AqPalette` `#96D788` since 2026-11-18 |
+| green (Good badge/dot) | Figma `#006E02`, badge bg `#E8F5E9`. Dots/borders/badge fills use `AqPalette` `#96D788` (since 2026-11-18); level **text** uses the darker `AqTextPaletteLight` (`#006E02`, moderate `#86711D`, orange `#E8720C`, red `#C62828`) in light theme (2026-11-24) |
 | gov-tag border | `#00B2EF`, bg `rgba(10,125,163,0.08)` |
 
 ### Typography (Roboto)

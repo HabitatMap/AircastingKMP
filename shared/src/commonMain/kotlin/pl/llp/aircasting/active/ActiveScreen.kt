@@ -63,7 +63,9 @@ import pl.llp.aircasting.ui.components.SectionHeader
 import pl.llp.aircasting.ui.components.StreamChip
 import pl.llp.aircasting.ui.components.TintedTag
 import pl.llp.aircasting.ui.components.UserTag
+import pl.llp.aircasting.ui.format.LocalDateFormatter
 import pl.llp.aircasting.ui.theme.LocalAqColors
+import pl.llp.aircasting.ui.theme.LocalAqTextColors
 import kotlin.time.Clock
 import kotlin.time.Instant
 import pl.llp.aircasting.ui.components.LoadingSpinner
@@ -247,6 +249,12 @@ private fun CardHeader(card: ActiveSessionCard, now: Instant, tag: String) {
           style = MaterialTheme.typography.titleSmallEmphasized,
           color = MaterialTheme.colorScheme.onSurface
         )
+        // Same start - newest measurement line as the details screen, its own row (2026-11-24).
+        Text(
+          LocalDateFormatter.current.range(card.startTime, card.lastSeen, card.timeZone),
+          style = MaterialTheme.typography.bodySmall,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
         DotSeparatedRow(
           card.meta(now, strings),
           MaterialTheme.typography.bodySmall,
@@ -268,10 +276,10 @@ private fun CardHeader(card: ActiveSessionCard, now: Instant, tag: String) {
 /** Same pill shape as [LevelBadge], in the "unhealthy" red, with the Bluetooth-off glyph. */
 @Composable
 private fun ConnectionLostBadge() {
-  val red = LocalAqColors.current.unhealthy
+  val red = LocalAqTextColors.current.unhealthy
   Row(
     Modifier.clip(RoundedCornerShape(100.dp))
-      .background(red.copy(alpha = 0.12f))
+      .background(LocalAqColors.current.unhealthy.copy(alpha = 0.12f))
       .padding(horizontal = 8.dp, vertical = 2.dp),
     horizontalArrangement = Arrangement.spacedBy(4.dp),
     verticalAlignment = Alignment.CenterVertically,

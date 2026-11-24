@@ -3,8 +3,7 @@ package pl.llp.aircasting.explore
 import pl.llp.aircasting.domain.StationDetails
 import pl.llp.aircasting.domain.StationStream
 import pl.llp.aircasting.i18n.Strings
-import pl.llp.aircasting.mydata.dateTimeLabel
-import pl.llp.aircasting.mydata.timeRangeLabel
+import pl.llp.aircasting.ui.format.DateFormatter
 
 /** One stat column on the details screen. */
 internal data class DetailsStat(val label: String, val value: Int?)
@@ -29,10 +28,12 @@ internal fun StationDetails.stats(stream: StationStream, strings: Strings): List
 }
 
 /**
- * Own sessions' line under the title (Figma 1138:28732, the "Location name" slot): start only while
- * live, start - end once finished, like legacy `DurationStringHelper`. Null for Explore stations.
+ * Own sessions' line under the title (Figma 1138:28732, the "Location name" slot): start - newest
+ * measurement, live or finished (*decided 2026-11-24*; legacy `DurationStringHelper` showed the
+ * start alone while live and used the finish tap as the end). The start alone until the first
+ * measurement. Null for Explore stations.
  */
-internal fun StationDetails.timeRange(): String? {
+internal fun StationDetails.timeRange(dates: DateFormatter): String? {
   val start = startTime ?: return null
-  return endTime?.let { timeRangeLabel(start, it, timeZone) } ?: dateTimeLabel(start, timeZone)
+  return dates.range(start, streams.mapNotNull { it.measuredAt }.maxOrNull(), timeZone)
 }

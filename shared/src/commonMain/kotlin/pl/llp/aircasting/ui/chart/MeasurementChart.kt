@@ -7,6 +7,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -59,6 +61,8 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.withContext
 import pl.llp.aircasting.domain.MeasurementLevel
 import pl.llp.aircasting.domain.SensorThreshold
+import pl.llp.aircasting.ui.format.DateFormatter
+import pl.llp.aircasting.ui.format.LocalDateFormatter
 import pl.llp.aircasting.ui.theme.AqColors
 import pl.llp.aircasting.ui.theme.LocalAqColors
 import kotlin.math.roundToInt
@@ -66,7 +70,7 @@ import kotlin.math.roundToInt
 /** Seconds visible at first: the design frame spans ~8 h (19:00–03:00). Open with design: see EXPLORE_SCREEN.md. */
 private const val INITIAL_VISIBLE_SECONDS = 8 * 3_600.0
 
-/** How far sideways (from where the finger landed) the tooltip scrubs before the chart pans. System default: 8 dp. */
+/** Fully zoomed out: how far sideways the tooltip scrubs before the chart's drag owns the gesture. Zoomed in the chart uses the system slop (8 dp). */
 private val PanSlop = 48.dp
 /** The system configuration with the chart's own touch slop. */
 private class ChartViewConfiguration(system: ViewConfiguration, override val touchSlop: Float) :
@@ -122,12 +126,18 @@ fun MeasurementChart(
       visibleRange
   }
   val firstX = points.first().x
-  val timeLabels = remember { TimeAxisLabels() }
+  val dates = LocalDateFormatter.current
+  val timeLabels = remember(dates) { TimeAxisLabels(dates) }
   val labelColor = colors.onSurfaceVariant
   val system = LocalViewConfiguration.current
   val panSlop = with(LocalDensity.current) { PanSlop.toPx() }
-  val chartConfiguration = remember(system, panSlop) { ChartViewConfiguration(system, panSlop) }
   val scrollState = rememberVicoScrollState(initialScroll = Scroll.Absolute.End)
+  val canPan by remember(scrollState) { derivedStateOf { scrollState.maxValue >= 1f } }
+  // Zoomed in, a drag pans from the system slop like any scrolling view; fully zoomed out the
+  // large slop leaves room to scrub (see ScrubUntilPanController).
+  val chartConfiguration = remember(system, panSlop, canPan) {
+    ChartViewConfiguration(system, if (canPan) system.touchSlop else panSlop)
+  }
   FollowNewestPoint(scrollState)
   val markerController = remember(panSlop, system.touchSlop, scrollState) {
     ScrubUntilPanController(panSlop, system.touchSlop, canPan = { scrollState.maxValue >= 1f })
@@ -184,8 +194,9 @@ fun MeasurementChart(
               )
             },
           ),
-          valueFormatter = remember(unit, threshold, aq, typography, colors) {
+          valueFormatter = remember(unit, threshold, aq, typography, colors, dates) {
             MarkerFormatter(
+              dates,
               unit,
               threshold,
               aq,
@@ -278,7 +289,7 @@ private class UnderLayers(private val delegate: Decoration) : Decoration {
  *
  * Reserves no layer padding (unlike Vico's aligned placer), so the line runs edge to edge.
  */
-private class TimeAxisLabels : HorizontalAxis.ItemPlacer, CartesianValueFormatter {
+private class TimeAxisLabels(private val dates: DateFormatter) : HorizontalAxis.ItemPlacer, CartesianValueFormatter {
   /** From the latest [getLabelValues], which Vico calls just before formatting what it returns. */
   private var shownTimes = emptyMap<Double, Double>()
 
@@ -294,10 +305,14 @@ private class TimeAxisLabels : HorizontalAxis.ItemPlacer, CartesianValueFormatte
   }
 
   override fun format(context: CartesianMeasuringContext, value: Double, verticalAxisPosition: Axis.Position.Vertical?) =
-    hourMinuteSecondUtc(shownTimes[value] ?: value)
+    dates.chartTime(shownTimes[value] ?: value)
 
-  /** `00:00:00`, `01:01:01` … `09:09:09`: every digit in each last place, so the widest label whatever the font. */
-  private val measuredValues = List(10) { it * 3_661.0 }
+  /**
+   * One label per hour of the day (`00:00:00`, `01:01:01` … `23:03:03`, or `12:00:00 AM` …
+   * `11:03:03 PM`): every hour, both AM and PM, and every digit in the last places, so the widest
+   * label whatever the font or clock.
+   */
+  private val measuredValues = List(24) { h -> h * 3_600.0 + (h % 10) * 61 }
 
   override fun getWidthMeasurementLabelValues(
     context: CartesianMeasuringContext,
@@ -334,6 +349,7 @@ val ElevationLight1 = listOf(
 )
 
 private class MarkerFormatter(
+  private val dates: DateFormatter,
   private val unit: String,
   private val threshold: SensorThreshold?,
   private val aq: AqColors,
@@ -342,7 +358,7 @@ private class MarkerFormatter(
   override fun format(context: CartesianDrawingContext, targets: List<CartesianMarker.Target>): CharSequence {
     val entry = (targets.first() as LineCartesianLayerMarkerTarget).points.first().entry
     return buildAnnotatedString {
-      append(hourMinuteSecondUtc(entry.x))
+      append(dates.chartTime(entry.x))
       append('\n')
       threshold?.let { withStyle(SpanStyle(color = aq.forLevel(it.levelFor(entry.y)))) { append("● ") } }
       withStyle(valueStyle) { append("${entry.y.roundToInt()}") }

@@ -36,16 +36,16 @@ class AppSettingsPickersTest {
   }
 
   @Test
-  fun `each regional preset previews its own separators and distance unit`() {
+  fun `each regional preset previews its own date and clock and separators and distance unit`() {
     // The whole reason RegionalFormat carries its separators: this line is computed from them,
     // so a preset can never advertise a format it does not produce.
     assertEquals(
       listOf(
-        "US format" to "MM/DD/YYYY • 1,234.5 • Miles",
-        "UK format" to "DD/MM/YYYY • 1,234.5 • Miles",
-        "Central European" to "DD.MM.YYYY • 1.234,5 • Kilometers",
-        "Nordic" to "DD.MM.YYYY • 1 234,5 • Kilometers",
-        "East Asian" to "YYYY/MM/DD • 1,234.5 • Kilometers",
+        "US format" to "MM/DD/YYYY • h:mm AM • 1,234.5 • Miles",
+        "UK format" to "DD/MM/YYYY • HH:mm • 1,234.5 • Miles",
+        "Central European" to "DD.MM.YYYY • HH:mm • 1.234,5 • Kilometers",
+        "Nordic" to "DD.MM.YYYY • HH:mm • 1 234,5 • Kilometers",
+        "East Asian" to "YYYY/MM/DD • HH:mm • 1,234.5 • Kilometers",
       ),
       EnStrings.regionalFormatOptions().map { it.label to it.supporting },
     )

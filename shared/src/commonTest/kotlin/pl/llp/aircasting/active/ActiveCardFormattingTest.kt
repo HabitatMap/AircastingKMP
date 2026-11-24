@@ -1,8 +1,10 @@
 package pl.llp.aircasting.active
 
+import kotlinx.datetime.TimeZone
 import pl.llp.aircasting.i18n.EnStrings
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 
@@ -49,6 +51,8 @@ class ActiveCardFormattingTest {
     tags = emptyList(),
     deviceModel = "AirBeamMini",
     state = if (lastSeen == null) CardState.NoDataYet else CardState.Live,
+    startTime = now - 1.hours,
+    timeZone = TimeZone.UTC,
     lastSeen = lastSeen,
     streams = emptyList(),
     selected = null,

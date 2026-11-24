@@ -53,6 +53,7 @@ import pl.llp.aircasting.ui.components.LevelDot
 import pl.llp.aircasting.ui.components.LoadingSpinner
 import pl.llp.aircasting.ui.components.StreamChip
 import pl.llp.aircasting.ui.components.TintedTag
+import pl.llp.aircasting.ui.format.LocalDateFormatter
 import pl.llp.aircasting.ui.deviceDisplayName
 import pl.llp.aircasting.ui.streamChipLabel
 import kotlin.time.Clock
@@ -120,7 +121,7 @@ fun StationDetailsScreen(
               )
               // Own sessions: their time range in the design's "Location name" slot (1138:28732).
               // Explore stations' location name needs reverse geocoding — later slice.
-              details.timeRange()?.let {
+              details.timeRange(LocalDateFormatter.current)?.let {
                 Text(it, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface)
               }
               val clock = koinInject<Clock>()

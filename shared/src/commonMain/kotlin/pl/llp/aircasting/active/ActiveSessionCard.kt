@@ -1,5 +1,6 @@
 package pl.llp.aircasting.active
 
+import kotlinx.datetime.TimeZone
 import pl.llp.aircasting.domain.MeasurementLevel
 import pl.llp.aircasting.domain.Thresholds
 import pl.llp.aircasting.domain.session.Session
@@ -30,7 +31,10 @@ data class ActiveSessionCard(
   val tags: List<String>,
   val deviceModel: String?,
   val state: CardState,
-  /** Newest reading across all streams: drives "1 min ago". */
+  /** With [lastSeen] as the end: the card's time row, formatted by the view on this zone's clock. */
+  val startTime: Instant,
+  val timeZone: TimeZone,
+  /** Newest reading across all streams: drives "1 min ago" and ends the time row. */
   val lastSeen: Instant?,
   /** In chip order. */
   val streams: List<CardStream>,
@@ -57,6 +61,8 @@ fun activeSessionCard(
       lastSeen == null -> CardState.NoDataYet
       else -> CardState.Live
     },
+    startTime = session.startTime,
+    timeZone = TimeZone.of(session.timeZone),
     lastSeen = lastSeen,
     streams = streams,
     selected = streams.preferred(savedSensor) { it.sensorName },

@@ -300,7 +300,7 @@ object FrStrings : Strings {
   override val aqModerateLabel = "Modérée"
   override val aqModerateDescription =
     "La qualité de l'air est acceptable pour la plupart des personnes."
-  override val aqUnhealthySensitiveLabel = "Mauvaise pour les groupes sensibles"
+  override val aqUnhealthySensitiveLabel = "Médiocre"
   override val aqUnhealthySensitiveDescription =
     "Les groupes sensibles devraient limiter les efforts en plein air."
   override val aqUnhealthyLabel = "Mauvaise"

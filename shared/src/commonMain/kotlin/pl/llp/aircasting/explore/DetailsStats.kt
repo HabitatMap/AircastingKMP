@@ -12,7 +12,7 @@ internal data class DetailsStat(val label: String, val value: Int?)
 /**
  * - Explore station: NOW · MIN. 24H · MAX. 24H, the server's last 24 h.
  * - Our live session: NOW · AVG. · MIN. · MAX. over the whole session (Figma 859:7216).
- * - Our own fixed session: NOW only (see below).
+ * - Our own fixed session: NOW only while live; AVG. · MIN. · MAX. empty once finished (see below).
  * - Our finished session: AVG. · MIN. · MAX.: nothing is "now" any more. Legacy hides the stats
  *   for dormant sessions entirely; the redesign's past session card shows these three.
  */
@@ -21,15 +21,17 @@ internal fun StationDetails.stats(stream: StationStream, strings: Strings): List
   if (startTime == null) {
     return listOf(now, DetailsStat(strings.stationMin24h, stream.min), DetailsStat(strings.stationMax24h, stream.max))
   }
-  // Our own fixed session: the server sends no avg/min/max (/fixed_sessions has only the last reading),
-  // and a fixed session can run for months, so they'd need a server-side aggregate. NOW until then.
-  if (type == SessionType.FIXED) return listOf(now)
-  val wholeSession = listOf(
-    DetailsStat(strings.pastSessionsAvg.uppercase(), stream.avg),
-    DetailsStat(strings.pastSessionsMin.uppercase(), stream.min),
-    DetailsStat(strings.pastSessionsMax.uppercase(), stream.max),
+  fun wholeSession(avg: Int?, min: Int?, max: Int?) = listOf(
+    DetailsStat(strings.pastSessionsAvg.uppercase(), avg),
+    DetailsStat(strings.pastSessionsMin.uppercase(), min),
+    DetailsStat(strings.pastSessionsMax.uppercase(), max),
   )
-  return if (endTime == null) listOf(now) + wholeSession else wholeSession
+  // Our own fixed session: the server sends no avg/min/max (/fixed_sessions has only the last reading),
+  // and a fixed session can run for months, so they'd need a server-side aggregate. NOW while live;
+  // once finished, the finished columns, empty (--) until then.
+  if (type == SessionType.FIXED) return if (endTime == null) listOf(now) else wholeSession(null, null, null)
+  val whole = wholeSession(stream.avg, stream.min, stream.max)
+  return if (endTime == null) listOf(now) + whole else whole
 }
 
 /**

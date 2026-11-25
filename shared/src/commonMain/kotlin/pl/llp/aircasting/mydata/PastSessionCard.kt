@@ -5,6 +5,7 @@ import pl.llp.aircasting.active.chipRank
 import pl.llp.aircasting.active.preferred
 import pl.llp.aircasting.domain.MeasurementLevel
 import pl.llp.aircasting.domain.Thresholds
+import pl.llp.aircasting.domain.session.SessionType
 import pl.llp.aircasting.recording.PhoneMicDeviceId
 import kotlin.time.Instant
 
@@ -25,6 +26,8 @@ data class PastSessionCard(
   val tags: List<String>,
   /** Phone-mic sessions are MOBILE rows too, told apart by [PhoneMicDeviceId]: they get their own tag. */
   val isPhoneMic: Boolean,
+  /** Fixed sessions get their own tag and open the fixed session details. */
+  val isFixed: Boolean,
   /** Formatted by the view with `LocalDateFormatter`, on the session's own wall clock. */
   val startTime: Instant,
   val endTime: Instant,
@@ -44,6 +47,7 @@ fun pastSessionCard(past: PastSession, thresholds: Thresholds, savedSensor: Stri
     name = session.name,
     tags = session.tags,
     isPhoneMic = session.deviceId == PhoneMicDeviceId,
+    isFixed = session.type == SessionType.FIXED,
     startTime = session.startTime,
     // A past session always has an end; fall back to the start rather than crash on a bad row.
     endTime = session.endTime ?: session.startTime,

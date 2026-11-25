@@ -52,6 +52,14 @@ class DetailsStatsTest {
   }
 
   @Test
+  fun finished_own_fixed_session_shows_empty_avg_min_max_until_the_server_sends_them() {
+    assertEquals(
+      listOf(DetailsStat("AVG.", null), DetailsStat("MIN.", null), DetailsStat("MAX.", null)),
+      details(startTime = start, endTime = start + 6.hours).copy(type = SessionType.FIXED).stats(stream, EnStrings),
+    )
+  }
+
+  @Test
   fun finished_session_has_no_now() {
     assertEquals(
       listOf(DetailsStat("AVG.", 12), DetailsStat("MIN.", 3), DetailsStat("MAX.", 40)),

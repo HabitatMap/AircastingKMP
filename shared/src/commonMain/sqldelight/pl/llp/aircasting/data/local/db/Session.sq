@@ -121,20 +121,24 @@ selectSessionStreamTrack:
     AND (m.latitude != 200.0 OR m.longitude != 200.0)
   ORDER BY m.time;
 
-selectPastMobile:
+-- Every finished session: mobile (AirBeam, phone mic) and fixed. A fixed row gets end_time only from
+-- the backend's finished_at.
+selectPast:
 SELECT *
 FROM sessions
-WHERE type = 'MOBILE' AND end_time IS NOT NULL
+WHERE end_time IS NOT NULL
 ORDER BY start_time DESC;
 
--- Whole-session aggregates per stream of every finished mobile session. A stream with no
--- measurements still comes back (LEFT JOIN), its aggregates null.
-selectPastMobileStreamStats:
+-- Whole-session aggregates per stream of every finished session. A stream with no
+-- measurements still comes back (LEFT JOIN), its aggregates null. Fixed streams never join their
+-- readings (the type check sits in ON, not WHERE, so the streams themselves still come back): we keep
+-- at most their last 24 h, so any aggregate would be wrong (-- until the server sends one).
+selectPastStreamStats:
 SELECT st.session_uuid, st.sensor_name, st.unit_symbol,
        AVG(m.value) AS avg_value, MIN(m.value) AS min_value, MAX(m.value) AS max_value
 FROM measurement_streams st
 JOIN sessions se ON se.uuid = st.session_uuid
-LEFT JOIN measurements m ON m.stream_id = st.id
-WHERE se.type = 'MOBILE' AND se.end_time IS NOT NULL
+LEFT JOIN measurements m ON m.stream_id = st.id AND se.type = 'MOBILE'
+WHERE se.end_time IS NOT NULL
 GROUP BY st.id
 ORDER BY st.id;

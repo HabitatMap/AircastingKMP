@@ -22,6 +22,7 @@ fun PastSessionsScreen(
   onBack: () -> Unit,
   onSelectStream: (uuid: String, sensorName: String) -> Unit,
   onSeeDetails: (uuid: String, sensorName: String?) -> Unit,
+  onSeeFixedDetails: (uuid: String, sensorName: String?) -> Unit,
 ) {
   SettingsScaffold(title = LocalStrings.current.pastSessionsTitle, onBack = onBack) { padding ->
     val direction = LocalLayoutDirection.current
@@ -40,7 +41,7 @@ fun PastSessionsScreen(
           card,
           summaryOnly = false,
           onSelectStream = { onSelectStream(card.uuid, it) },
-          onSeeDetails = { onSeeDetails(card.uuid, card.selected?.sensorName) },
+          onSeeDetails = { (if (card.isFixed) onSeeFixedDetails else onSeeDetails)(card.uuid, card.selected?.sensorName) },
           modifier = Modifier.fillMaxWidth(),
         )
       }

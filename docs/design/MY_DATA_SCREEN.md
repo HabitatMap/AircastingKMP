@@ -22,13 +22,13 @@ legacy's `MOBILE_DORMANT` tab).
 
 **Built (2026-11-23):** Past Sessions only — section, empty card, "View all" list, See details.
 **Parked:** Favorites, search, Filters, the list/card view toggle, the card's ⋯ menu
-(edit/delete/share — next slice), fixed sessions in Past Sessions.
+(edit/delete/share — next slice).
+**Added (2026-11-25):** finished fixed sessions in Past Sessions — see *Fixed sessions* below.
 
 ## Decided rules
 
-- **Which sessions:** finished `MOBILE` rows (`end_time IS NOT NULL`), AirBeam and phone mic alike,
-  newest start first. Phone mic = `device_id = "Builtin"`, tagged PHONE MICROPHONE. Fixed sessions
-  are not stored with measurements locally, so they're out until they come from the server.
+- **Which sessions:** finished rows (`end_time IS NOT NULL`) — mobile (AirBeam and phone mic) and
+  fixed alike — newest start first. Phone mic = `device_id = "Builtin"`, tagged PHONE MICROPHONE.
 - **Overview card** shows the selected stream's **session average**; the **list card** shows
   **Avg / Min / Max** over the whole session. Each value gets its own threshold colour; no
   thresholds / no value = grey dot and `--`.
@@ -47,3 +47,21 @@ legacy's `MOBILE_DORMANT` tab).
 - **Live-update cost:** the list re-queries only when the `sessions` table changes. The stats
   aggregate scans every past measurement, and an active recording writes each second — see
   `LocalPastSessionsRepository`. SD-card sync will need to re-trigger it.
+
+## Fixed sessions (*added 2026-11-25*)
+
+- **Only when the backend says finished:** a fixed row has an `end_time` only from the backend's
+  `finished_at` (see `ACTIVE_SCREEN.md` → *Fixed sessions*), so Past Sessions lists exactly those. Legacy
+  fixed sessions all have `finished_at: null`: none show here until the backend finishes them.
+- **Sync — every page** (*decided 2026-11-25*): each subscription to the list (the My Data tab,
+  "View all") runs one `FixedSessionsSync.syncFinished`: `GET /fixed_sessions` page by page (50 each, up
+  to `meta.total_pages`, newest first), storing **only the finished entries**, one transaction per page,
+  so the list fills from the top while later pages load. Active's 50 cap doesn't apply here — it exists
+  because Active needs everything in one polled request; but not-finished entries are skipped, else every
+  legacy session (`finished_at: null`) past the newest 50 would land on Active as Offline. A failed page
+  is logged; pages already stored stay.
+- **Card values: `--`** (*decided 2026-11-25*): whole-session Avg / Min / Max need a server aggregate
+  (`/fixed_sessions` sends only the last reading; locally we keep at most 24 h), so a fixed card's
+  aggregates are null — grey dot, `--`. The stats query doesn't join fixed streams' readings at all.
+- **Tag** AIRBEAM FIXED; **See details** opens the fixed session details (`FixedSessionDetailsRoute`),
+  whose stats are AVG. · MIN. · MAX. as `--` once finished.

@@ -25,7 +25,9 @@ import pl.llp.aircasting.data.auth.AccountProfile
 import pl.llp.aircasting.data.auth.StoredAuthSession
 import pl.llp.aircasting.data.local.FixedSessionDetailsRepository
 import pl.llp.aircasting.data.local.LocalActiveFixedSessionsRepository
+import pl.llp.aircasting.data.local.LocalPastSessionsRepository
 import pl.llp.aircasting.data.local.LocalSessionDetailsRepository
+import pl.llp.aircasting.data.local.SyncingPastSessionsRepository
 import pl.llp.aircasting.data.local.testDatabase
 import pl.llp.aircasting.domain.session.SessionStatus
 import pl.llp.aircasting.domain.session.SessionType
@@ -44,6 +46,7 @@ class FixedSessionsSyncTest {
   private val auth = StoredAuthSession(MapSettings())
   private var failing = false
   private var listJson = LIST_JSON
+  private var listPages = emptyMap<Int, String>()
   private var sessionJson = SESSION_JSON
   private var measurementsJson = "[]"
 
@@ -112,6 +115,34 @@ class FixedSessionsSyncTest {
     val row = db.sessionQueries.selectSessionByUuid("f1").executeAsOne()
     assertEquals(SessionStatus.FINISHED, row.status)
     assertEquals(Instant.fromEpochMilliseconds(FINISHED_AT), row.end_time)
+  }
+
+  @Test
+  fun opening_past_sessions_syncs_and_shows_a_session_finished_on_the_server() = runTest {
+    auth.start("user-token", PROFILE)
+    listJson = LIST_JSON.replace(""""finished_at":null""", """"finished_at":$FINISHED_AT""")
+
+    pastSessions().observe().test {
+      assertEquals(emptyList(), awaitItem()) // the empty DB, before the sync answers
+      assertEquals(listOf("f1"), awaitItem().map { it.session.uuid })
+    }
+    assertEquals(1, requests.size)
+  }
+
+  @Test
+  fun past_sessions_walk_every_page_and_store_only_the_finished_ones() = runTest {
+    auth.start("user-token", PROFILE)
+    listPages = mapOf(
+      1 to page(1, 2, session("f1"), session("live", finished = false)),
+      2 to page(2, 2, session("f2")),
+    )
+
+    sync().syncFinished()
+
+    assertEquals(listOf("1", "2"), requests.map { it.url.parameters["page"] })
+    assertEquals(listOf("50", "50"), requests.map { it.url.parameters["per_page"] })
+    assertEquals(Instant.fromEpochMilliseconds(FINISHED_AT), db.sessionQueries.selectSessionByUuid("f2").executeAsOne().end_time)
+    assertEquals(null, db.sessionQueries.selectSessionByUuid("live").executeAsOneOrNull())
   }
 
   @Test
@@ -335,6 +366,14 @@ class FixedSessionsSyncTest {
   private fun readings(vararg times: Instant) =
     times.joinToString(",", "[", "]") { """{"time":${it.toEpochMilliseconds()},"value":5.0}""" }
 
+  private fun page(page: Int, totalPages: Int, vararg sessions: String) =
+    """{"meta":{"total":${totalPages * 50},"page":$page,"per_page":50,"total_pages":$totalPages},""" +
+      """"sessions":[${sessions.joinToString(",")}]}"""
+
+  private fun session(uuid: String, finished: Boolean = true) =
+    SESSION_JSON.replace(""""f1"""", """"$uuid"""")
+      .let { if (finished) it.replace(""""finished_at":null""", """"finished_at":$FINISHED_AT""") else it }
+
   /** The engine and DB reads run on the test scheduler: otherwise virtual time races ahead and polls early. */
   private fun TestScope.sync(): FixedSessionsSync {
     val engine = MockEngine(
@@ -346,7 +385,7 @@ class FixedSessionsSyncTest {
             "/api/v3/fixed_sessions/f1/finish" -> FINISH_JSON
             "/api/v3/fixed_sessions/f1" -> sessionJson
             "/api/v3/fixed_sessions/f1/measurements" -> measurementsJson
-            else -> listJson
+            else -> listPages[request.url.parameters["page"]?.toInt()] ?: listJson
           }
           if (failing) respondError(HttpStatusCode.InternalServerError)
           else respond(body, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
@@ -363,6 +402,10 @@ class FixedSessionsSyncTest {
 
   private fun TestScope.details() = FixedSessionDetailsRepository(
     LocalSessionDetailsRepository(db.sessionQueries, UnconfinedTestDispatcher(testScheduler)), sync(),
+  )
+
+  private fun TestScope.pastSessions() = SyncingPastSessionsRepository(
+    LocalPastSessionsRepository(db.sessionQueries, UnconfinedTestDispatcher(testScheduler)), sync(),
   )
 
   private companion object {

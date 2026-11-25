@@ -13,8 +13,15 @@ import pl.llp.aircasting.mydata.PastSessionsViewModel
 data object PastSessionsRoute
 
 @Composable
-fun PastSessionsDestination(onBack: () -> Unit, onOpenSession: (uuid: String, sensorName: String?) -> Unit) {
+fun PastSessionsDestination(
+  onBack: () -> Unit,
+  onOpenSession: (uuid: String, sensorName: String?) -> Unit,
+  onOpenFixedSession: (uuid: String, sensorName: String?) -> Unit,
+) {
   val vm = koinViewModel<PastSessionsViewModel>()
   val state by vm.state.collectAsStateWithLifecycle()
-  PastSessionsScreen(state, onBack = onBack, onSelectStream = vm::selectStream, onSeeDetails = onOpenSession)
+  PastSessionsScreen(
+    state, onBack = onBack, onSelectStream = vm::selectStream,
+    onSeeDetails = onOpenSession, onSeeFixedDetails = onOpenFixedSession,
+  )
 }

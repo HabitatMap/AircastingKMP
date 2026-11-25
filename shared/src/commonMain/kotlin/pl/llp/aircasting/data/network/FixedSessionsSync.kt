@@ -40,8 +40,22 @@ class FixedSessionsSync(
     //  The full list (500) took 11 s for an account with 212 sessions, past the 10 s timeout, so an
     //  active session older than the newest 50 is missed. Legacy sessions all have finished_at null;
     //  the backend is to finish those itself.
-    val sessions = api.listSessions(token, perPage = ONE_PAGE).sessions
+    val sessions = api.listSessions(token, perPage = PAGE_SIZE).sessions
     write { sessions.forEach { sync(it) } }
+  }
+
+  /**
+   * Every page of `GET /fixed_sessions`, for Past Sessions: stores the ones the backend reports finished,
+   * one transaction per page, newest first, so the list fills from the top while later pages load.
+   * Not-finished entries are skipped: Active's [syncList] owns those, and storing every one would put each
+   * legacy session (finished_at null) on Active as Offline.
+   */
+  suspend fun syncFinished() = withToken("finished fixed_sessions sync") { token ->
+    var page = 1
+    do {
+      val answer = api.listSessions(token, page, PAGE_SIZE)
+      write { answer.sessions.filter { it.finishedAt != null }.forEach { sync(it) } }
+    } while (page++ < answer.meta.totalPages)
   }
 
   /** `GET /fixed_sessions/{uuid}`: refreshes one session (details opened); finished there → finished here. */
@@ -164,7 +178,7 @@ class FixedSessionsSync(
   }
 
   private companion object {
-    const val ONE_PAGE = 50
+    const val PAGE_SIZE = 50
     val HISTORY = 24.hours
     val WINDOW = 12.hours
     val log = Logger.withTag("FixedSessionsSync")

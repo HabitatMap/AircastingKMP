@@ -89,8 +89,9 @@ and does nothing until sync exists.
 - **Finished only by the backend's `finished_at`** (*decided 2026-11-24*): a row's `end_time` (status
   `FINISHED`) is always a `finished_at` from the backend — from the answer to the user's own Finish
   (`POST .../finish`), or from a list / details sync that reports a stored session finished (e.g. on the
-  web). Either way the DB flow drops its card from Active. A finished session is never inserted, only an
-  already stored one updated. A `finished_at: null` never reopens a row (the sync doesn't touch
+  web). Either way the DB flow drops its card from Active and it moves to My Data → Past Sessions. A
+  session the list reports already finished is stored as finished (*changed 2026-11-25*, for Past
+  Sessions; before, finished ones were never inserted). A `finished_at: null` never reopens a row (the sync doesn't touch
   status/`end_time` otherwise, so a list answered just before a finish can't undo it), and a row missing
   from the answer just stays.
 - **Sign-out** (*decided 2026-11-24*): `FixedSessionsSync.clearWhenSignedOut` (started with Koin, runs for
@@ -124,8 +125,8 @@ and does nothing until sync exists.
   now (`ActiveViewModel.reconnect`); a station that came back flips to Live without waiting for the poll.
 - **Finish** (*added 2026-11-24*): same confirmation dialog, then `POST /api/v3/fixed_sessions/{uuid}/finish`
   (server stamps `finished_at`, drops later uploads). The answer's `finished_at` marks the row `FINISHED`,
-  so the DB flow drops the card — no re-fetch. Nothing to stop locally. A failed call is only logged; the card stays and Finish can be tapped again. Note the
-  dialog's "moves it to Past Sessions" copy is mobile-only today: My Data doesn't list fixed sessions yet.
+  so the DB flow drops the card — no re-fetch. Nothing to stop locally. A failed call is only logged; the card stays and Finish can be tapped again. The
+  finished row then shows in My Data → Past Sessions, as the dialog says.
 - **Meta row** leads with the placement: `Indoor • AirBeam Mini • 1 min ago` (Outdoor likewise).
 - **Time row** — start - newest reading, like mobile; omitted while `start_time` is null.
 
@@ -188,7 +189,9 @@ a track, and each subscription also syncs). Koin definitions under `FixedSession
   → no Map tab.
 - **Stats: NOW only** for now. Figma shows Now · Avg · Min · Max, but `/fixed_sessions` sends only the
   last reading and a fixed session can run for months, so whole-session avg/min/max need a server
-  aggregate — open question for the backend.
+  aggregate — open question for the backend. A **finished** fixed session drops NOW like a finished mobile
+  one and shows **AVG. · MIN. · MAX. as `--`** until that aggregate exists (*decided 2026-11-25*); the
+  level badge, which follows AVG., stays grey.
 
 ## Open (parked) questions
 

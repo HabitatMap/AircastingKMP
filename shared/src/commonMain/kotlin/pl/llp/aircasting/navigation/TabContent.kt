@@ -37,15 +37,25 @@ fun TabContent(
     )
     AppTab.Explore -> ExploreRoute(onOpenStation)
     AppTab.Active -> ActiveRoute(onStartNewSession, onOpenSession, onOpenFixedSession)
-    AppTab.MyData -> MyDataRoute(onOpenPastSessions, onOpenSession)
+    AppTab.MyData -> MyDataRoute(onOpenPastSessions, onOpenSession, onOpenFixedSession)
   }
 }
 
 @Composable
-private fun MyDataRoute(onViewAllPast: () -> Unit, onOpenSession: (String, String?) -> Unit) {
+private fun MyDataRoute(
+  onViewAllPast: () -> Unit,
+  onOpenSession: (String, String?) -> Unit,
+  onOpenFixedSession: (String, String?) -> Unit,
+) {
   val vm = koinViewModel<PastSessionsViewModel>()
   val state by vm.state.collectAsStateWithLifecycle()
-  MyDataScreen(state, onSelectStream = vm::selectStream, onViewAllPast = onViewAllPast, onSeeDetails = onOpenSession)
+  MyDataScreen(
+    state,
+    onSelectStream = vm::selectStream,
+    onViewAllPast = onViewAllPast,
+    onSeeDetails = onOpenSession,
+    onSeeFixedDetails = onOpenFixedSession,
+  )
 }
 
 @Composable

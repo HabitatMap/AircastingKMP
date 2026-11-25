@@ -492,6 +492,10 @@ transports (BLE, WiFi-SoftAP, file I/O) are **PLATFORM**; HTTP is **CHANGE-LIKEL
    A cursor rather than legacy's "last stored measurement", because the list sync stores each stream's
    newest reading alone (for the Active card), past a gap the graph hasn't fetched yet.
 
+   **When measurements and sessions are fetched** (legacy poll-everything vs the rewrite's lazy
+   policy, `sync_with_versioning` vs the proposed change feed, the backend ask): see
+   [`SYNC.md`](./SYNC.md).
+
 **Dedup differs:** V1 mobile filters `time > lastMeasurementTime`; V2 relies on the DB
 unique index `(session_id, stream_id, time)` + `IGNORE`. Preserve the dedup — in the rewrite
 the key is `PRIMARY KEY (stream_id, time)` (see rule #5).

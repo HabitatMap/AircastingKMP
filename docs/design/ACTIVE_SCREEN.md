@@ -85,7 +85,7 @@ and does nothing until sync exists.
   (nor a not-finished filter) yet, so the sync asks for one page of the newest 50 and keeps those with
   `finished_at == null`. 500 took 11 s for an account with 212 fixed sessions, past the client's 10 s
   timeout. Once the backend endpoint exists, call it and drop the paging and the filter (marked in
-  `FixedSessionsSync.syncList`).
+  `FixedSessionsSync.syncList`). The proposed `status=active` filter: [`SYNC.md` §5.2](../SYNC.md#52-changed-get-apiv3fixed_sessionsstatusactivefinished).
 - **Finished only by the backend's `finished_at`** (*decided 2026-11-24*): a row's `end_time` (status
   `FINISHED`) is always a `finished_at` from the backend — from the answer to the user's own Finish
   (`POST .../finish`), or from a list / details sync that reports a stored session finished (e.g. on the

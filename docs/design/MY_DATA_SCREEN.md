@@ -59,7 +59,8 @@ legacy's `MOBILE_DORMANT` tab).
   so the list fills from the top while later pages load. Active's 50 cap doesn't apply here — it exists
   because Active needs everything in one polled request; but not-finished entries are skipped, else every
   legacy session (`finished_at: null`) past the newest 50 would land on Active as Offline. A failed page
-  is logged; pages already stored stay.
+  is logged; pages already stored stay. TEMPORARY: to be replaced by the proposed change feed (one
+  small request per visit, deletions included) — [`SYNC.md` §4](../SYNC.md#4-target--a-change-feed-of-the-users-sessions-proposed-2026-11-25-waits-on-backend).
 - **Card values: `--`** (*decided 2026-11-25*): whole-session Avg / Min / Max need a server aggregate
   (`/fixed_sessions` sends only the last reading; locally we keep at most 24 h), so a fixed card's
   aggregates are null — grey dot, `--`. The stats query doesn't join fixed streams' readings at all.

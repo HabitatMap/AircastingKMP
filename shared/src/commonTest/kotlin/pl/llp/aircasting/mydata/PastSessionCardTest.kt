@@ -31,11 +31,12 @@ class PastSessionCardTest {
 
   private fun past(
     deviceId: String? = "mini-1",
+    type: SessionType = SessionType.MOBILE,
     streams: List<StreamSummary> = emptyList(),
   ) = PastSession(
     Session(
       uuid = "s1",
-      type = SessionType.MOBILE,
+      type = type,
       status = SessionStatus.FINISHED,
       name = "Walk",
       tags = listOf("Home"),
@@ -92,5 +93,11 @@ class PastSessionCardTest {
   fun phone_mic_sessions_are_told_apart_by_device_id() {
     assertTrue(pastSessionCard(past(deviceId = PhoneMicDeviceId), thresholds).isPhoneMic)
     assertFalse(pastSessionCard(past(), thresholds).isPhoneMic)
+  }
+
+  @Test
+  fun fixed_sessions_are_flagged_for_their_tag_and_details() {
+    assertTrue(pastSessionCard(past(type = SessionType.FIXED), thresholds).isFixed)
+    assertFalse(pastSessionCard(past(), thresholds).isFixed)
   }
 }

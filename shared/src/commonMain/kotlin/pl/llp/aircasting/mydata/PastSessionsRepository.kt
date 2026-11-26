@@ -15,6 +15,9 @@ data class StreamSummary(
 data class PastSession(val session: Session, val streams: List<StreamSummary>)
 
 interface PastSessionsRepository {
-  /** Finished mobile sessions (AirBeam and phone mic), newest first, each with its streams' aggregates. */
+  /**
+   * Finished sessions, mobile (AirBeam and phone mic) and fixed, newest first, each with its streams'
+   * aggregates (always null for fixed ones until the server sends them).
+   */
   fun observe(): Flow<List<PastSession>>
 }

@@ -93,6 +93,7 @@ fun AircastingTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Compos
   CompositionLocalProvider(
     LocalAqColors provides AqPalette,
     LocalAqTextColors provides if (darkTheme) AqPalette else AqTextPaletteLight,
+    LocalAqBadgeColors provides if (darkTheme) AqBadgePaletteDark else AqBadgePaletteLight,
   ) {
     MaterialTheme(
       colorScheme = if (darkTheme) DarkColors else LightColors,

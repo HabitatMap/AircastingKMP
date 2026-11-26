@@ -27,6 +27,7 @@ fun TabContent(
   onOpenStation: (uuid: String) -> Unit = {},
   onOpenSession: (uuid: String, sensorName: String?) -> Unit = { _, _ -> },
   onOpenPastSessions: () -> Unit = {},
+  onOpenFixedSession: (uuid: String, sensorName: String?) -> Unit = { _, _ -> },
 ) {
   when (tab) {
     AppTab.Home -> HomeRoute(onRequestLocation, onOpenSettings)
@@ -35,20 +36,34 @@ fun TabContent(
       onRecoverData = { /* TODO: recover & sync flow */ },
     )
     AppTab.Explore -> ExploreRoute(onOpenStation)
-    AppTab.Active -> ActiveRoute(onStartNewSession, onOpenSession)
-    AppTab.MyData -> MyDataRoute(onOpenPastSessions, onOpenSession)
+    AppTab.Active -> ActiveRoute(onStartNewSession, onOpenSession, onOpenFixedSession)
+    AppTab.MyData -> MyDataRoute(onOpenPastSessions, onOpenSession, onOpenFixedSession)
   }
 }
 
 @Composable
-private fun MyDataRoute(onViewAllPast: () -> Unit, onOpenSession: (String, String?) -> Unit) {
+private fun MyDataRoute(
+  onViewAllPast: () -> Unit,
+  onOpenSession: (String, String?) -> Unit,
+  onOpenFixedSession: (String, String?) -> Unit,
+) {
   val vm = koinViewModel<PastSessionsViewModel>()
   val state by vm.state.collectAsStateWithLifecycle()
-  MyDataScreen(state, onSelectStream = vm::selectStream, onViewAllPast = onViewAllPast, onSeeDetails = onOpenSession)
+  MyDataScreen(
+    state,
+    onSelectStream = vm::selectStream,
+    onViewAllPast = onViewAllPast,
+    onSeeDetails = onOpenSession,
+    onSeeFixedDetails = onOpenFixedSession,
+  )
 }
 
 @Composable
-private fun ActiveRoute(onStartNewSession: () -> Unit, onOpenSession: (String, String?) -> Unit) {
+private fun ActiveRoute(
+  onStartNewSession: () -> Unit,
+  onOpenSession: (String, String?) -> Unit,
+  onOpenFixedSession: (String, String?) -> Unit,
+) {
   val vm = koinViewModel<ActiveViewModel>()
   val state by vm.state.collectAsStateWithLifecycle()
   ActiveScreen(
@@ -58,8 +73,11 @@ private fun ActiveRoute(onStartNewSession: () -> Unit, onOpenSession: (String, S
     onConfirmFinish = vm::confirmFinish,
     onDismissFinish = vm::dismissFinish,
     onStartMobileSession = onStartNewSession,
+    onStartFixedSession = onStartNewSession,
     onStartMicSession = onStartNewSession,
     onSeeDetails = onOpenSession,
+    onSeeFixedDetails = onOpenFixedSession,
+    onReconnect = vm::reconnect,
   )
 }
 

@@ -100,18 +100,61 @@ data class NoteDto(
   @SerialName("photo_location") val photoLocation: String? = null,
 )
 // --- Fixed Sessions v3 ---
+/** `GET /api/v3/fixed_sessions`: the signed-in user's own fixed sessions, newest first. */
 @Serializable
 data class FixedSessionListResponseDto(
-  val sessions: List<FixedSessionSummaryDto> = emptyList(),
+  val sessions: List<FixedSessionDto> = emptyList(),
   val meta: PaginationMetaDto,
 )
+
+/**
+ * One fixed session, as `GET /api/v3/fixed_sessions` lists it and `GET /fixed_sessions/{uuid}` returns it.
+ * Times are epoch ms, true UTC. Unused fields (`contribute`, `share_url`, `version`…) are dropped by
+ * `ignoreUnknownKeys`.
+ */
 @Serializable
-data class FixedSessionSummaryDto(
+data class FixedSessionDto(
   val uuid: String,
   val title: String,
-  @SerialName("share_url") val shareUrl: String,
-  @SerialName("session_token") val sessionToken: String? = null,
+  /** Space-separated as we send it; the spec's example is comma-separated, so the mapper splits on both. */
+  @SerialName("tag_list") val tagList: String = "",
+  @SerialName("is_indoor") val isIndoor: Boolean = false,
+  /** IANA zone at the sensor: every timestamp is shown on its wall clock. */
+  @SerialName("time_zone") val timeZone: String,
+  @SerialName("start_time") val startTime: Long? = null,
+  /** When the AirBeam last reached the server (not the reading's own time). Null until it first reports. */
+  @SerialName("last_measurement_at") val lastMeasurementAt: Long? = null,
+  /** Set once the owner finished (decommissioned) the session. */
+  @SerialName("finished_at") val finishedAt: Long? = null,
+  /** Indoor sessions carry the 200, 200 placeholder. */
+  val latitude: Double? = null,
+  val longitude: Double? = null,
+  val device: FixedSessionDeviceDto? = null,
+  /** Keyed by sensor_name. */
+  val streams: Map<String, FixedSessionStreamDto> = emptyMap(),
 )
+
+/** `POST /fixed_sessions/{uuid}/finish`: only these are guaranteed. */
+@Serializable
+data class FinishedFixedSessionDto(
+  val uuid: String,
+  @SerialName("finished_at") val finishedAt: Long? = null,
+)
+
+@Serializable
+data class FixedSessionDeviceDto(val model: String? = null)
+
+@Serializable
+data class FixedSessionStreamDto(
+  @SerialName("sensor_name") val sensorName: String,
+  @SerialName("unit_symbol") val unitSymbol: String,
+  /** Null: the stream never reported. */
+  @SerialName("last_measurement") val lastMeasurement: FixedLastMeasurementDto? = null,
+)
+
+/** Unlike Explore's rounded value, the fixed endpoints send the raw reading (e.g. 12.5). */
+@Serializable
+data class FixedLastMeasurementDto(val value: Double, val time: Long)
 @Serializable
 data class FixedSessionPayloadDto(
   val uuid: String,

@@ -13,6 +13,8 @@ Backend API in particular: [`docs/API_V3.md`](docs/API_V3.md) is the current
 one. The source of truth for both is the OpenAPI spec at
 <https://experimental.aircasting.org/api-docs/index.html> — the Swagger UI is
 JS-rendered, so fetch `.../api-docs/swagger.yaml` instead.
+How sessions and measurements get from the server to the phone (and what we've asked the
+backend for) is in [`docs/SYNC.md`](docs/SYNC.md).
 
 ## Business logic: docs first, then the legacy app
 

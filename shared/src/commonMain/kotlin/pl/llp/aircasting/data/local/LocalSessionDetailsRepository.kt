@@ -18,7 +18,7 @@ import pl.llp.aircasting.domain.GeoLocation
 import pl.llp.aircasting.domain.StationDetails
 import pl.llp.aircasting.domain.StationStream
 import pl.llp.aircasting.domain.TrackPoint
-import pl.llp.aircasting.domain.session.Session
+import pl.llp.aircasting.data.local.db.Sessions
 import pl.llp.aircasting.recording.PhoneMicDeviceId
 import pl.llp.aircasting.ui.chart.ChartPoint
 import pl.llp.aircasting.ui.chart.wallClockPoint
@@ -36,7 +36,7 @@ class LocalSessionDetailsRepository(
   override fun observe(uuid: String): Flow<StationDetails?> = combine(
     queries.selectSessionByUuid(uuid).asFlow().mapToOneOrNull(ioDispatcher),
     queries.selectSessionStreamStats(uuid).asFlow().mapToList(ioDispatcher),
-  ) { session, stats -> session?.toDomain()?.toDetails(stats) }
+  ) { session, stats -> session?.toDetails(stats) }
 
   override fun observePoints(uuid: String, sensorName: String, timeZone: TimeZone): Flow<List<ChartPoint>> =
     queries.selectSessionStreamPoints(uuid, sensorName) { time, value -> wallClockPoint(time, value, timeZone) }
@@ -51,21 +51,22 @@ class LocalSessionDetailsRepository(
       .mapToList(ioDispatcher)
 }
 
-private fun Session.toDetails(stats: List<SelectSessionStreamStats>) = StationDetails(
+/** From the row, not the domain Session: mobile and fixed rows alike. */
+private fun Sessions.toDetails(stats: List<SelectSessionStreamStats>) = StationDetails(
   uuid = uuid,
   type = type,
   // Same split as ActiveViewModel's two sections.
-  source = if (deviceId == PhoneMicDeviceId) DataSource.PhoneMic else DataSource.AirBeam,
+  source = if (device_id == PhoneMicDeviceId) DataSource.PhoneMic else DataSource.AirBeam,
   title = name,
-  provider = "", // our own session: the screen shows deviceModel, which is always set
-  deviceModel = deviceModel,
-  timeZone = TimeZone.of(timeZone),
+  provider = "", // our own session: the screen shows deviceModel instead
+  deviceModel = device_model,
+  timeZone = TimeZone.of(time_zone),
   streams = stats.map { it.toStream() }.sortedBy { chipRank(it.sensorName) },
   tags = tags,
-  isIndoor = isIndoor,
-  location = location,
-  startTime = startTime,
-  endTime = endTime,
+  isIndoor = is_indoor,
+  location = latitude?.let { lat -> longitude?.let { lng -> GeoLocation(lat, lng) } },
+  startTime = start_time,
+  endTime = end_time,
 )
 
 private fun SelectSessionStreamStats.toStream() = StationStream(

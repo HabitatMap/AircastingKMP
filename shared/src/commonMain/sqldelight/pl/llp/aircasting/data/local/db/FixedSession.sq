@@ -1,0 +1,48 @@
+-- Our own fixed sessions, mirrored from GET /api/v3/fixed_sessions. The backend is their only source of
+-- truth: these rows are written from its answers alone (the setup wizard writes nothing locally).
+-- A row is finished only by finishFixed, with the finished_at of the user's own POST .../finish.
+
+-- Insert-or-ignore + update instead of an upsert: SQLDelight's 3.18 grammar has no ON CONFLICT DO UPDATE,
+-- and INSERT OR REPLACE deletes the row first, cascading away its streams and measurements.
+-- Neither touches status/end_time: a list fetched before a finish answer must not reopen the session.
+insertFixedIfAbsent:
+INSERT OR IGNORE INTO sessions(
+    uuid, type, status, name, tags, device_model, start_time, latitude, longitude,
+    is_indoor, time_zone, measurement_interval_millis, last_reported_at
+) VALUES (
+    :uuid, 'FIXED', 'RECORDING', :name, :tags, :deviceModel, :startTime, :latitude, :longitude,
+    :isIndoor, :timeZone, 60000, :lastReportedAt
+);
+
+updateFixed:
+UPDATE sessions
+SET name = :name, tags = :tags, device_model = :deviceModel, start_time = :startTime,
+    latitude = :latitude, longitude = :longitude, is_indoor = :isIndoor,
+    time_zone = :timeZone, last_reported_at = :lastReportedAt
+WHERE uuid = :uuid AND type = 'FIXED';
+
+finishFixed:
+UPDATE sessions
+SET status = 'FINISHED', end_time = :endTime
+WHERE uuid = :uuid AND type = 'FIXED';
+
+selectActiveFixed:
+SELECT *
+FROM sessions
+WHERE type = 'FIXED' AND end_time IS NULL
+ORDER BY start_time DESC;
+
+selectActiveFixedLatestReadings:
+SELECT st.session_uuid, st.sensor_name, st.unit_symbol, m.value, m.time
+FROM measurement_streams st
+JOIN sessions se ON se.uuid = st.session_uuid
+LEFT JOIN measurements m
+  ON m.stream_id = st.id
+ AND m.time = (SELECT MAX(time) FROM measurements WHERE stream_id = st.id)
+WHERE se.type = 'FIXED' AND se.end_time IS NULL
+ORDER BY st.id;
+
+-- Signed out: they're the account's own sessions. Cascades to their streams and measurements.
+deleteAllFixed:
+DELETE FROM sessions
+WHERE type = 'FIXED';

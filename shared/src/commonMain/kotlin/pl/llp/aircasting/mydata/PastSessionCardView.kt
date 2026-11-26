@@ -52,7 +52,13 @@ fun PastSessionCardView(
     verticalArrangement = Arrangement.spacedBy(16.dp),
   ) {
     Column(Modifier.padding(bottom = 12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-      TintedTag(if (card.isPhoneMic) strings.activeTagPhoneMic else strings.activeTagAirBeamMobile)
+      TintedTag(
+        when {
+          card.isFixed -> strings.activeTagAirBeamFixed
+          card.isPhoneMic -> strings.activeTagPhoneMic
+          else -> strings.activeTagAirBeamMobile
+        },
+      )
       Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
           Text(card.name, style = MaterialTheme.typography.titleSmallEmphasized, color = colors.onSurface, maxLines = 1)

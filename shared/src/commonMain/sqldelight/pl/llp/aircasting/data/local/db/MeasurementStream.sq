@@ -1,9 +1,13 @@
+import kotlin.time.Instant;
+
 CREATE TABLE measurement_streams (
     id INTEGER NOT NULL PRIMARY KEY,
     session_uuid TEXT NOT NULL REFERENCES sessions(uuid) ON DELETE CASCADE,
     sensor_name TEXT NOT NULL,
     unit_symbol TEXT NOT NULL,
-    sensor_type_id INTEGER
+    sensor_type_id INTEGER,
+    -- Fixed only: the newest reading time the graph's history was fetched up to (FixedSessionsSync).
+    synced_until INTEGER AS Instant
 );
 CREATE UNIQUE INDEX measurement_streams_session_sensor
 ON measurement_streams(session_uuid, sensor_name);
@@ -26,4 +30,9 @@ ORDER BY id;
 updateSensorTypeId:
 UPDATE measurement_streams
 SET sensor_type_id = :sensorTypeId
+WHERE id = :id;
+
+updateSyncedUntil:
+UPDATE measurement_streams
+SET synced_until = :syncedUntil
 WHERE id = :id;

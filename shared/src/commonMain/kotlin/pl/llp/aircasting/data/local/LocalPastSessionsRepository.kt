@@ -25,21 +25,22 @@ class LocalPastSessionsRepository(
    * table would rerun that scan every second for data that can't have changed. A finished
    * session's measurements are frozen; the only change that matters (a session finishing,
    * renamed, deleted) touches the sessions row.
+   * Fixed rows also change here when a list sync rewrites them (last_reported_at), at most once a minute.
    * TODO: SD-card sync adds measurements to finished sessions — re-trigger when it lands.
    */
   override fun observe(): Flow<List<PastSession>> =
-    queries.selectPastMobile()
+    queries.selectPast()
       .asFlow()
       .map { withContext(ioDispatcher) { queries.transactionWithResult { snapshot() } } }
       .distinctUntilChanged()
 
   private fun snapshot(): List<PastSession> {
-    val stats = queries.selectPastMobileStreamStats().executeAsList().groupBy(
+    val stats = queries.selectPastStreamStats().executeAsList().groupBy(
       keySelector = { it.session_uuid },
       valueTransform = { StreamSummary(it.sensor_name, it.unit_symbol, it.avg_value, it.min_value, it.max_value) },
     )
     // `end_time IS NOT NULL` makes SQLDelight generate its own row type (end_time non-null);
     // ::Sessions maps it back to the table type, so the shared toDomain() applies.
-    return queries.selectPastMobile(::Sessions).executeAsList().map { PastSession(it.toDomain(), stats[it.uuid].orEmpty()) }
+    return queries.selectPast(::Sessions).executeAsList().map { PastSession(it.toDomain(), stats[it.uuid].orEmpty()) }
   }
 }

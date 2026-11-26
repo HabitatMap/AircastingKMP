@@ -40,6 +40,7 @@ fun MyDataScreen(
   onSelectStream: (uuid: String, sensorName: String) -> Unit,
   onViewAllPast: () -> Unit,
   onSeeDetails: (uuid: String, sensorName: String?) -> Unit,
+  onSeeFixedDetails: (uuid: String, sensorName: String?) -> Unit,
 ) {
   val strings = LocalStrings.current
   LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(vertical = 48.dp)) {
@@ -63,7 +64,7 @@ fun MyDataScreen(
               card,
               summaryOnly = true,
               onSelectStream = { onSelectStream(card.uuid, it) },
-              onSeeDetails = { onSeeDetails(card.uuid, card.selected?.sensorName) },
+              onSeeDetails = { (if (card.isFixed) onSeeFixedDetails else onSeeDetails)(card.uuid, card.selected?.sensorName) },
               modifier = Modifier.width(320.dp),
             )
           }

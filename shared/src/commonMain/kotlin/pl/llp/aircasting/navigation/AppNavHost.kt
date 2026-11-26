@@ -76,6 +76,7 @@ fun AppNavHost(onRequestLocation: () -> Unit = {}) {
         onStartNewSession = { nav.navigateOnce(NewSessionRoute) },
         onOpenStation = { uuid -> nav.navigateOnce(StationDetailsRoute(uuid)) },
         onOpenSession = { uuid, sensorName -> nav.navigateOnce(SessionDetailsRoute(uuid, sensorName)) },
+        onOpenFixedSession = { uuid, sensorName -> nav.navigateOnce(FixedSessionDetailsRoute(uuid, sensorName)) },
         onOpenPastSessions = { nav.navigateOnce(PastSessionsRoute) },
       )
     }
@@ -83,6 +84,7 @@ fun AppNavHost(onRequestLocation: () -> Unit = {}) {
       PastSessionsDestination(
         onBack = { nav.popBackStack() },
         onOpenSession = { uuid, sensorName -> nav.navigateOnce(SessionDetailsRoute(uuid, sensorName)) },
+        onOpenFixedSession = { uuid, sensorName -> nav.navigateOnce(FixedSessionDetailsRoute(uuid, sensorName)) },
       )
     }
     composable<StationDetailsRoute> { entry ->
@@ -90,6 +92,9 @@ fun AppNavHost(onRequestLocation: () -> Unit = {}) {
     }
     composable<SessionDetailsRoute> { entry ->
       SessionDetailsDestination(entry.toRoute(), onBack = { nav.popBackStack() })
+    }
+    composable<FixedSessionDetailsRoute> { entry ->
+      FixedSessionDetailsDestination(entry.toRoute(), onBack = { nav.popBackStack() })
     }
     composable<NewSessionRoute> {
       NewSessionDestination(

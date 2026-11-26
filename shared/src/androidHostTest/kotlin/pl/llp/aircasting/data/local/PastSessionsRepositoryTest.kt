@@ -40,13 +40,24 @@ class PastSessionsRepositoryTest {
   }
 
   @Test
-  fun `only finished mobile sessions are past, newest first`() = runTest {
+  fun `finished fixed sessions are past too and recording ones are not`() = runTest {
     finished("old", start = t0)
     finished("new", start = t0 + 3600.seconds)
-    finished("fixed", type = SessionType.FIXED)
+    finished("fixed", type = SessionType.FIXED, start = t0 + 1800.seconds)
     sessions.insert(session("recording"))
+    sessions.insert(session("live fixed", type = SessionType.FIXED))
 
-    assertEquals(listOf("new", "old"), repo.observe().first().map { it.session.uuid })
+    assertEquals(listOf("new", "fixed", "old"), repo.observe().first().map { it.session.uuid })
+  }
+
+  @Test
+  fun `a fixed session gets no aggregates from its few stored readings`() = runTest {
+    sessions.insert(session("f1", type = SessionType.FIXED))
+    val pm25 = streams.findOrCreate("f1", "AirBeam3-PM2.5", "µg/m³")
+    measurements.insertAll(listOf(Measurement(pm25, t0, 7.0)))
+    sessions.finish("f1", t0 + 60.seconds)
+
+    assertEquals(listOf(StreamSummary("AirBeam3-PM2.5", "µg/m³")), repo.observe().first().single().streams)
   }
 
   @Test

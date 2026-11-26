@@ -14,6 +14,8 @@
 | Card — "No data yet" | `1009:28154` | https://www.figma.com/design/8AQfUtkIu9qgd4CAVNPbXB/Air-Casting-app-re-design?node-id=1009-28154 |
 | Finish confirmation dialog | `1136:18936` | https://www.figma.com/design/8AQfUtkIu9qgd4CAVNPbXB/Air-Casting-app-re-design?node-id=1136-18936 |
 | Tab icon `sensors` | `1001:26037` | committed as `composeResources/drawable/ic_sensors.xml` |
+| Fixed section (Live + Offline cards) | `1107:16828` | https://www.figma.com/design/8AQfUtkIu9qgd4CAVNPbXB/Air-Casting-app-re-design?node-id=1107-16828 |
+| Fixed session details (one dot on the map) | `1138:28153` | https://www.figma.com/design/8AQfUtkIu9qgd4CAVNPbXB/Air-Casting-app-re-design?node-id=1138-28153 |
 | Empty tab (all three sections empty) | `1137:27447` | https://www.figma.com/design/8AQfUtkIu9qgd4CAVNPbXB/Air-Casting-app-re-design?node-id=1137-27447 |
 
 
@@ -22,8 +24,10 @@
 Only the user's **own, running** sessions, in three collapsible sections with a count:
 **Mobile sessions**, **Fixed sessions**, **Phone Microphone**. Not favourites, not dormant.
 
-**Scope now: Mobile and Phone Microphone.** Fixed (needs `GET /api/v3/fixed_sessions` — nothing stored locally
-for fixed, see `FixedSessionStarter`) and Phone Microphone (no mic recording yet) are parked.
+**All three sections are built** (Fixed added 2026-11-24). Fixed sessions are mirrored from the backend
+into the DB (`FixedSessionsSync`) and the tab observes the DB, like mobile. The backend is their only
+source of truth: the setup wizard writes nothing locally (`FixedSessionStarter`); the new session arrives
+with the tab's next sync.
 
 Phone Microphone — a MOBILE session with device_id = "Builtin" (legacy MicrophoneDeviceItem.DEFAULT_ID); ActiveViewModel splits these out of observeMobile(). Same card, tag PHONE MICROPHONE, one dB chip. Never DISCONNECTED. Empty card (Figma 1137:27447) opens the new-session flow.
 
@@ -68,11 +72,70 @@ and does nothing until sync exists.
 - **Level / colour** — the selected stream's latest value through `Thresholds.forSensor()`
   (aliases resolve `AirBeamMini-PM2.5` → `AirBeam-PM2.5`).
 
+## Fixed sessions (*added 2026-11-24*)
+
+- **Data source** (*persisted 2026-11-24*) — `LocalActiveFixedSessionsRepository` reads the DB
+  (`selectActiveFixed` + `selectActiveFixedLatestReadings`, same shape as mobile), so the stored list shows
+  at once, offline or after a restart. While the tab is subscribed it runs `FixedSessionsSync.syncList`:
+  `GET /api/v3/fixed_sessions` (user token) at once, every 60 s (the AirBeam uploads about once a minute)
+  and on `refresh()`. The sync writes the session row (`type = FIXED`, `last_reported_at` =
+  `last_measurement_at`), its streams and each stream's newest reading. Signed out → no request. A failed
+  sync is only logged; the stored rows stay. No migration for the new columns: testers reinstall.
+- **One page of 500, 20 s timeout** (*changed 2026-11-26*, was newest 50): there is no active-only
+  filter yet, so the sync asks for one page of the server's maximum (500, newest first) and stores them
+  all; the ones with `finished_at` set go to Past. A full page took 11 s for an account with 212 fixed
+  sessions, past OkHttp's default 10 s read timeout, so `FixedSessionsApi.listSessions` sets 20 s
+  (request and socket) through Ktor's `HttpTimeout`. An active session older than the newest 500 is
+  missed. The proposed `status=active` filter: [`SYNC.md` §5.2](../SYNC.md#52-changed-get-apiv3fixed_sessionsstatusactivefinished).
+- **Finished only by the backend's `finished_at`** (*decided 2026-11-24*): a row's `end_time` (status
+  `FINISHED`) is always a `finished_at` from the backend — from the answer to the user's own Finish
+  (`POST .../finish`), or from a list / details sync that reports a stored session finished (e.g. on the
+  web). Either way the DB flow drops its card from Active and it moves to My Data → Past Sessions. A
+  session the list reports already finished is stored as finished (*changed 2026-11-25*, for Past
+  Sessions; before, finished ones were never inserted). A `finished_at: null` never reopens a row (the sync doesn't touch
+  status/`end_time` otherwise, so a list answered just before a finish can't undo it), and a row missing
+  from the answer just stays.
+- **Sign-out** (*decided 2026-11-24*): `FixedSessionsSync.clearWhenSignedOut` (started with Koin, runs for
+  the process's life) deletes every fixed row, cascading to streams and measurements, whenever no one is
+  signed in — at launch too — so the next account never sees them. Mobile rows stay. Legacy
+  `LogoutService` clears the whole DB.
+- **Start time is never null** (*decided 2026-11-24*): the backend sets `start_time` when the session is
+  created, before any measurement, so `sessions.start_time` stays NOT NULL. (The spec marks it nullable
+  without saying when; a `/fixed_sessions` entry without one is skipped by `FixedSessionsSync`, logged.)
+  A created session with no measurements yet — older AirBeams don't send one during setup — is stored and
+  shows **No data yet**.
+- **Active fixed session** = `finished_at == null` on the backend, the only source of truth. Sessions from
+  the new app are finished manually by the user; it stays on Active, Offline or not, until then
+  (*decided 2026-11-24*). Legacy has no "finish" for fixed, so every legacy-created session has
+  `finished_at: null` — the backend is to finish those by its own criteria later; until then old ones among
+  the newest 500 show as Offline.
+- **Card states** (`activeFixedSessionCard`):
+
+| State | When | Body | Footer |
+|-------|------|------|--------|
+| **Live** | last measurement within `FixedOfflineAfter` | value + chips | Finish recording · See details |
+| **No data yet** | never reported (`last_measurement_at` and every reading null) — e.g. an older AirBeam's session, created on the backend, before its first upload | spinner, "No data yet" | Finish recording · See details |
+| **Offline** | `now - last_measurement_at > FixedOfflineAfter` | spinner, "Reconnecting to your AirBeam", **Reconnect** | Finish recording anyway |
+
+- **Offline threshold** — `FixedOfflineAfter = 30 min` in `ActiveSessionCard.kt` (*decided 2026-11-24*, a
+  TWEAK HERE constant): Offline once the fetched last measurement is more than 30 min old. Not from legacy (it has no such state). The backend's own `is_active`
+  (Explore station details) means "reported in the last 24 h and not finished" — too slow for the
+  "lost its Wi-Fi" card, and `/fixed_sessions` doesn't expose it anyway. Judged on `last_measurement_at`
+  (when the AirBeam last reached the server), falling back to the newest reading's time.
+- **Reconnect** (*decided 2026-11-24*): re-configuring Wi-Fi over BLE isn't built, so it re-syncs the list
+  now (`ActiveViewModel.reconnect`); a station that came back flips to Live without waiting for the poll.
+- **Finish** (*added 2026-11-24*): same confirmation dialog, then `POST /api/v3/fixed_sessions/{uuid}/finish`
+  (server stamps `finished_at`, drops later uploads). The answer's `finished_at` marks the row `FINISHED`,
+  so the DB flow drops the card — no re-fetch. Nothing to stop locally. A failed call is only logged; the card stays and Finish can be tapped again. The
+  finished row then shows in My Data → Past Sessions, as the dialog says.
+- **Meta row** leads with the placement: `Indoor • AirBeam Mini • 1 min ago` (Outdoor likewise).
+- **Time row** — start - newest reading, like mobile; omitted while `start_time` is null.
+
 ## Empty state
 
 Each section keeps its header (count `0`, grey `surfaceContainerHigh` badge) and shows one card:
-title, one line, outlined **Start … session** button. Mobile's button opens the new-session flow
-(`NewSessionRoute`) at the method step. Fixed / Phone Microphone empty cards wait with their sections.
+title, one line, outlined **Start … session** button. Every section's button opens the new-session flow
+(`NewSessionRoute`) at the method step.
 
 ## Session details ("See details")
 
@@ -110,8 +173,27 @@ station screen: Map tab, app-bar actions (favourite, alert, notes), location nam
 current measurement — gets a 2 dp white ring (*decided 2026-11-24*). The path is 4 dp wide at
 50 % alpha `Primary Container` — half Figma's 8 dp opaque stroke (*decided 2026-11-24*).
 
+### Fixed session details (*added 2026-11-24*, Figma `1138:28153`)
+
+Same `StationDetailsScreen`, its own route `FixedSessionDetailsRoute` (one dot on a `StationMap` instead of
+a track, and each subscription also syncs). Koin definitions under `FixedSessionDetailsQualifier`:
+- Header (*from the DB since 2026-11-24*): `FixedSessionDetailsRepository` = the mobile
+  `LocalSessionDetailsRepository` (rows map straight to `StationDetails`, so a fixed row without
+  `start_time` works) + one `FixedSessionsSync.syncSession` → `GET /api/v3/fixed_sessions/{uuid}` per
+  subscription. Stored values show at once; the synced ones arrive through the same DB flow. A failed sync
+  is only logged. Streams in chip order, ids are the DB's.
+- Graph (*from the DB since 2026-11-24*): `SessionGraph` with that qualifier — the stored readings, like
+  mobile, plus one `FixedSessionsSync.syncMeasurements` per subscription: `GET /fixed_sessions/{uuid}/measurements`
+  only after the stream's previous graph sync, at most the 24 h before its newest reading, then older
+  readings are deleted (legacy rule, see `DOMAIN_KNOWLEDGE.md` → *Own fixed sessions' measurements*).
+- Map: `StationMap`, one dot at the session's location. Indoor (placeholder `200, 200`) → no location
+  → no Map tab.
+- **Stats: NOW only** for now. Figma shows Now · Avg · Min · Max, but `/fixed_sessions` sends only the
+  last reading and a fixed session can run for months, so whole-session avg/min/max need a server
+  aggregate — open question for the backend. A **finished** fixed session drops NOW like a finished mobile
+  one and shows **AVG. · MIN. · MAX. as `--`** until that aggregate exists (*decided 2026-11-25*); the
+  level badge, which follows AVG., stays grey.
+
 ## Open (parked) questions
 
-- Fixed: when is a session "Offline"? Network-only vs local cache?
-- Fixed "Reconnect": hidden, disabled or no-op?
 - Process death leaves a `RECORDING` row with nothing feeding it — check legacy handling.

@@ -54,6 +54,9 @@ Re-read the spec before building against one.
 
 AirBeam mobile (moving) sessions.
 
+> Server → phone changes (web edits/deletes) are to come through the proposed `GET /api/v3/sessions/changes`
+> feed — see [`SYNC.md`](./SYNC.md).
+
 | Method | Path | Query / body | |
 |---|---|---|---|
 | GET | `/api/v3/mobile_sessions` | `page`, `per_page` | list own sessions **[A]** |
@@ -105,6 +108,9 @@ itself: the uploader backs off and retries, and by then the server clock has cau
 ## Fixed sessions — tag `Mobile app: Fixed sessions`
 
 AirBeam fixed (roof-mounted) sessions — the AirBeamMini path this project is building.
+
+> **Proposed, not in the spec yet:** `status=active|finished` on the list below and a new
+> `GET /api/v3/sessions/changes` change feed (mobile + fixed) — see [`SYNC.md` §5](./SYNC.md#5-the-backend-ask-drafted-2026-11-25-not-yet-agreed).
 
 | Method | Path | Query / body | |
 |---|---|---|---|

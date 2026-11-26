@@ -481,6 +481,21 @@ transports (BLE, WiFi-SoftAP, file I/O) are **PLATFORM**; HTTP is **CHANGE-LIKEL
    **Rewrite:** mobile upload is split out of sync and runs live, driven by the outbox — see
    [`API_V3.md` → When the uploader runs](./API_V3.md#when-the-uploader-runs--decided-2026-10-19).
 
+   **Own fixed sessions' measurements (legacy rule, kept in the rewrite 2026-11-24).** Legacy
+   `PeriodicallyDownloadFixedSessionMeasurementsService` (every 60 s) → `DownloadMeasurementsService`
+   downloads each stored fixed session's readings **since the last stored measurement, but never more
+   than 24 h back** (`LastMeasurementSyncCalculator`: `max(lastMeasurementTime, endTime - 24 h)`), and
+   `RemoveOldMeasurementsService` keeps only the last 1440 readings per fixed stream (24 h at one a
+   minute). The rewrite (`FixedSessionsSync.syncMeasurements`) applies it when the details graph opens:
+   from the stream's `synced_until` cursor (+1 ms), capped at 24 h before the newest stored reading, in
+   12 h windows (the v3 endpoint's max); then deletes readings older than those 24 h by time, not count.
+   A cursor rather than legacy's "last stored measurement", because the list sync stores each stream's
+   newest reading alone (for the Active card), past a gap the graph hasn't fetched yet.
+
+   **When measurements and sessions are fetched** (legacy poll-everything vs the rewrite's lazy
+   policy, `sync_with_versioning` vs the proposed change feed, the backend ask): see
+   [`SYNC.md`](./SYNC.md).
+
 **Dedup differs:** V1 mobile filters `time > lastMeasurementTime`; V2 relies on the DB
 unique index `(session_id, stream_id, time)` + `IGNORE`. Preserve the dedup — in the rewrite
 the key is `PRIMARY KEY (stream_id, time)` (see rule #5).

@@ -81,11 +81,12 @@ and does nothing until sync exists.
   and on `refresh()`. The sync writes the session row (`type = FIXED`, `last_reported_at` =
   `last_measurement_at`), its streams and each stream's newest reading. Signed out → no request. A failed
   sync is only logged; the stored rows stay. No migration for the new columns: testers reinstall.
-- **TEMPORARY: newest 50, filtered client-side** (*decided 2026-11-24*): there is no active-only endpoint
-  (nor a not-finished filter) yet, so the sync asks for one page of the newest 50 and keeps those with
-  `finished_at == null`. 500 took 11 s for an account with 212 fixed sessions, past the client's 10 s
-  timeout. Once the backend endpoint exists, call it and drop the paging and the filter (marked in
-  `FixedSessionsSync.syncList`). The proposed `status=active` filter: [`SYNC.md` §5.2](../SYNC.md#52-changed-get-apiv3fixed_sessionsstatusactivefinished).
+- **One page of 500, 20 s timeout** (*changed 2026-11-26*, was newest 50): there is no active-only
+  filter yet, so the sync asks for one page of the server's maximum (500, newest first) and stores them
+  all; the ones with `finished_at` set go to Past. A full page took 11 s for an account with 212 fixed
+  sessions, past OkHttp's default 10 s read timeout, so `FixedSessionsApi.listSessions` sets 20 s
+  (request and socket) through Ktor's `HttpTimeout`. An active session older than the newest 500 is
+  missed. The proposed `status=active` filter: [`SYNC.md` §5.2](../SYNC.md#52-changed-get-apiv3fixed_sessionsstatusactivefinished).
 - **Finished only by the backend's `finished_at`** (*decided 2026-11-24*): a row's `end_time` (status
   `FINISHED`) is always a `finished_at` from the backend — from the answer to the user's own Finish
   (`POST .../finish`), or from a list / details sync that reports a stored session finished (e.g. on the
@@ -107,7 +108,7 @@ and does nothing until sync exists.
   the new app are finished manually by the user; it stays on Active, Offline or not, until then
   (*decided 2026-11-24*). Legacy has no "finish" for fixed, so every legacy-created session has
   `finished_at: null` — the backend is to finish those by its own criteria later; until then old ones among
-  the newest 50 show as Offline.
+  the newest 500 show as Offline.
 - **Card states** (`activeFixedSessionCard`):
 
 | State | When | Body | Footer |

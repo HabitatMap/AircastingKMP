@@ -53,14 +53,10 @@ legacy's `MOBILE_DORMANT` tab).
 - **Only when the backend says finished:** a fixed row has an `end_time` only from the backend's
   `finished_at` (see `ACTIVE_SCREEN.md` → *Fixed sessions*), so Past Sessions lists exactly those. Legacy
   fixed sessions all have `finished_at: null`: none show here until the backend finishes them.
-- **Sync — every page** (*decided 2026-11-25*): each subscription to the list (the My Data tab,
-  "View all") runs one `FixedSessionsSync.syncFinished`: `GET /fixed_sessions` page by page (50 each, up
-  to `meta.total_pages`, newest first), storing **only the finished entries**, one transaction per page,
-  so the list fills from the top while later pages load. Active's 50 cap doesn't apply here — it exists
-  because Active needs everything in one polled request; but not-finished entries are skipped, else every
-  legacy session (`finished_at: null`) past the newest 50 would land on Active as Offline. A failed page
-  is logged; pages already stored stay. TEMPORARY: to be replaced by the proposed change feed (one
-  small request per visit, deletions included) — [`SYNC.md` §4](../SYNC.md#4-target--a-change-feed-of-the-users-sessions-proposed-2026-11-25-waits-on-backend).
+- **No sync of its own** (*decided 2026-11-26*; the every-page walk of 2026-11-25 was removed as a
+  workaround): Past lists the finished fixed sessions already in the DB — finished in the app, reported
+  finished in Active's list sync (newest 500), or finished when their details were opened. Older ones
+  appear once the proposed change feed exists — [`SYNC.md` §4](../SYNC.md#4-target--a-change-feed-of-the-users-sessions-proposed-2026-11-25-waits-on-backend).
 - **Card values: `--`** (*decided 2026-11-25*): whole-session Avg / Min / Max need a server aggregate
   (`/fixed_sessions` sends only the last reading; locally we keep at most 24 h), so a fixed card's
   aggregates are null — grey dot, `--`. The stats query doesn't join fixed streams' readings at all.

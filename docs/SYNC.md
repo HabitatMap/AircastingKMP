@@ -79,10 +79,13 @@ mechanism. That's §4.
 
 ## 3. Today — TEMPORARY client workarounds
 
-- **Active:** `syncList` takes page 1 of the newest 50 from `GET /fixed_sessions` and keeps the
-  unfinished ones (`ACTIVE_SCREEN.md`). An active session older than the newest 50 is missed.
-- **Past:** `syncFinished` walks **every page** on each visit and stores only finished entries
-  (`MY_DATA_SCREEN.md`) — ~160 legacy sessions downloaded just to be skipped.
+- **Active:** `syncList` takes one page of the server's maximum (500, newest first) from
+  `GET /fixed_sessions`, with a 20 s timeout (a full page took 11 s for 212 sessions, past OkHttp's
+  default 10 s). An active session older than the newest 500 is missed. Entries the backend reports
+  finished are stored as finished, so they land in Past.
+- **Past** has no sync of its own (*decided 2026-11-26*; the every-page walk was removed): it lists the
+  finished fixed sessions already in the DB — finished in the app, reported finished among Active's
+  newest 500, or finished when their details were opened. Older ones wait for the change feed.
 - **Deletions made elsewhere never reach the phone.** Plain paging can't report them.
 - **Finished mobile sessions** in Past come from the local DB only; nothing pulls server-side changes
   to them.
@@ -220,7 +223,7 @@ locally at once, the later tombstone is a no-op.
 
 ### 5.2 Changed: `GET /api/v3/fixed_sessions?status=active|finished`
 A list filter (`finished_at` null / set), still paginated as today. Active calls `status=active` every 60 s
-and drops the TEMPORARY newest-50 cap and the client-side split. Answer unchanged
+instead of one 500-entry page of every session, so its 20 s timeout can go back to the default. Answer unchanged
 (`{ sessions, meta }`, streams with `last_measurement`).
 
 ### 5.3 Data rules

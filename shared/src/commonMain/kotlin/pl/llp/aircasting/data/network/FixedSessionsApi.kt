@@ -2,6 +2,7 @@ package pl.llp.aircasting.data.network
 
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.plugins.timeout
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.patch
@@ -12,12 +13,19 @@ import io.ktor.http.contentType
 import kotlin.time.Instant
 
 class FixedSessionsApi(private val client: HttpClient) {
-  /** The user's own fixed sessions, newest first. 500 is the server's page maximum. */
+  /**
+   * The user's own fixed sessions, newest first. 500 is the server's page maximum. A full page took 11 s
+   * for an account with 212 sessions, past OkHttp's default 10 s read timeout, hence [LIST_TIMEOUT_MS].
+   */
   suspend fun listSessions(userToken: String, page: Int = 1, perPage: Int = 500): FixedSessionListResponseDto =
     client.get(ApiEndpoints.V3FixedSessions) {
       aircastingBearerAuth(userToken)
       parameter("page", page)
       parameter("per_page", perPage)
+      timeout {
+        requestTimeoutMillis = LIST_TIMEOUT_MS
+        socketTimeoutMillis = LIST_TIMEOUT_MS
+      }
     }
       .body()
 
@@ -57,5 +65,9 @@ class FixedSessionsApi(private val client: HttpClient) {
       contentType(ContentType.Application.Json)
       setBody(UpdateFixedSessionRequestDto(tagList))
     }
+  }
+
+  private companion object {
+    const val LIST_TIMEOUT_MS = 20_000L
   }
 }

@@ -7,7 +7,6 @@ import pl.llp.aircasting.data.local.LocalActiveSessionsRepository
 import pl.llp.aircasting.data.local.LocalMeasurementRepository
 import pl.llp.aircasting.data.local.LocalMeasurementStreamRepository
 import pl.llp.aircasting.data.local.LocalPastSessionsRepository
-import pl.llp.aircasting.data.local.SyncingPastSessionsRepository
 import pl.llp.aircasting.data.local.LocalSessionDetailsRepository
 import pl.llp.aircasting.data.local.LocalSessionRepository
 import pl.llp.aircasting.data.local.LocalUploadOutbox
@@ -38,5 +37,5 @@ val databaseModule = module {
   single<UploadOutbox> { LocalUploadOutbox(get()) }
   single<ActiveSessionsRepository> { LocalActiveSessionsRepository(get()) }
   single<SessionDetailsRepository> { LocalSessionDetailsRepository(get()) }
-  single<PastSessionsRepository> { SyncingPastSessionsRepository(LocalPastSessionsRepository(get()), get()) }
+  single<PastSessionsRepository> { LocalPastSessionsRepository(get()) }
 }

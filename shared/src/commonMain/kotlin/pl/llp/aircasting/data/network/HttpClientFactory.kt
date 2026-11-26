@@ -3,6 +3,7 @@ package pl.llp.aircasting.data.network
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.DefaultRequest
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
 const val DefaultBackendUrl = "https://experimental.aircasting.org"
@@ -29,4 +30,5 @@ fun createAircastingHttpClient(
   expectSuccess = true // 401/5xx throw instead of surfacing as JSON-decode errors
   install(ContentNegotiation) { json(AircastingJson) }
   install(DefaultRequest) { url(normalizeBackendUrl(baseUrl())) }
+  install(HttpTimeout) // no defaults: each engine keeps its own; a request may set `timeout { }`
 }

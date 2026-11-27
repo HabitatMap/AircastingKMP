@@ -49,6 +49,17 @@
             android:foregroundServiceType="microphone|location"
             android:exported="false" />
 
+        <!-- The camera app writes note photos through this; authority must match PhotoCapture.android.kt. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.notephotos"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/note_photo_paths" />
+        </provider>
+
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="${MAPS_API_KEY}" />

@@ -3,6 +3,7 @@ package pl.llp.aircasting.settings
 import aircasting.shared.generated.resources.Res
 import aircasting.shared.generated.resources.ic_arrow_back
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -24,6 +25,7 @@ import pl.llp.aircasting.i18n.LocalStrings
 fun SettingsScaffold(
   title: String,
   onBack: () -> Unit,
+  actions: @Composable RowScope.() -> Unit = {},
   content: @Composable (PaddingValues) -> Unit,
 ) {
   val background = MaterialTheme.colorScheme.background
@@ -40,10 +42,12 @@ fun SettingsScaffold(
             )
           }
         },
+        actions = actions,
         colors = TopAppBarDefaults.topAppBarColors(
           containerColor = background,
           titleContentColor = MaterialTheme.colorScheme.onSurface,
           navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
+          actionIconContentColor = MaterialTheme.colorScheme.onSurface,
         ),
       )
     },

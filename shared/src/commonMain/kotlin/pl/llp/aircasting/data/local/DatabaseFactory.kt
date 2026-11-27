@@ -4,6 +4,7 @@ import app.cash.sqldelight.EnumColumnAdapter
 import pl.llp.aircasting.data.local.db.AppDatabase
 import pl.llp.aircasting.data.local.db.Measurement_streams
 import pl.llp.aircasting.data.local.db.Measurements
+import pl.llp.aircasting.data.local.db.Notes
 import pl.llp.aircasting.data.local.db.Pending_uploads
 import pl.llp.aircasting.data.local.db.Sessions
 
@@ -25,6 +26,9 @@ fun createDatabase(driverFactory: DatabaseDriverFactory) = AppDatabase(
     timeAdapter = instantAdapter,
   ),
   pending_uploadsAdapter = Pending_uploads.Adapter(
+    timeAdapter = instantAdapter,
+  ),
+  notesAdapter = Notes.Adapter(
     timeAdapter = instantAdapter,
   ),
 )

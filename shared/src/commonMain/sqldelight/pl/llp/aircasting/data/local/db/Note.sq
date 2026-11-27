@@ -1,0 +1,107 @@
+import kotlin.Boolean;
+import kotlin.time.Instant;
+
+-- A user's notes on their own mobile sessions. time/latitude/longitude are copied from the reading the
+-- note was pinned to (selectNewestLocatedReading), so the note survives that reading's deletion.
+-- The note outbox, like pending_uploads but in the row:
+--   remote_id: the server's note id; NULL = not created on the server yet.
+--   edited:    the text changed since the server last got it (set by every edit; markUploaded and
+--              markEditUploaded clear it only if the text they sent is still the text).
+--   deleted:   a tombstone, hidden from every list, purged once the server has deleted it. Never an
+--              immediate DELETE: a create may be in flight, and its note must then be deleted remotely.
+CREATE TABLE notes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_uuid TEXT NOT NULL REFERENCES sessions(uuid) ON DELETE CASCADE,
+    time INTEGER AS Instant NOT NULL,
+    text TEXT NOT NULL,
+    latitude REAL NOT NULL,
+    longitude REAL NOT NULL,
+    -- JPEG, downscaled on capture (a few hundred KB). Lists select has_photo, never the bytes.
+    photo BLOB,
+    remote_id INTEGER,
+    edited INTEGER AS Boolean NOT NULL DEFAULT 0,
+    deleted INTEGER AS Boolean NOT NULL DEFAULT 0
+);
+
+CREATE INDEX notes_session_uuid ON notes(session_uuid);
+
+insertNote:
+INSERT INTO notes(session_uuid, time, text, latitude, longitude, photo)
+VALUES (?, ?, ?, ?, ?, ?);
+
+lastInsertedId:
+SELECT last_insert_rowid();
+
+selectBySession:
+SELECT id, session_uuid, time, text, latitude, longitude, photo IS NOT NULL AS has_photo
+FROM notes
+WHERE session_uuid = :sessionUuid AND deleted = 0
+ORDER BY time DESC, id DESC;
+
+-- The note's own reading is on whichever stream it was pinned from; other streams take their latest
+-- reading at or before the note (streams of one AirBeam read together, so that is the same moment).
+-- LEFT JOINs, not a scalar subquery: SQLDelight types a subquery column as non-null.
+selectBySessionOnStream:
+SELECT n.id, n.session_uuid, n.time, n.text, n.latitude, n.longitude, n.photo IS NOT NULL AS has_photo,
+       m.value AS stream_value
+FROM notes n
+LEFT JOIN measurement_streams st
+  ON st.session_uuid = n.session_uuid AND st.sensor_name = :sensorName
+LEFT JOIN measurements m
+  ON m.stream_id = st.id
+ AND m.time = (SELECT MAX(time) FROM measurements WHERE stream_id = st.id AND time <= n.time)
+WHERE n.session_uuid = :sessionUuid AND n.deleted = 0
+ORDER BY n.time DESC, n.id DESC;
+
+selectPhoto:
+SELECT photo FROM notes WHERE id = :id;
+
+updateText:
+UPDATE notes SET text = :text, edited = 1 WHERE id = :id;
+
+markDeleted:
+UPDATE notes SET deleted = 1 WHERE id = :id;
+
+-- Across all of the session's streams: they share the phone's clock and position.
+selectNewestLocatedReading:
+SELECT m.time, m.latitude, m.longitude
+FROM measurements m
+JOIN measurement_streams st ON st.id = m.stream_id
+WHERE st.session_uuid = :sessionUuid
+  AND m.latitude IS NOT NULL
+  AND m.longitude IS NOT NULL
+ORDER BY m.time DESC
+LIMIT 1;
+
+-- Outbox: oldest first, so the server's `number` follows the order the notes were written.
+selectPending:
+SELECT id, session_uuid, time, text, latitude, longitude, photo IS NOT NULL AS has_photo
+FROM notes
+WHERE session_uuid = :sessionUuid AND remote_id IS NULL AND deleted = 0
+ORDER BY time, id;
+
+-- An edit made while the POST was in flight left a different text: still edited, so it gets PATCHed.
+markUploaded:
+UPDATE notes SET remote_id = :remoteId, edited = (text <> :sentText) WHERE id = :id;
+
+selectPendingEdits:
+SELECT id, remote_id, text
+FROM notes
+WHERE session_uuid = :sessionUuid AND remote_id IS NOT NULL AND edited = 1 AND deleted = 0
+ORDER BY id;
+
+markEditUploaded:
+UPDATE notes SET edited = 0 WHERE id = :id AND text = :sentText;
+
+-- remote_id NULL here = never reached the server: the uploader purges it without a request.
+selectPendingDeletes:
+SELECT id, remote_id, text
+FROM notes
+WHERE session_uuid = :sessionUuid AND deleted = 1
+ORDER BY id;
+
+purge:
+DELETE FROM notes WHERE id = :id;
+
+selectSessionsWithPending:
+SELECT DISTINCT session_uuid FROM notes WHERE remote_id IS NULL OR edited = 1 OR deleted = 1;

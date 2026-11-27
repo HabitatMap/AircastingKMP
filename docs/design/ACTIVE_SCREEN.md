@@ -167,7 +167,32 @@ while live, finish tap as the end). The **Active tab card** shows the same line 
 under the name (bodySmall / onSurfaceVariant), ending at the card's `lastSeen`.
 The meta row's "1 min ago" stays while live, is dropped once finished. Explore stations have no
 such line (their location name needs reverse geocoding). Not built yet, like on the
-station screen: Map tab, app-bar actions (favourite, alert, notes), location name.
+station screen: Map tab, app-bar actions (favourite, alert), location name.
+
+**Notes** (*added 2026-11-26*, Figma section `2174:10249`). Own **mobile** sessions only:
+- App bar `add_notes` (live sessions only) opens "Bottom sheet - add notes" (`1138:28658`) → `AddNoteSheet`
+  on `SettingsSheet` (Cancel / Notes / Done). Done and the outline Save both save. Rules in
+  `DOMAIN_KNOWLEDGE.md` (Notes with photos).
+- Segmented control becomes **Graph | Notes | Map** (`DetailsTab`; Notes only when the route passes the
+  `notes` slot = mobile sessions, live or finished). Notes tab (`1245:15635`) = `SessionNotesList`: newest
+  first; each `NoteCard` shows the date on the session's clock (regional format, not Figma's literal
+  "Aug 26, 2026 · 2:15 PM") and the **selected chip's** reading at the note's time with its level dot
+  (`NoteRepository.observeOnStream`). The threshold slider is hidden on this tab, as in Figma.
+- Graph: each note is a "Timeline note indicator" (`1147:351`): a 24 dp disc with the 12 dp `ic_note`
+  icon (Figma's `file-text`, `1145:29844`, tinted `onSurfaceVariant`), **on the line** at (note time on the session's wall clock, the selected stream's reading there):
+  `noteMarkers` → `MeasurementChart(notes = …)` → `NoteMarkers` decoration, using Vico's own x/y mapping.
+  A note with no reading on the selected stream gets no marker. Not tappable yet.
+- Map (mobile track): the same disc at each note's own position (`TrackMap(notes = …)`, pinned with
+  `centredOn`), above the track. Every note shows whatever the chip. Not tappable yet.
+- Tapping a note card, live or finished session, opens "Edit notes" (`1140:29142`) — same
+  `NoteEditorSheet`, text prefilled, red outlined Delete above Save (*decided 2026-11-27*, as legacy). Delete asks first
+  (`ConfirmDialog`, "Delete this note?"), though neither Figma nor legacy does (*decided 2026-11-27*).
+  The add-note app-bar action stays live-only.
+- Photo: the add sheet's dashed "Add photo" (`1141:277`) opens `rememberPhotoCapture`; the taken photo
+  replaces the slot with a camera button to retake (`1140:29086`). Figma's photo is a 380 dp square in a
+  918 dp sheet, taller than a phone: the note sheet doesn't scroll, and the photo keeps the full width
+  and takes the height left over, up to square, cropped to fill (*decided 2026-11-27*). Cards show it 140 dp tall on
+  top; the edit sheet shows it read-only (the API could replace it via PATCH — not built).
 
 **Track map** (`TrackMap` → `MapDotsOverlay`): while the session is live the newest dot — the
 current measurement — gets a 2 dp white ring (*decided 2026-11-24*). The path is 4 dp wide at

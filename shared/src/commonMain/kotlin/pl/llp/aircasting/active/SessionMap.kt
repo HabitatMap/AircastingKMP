@@ -6,6 +6,7 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
+import pl.llp.aircasting.domain.GeoLocation
 import pl.llp.aircasting.domain.SensorThreshold
 import pl.llp.aircasting.domain.StationDetails
 import pl.llp.aircasting.domain.StationStream
@@ -19,6 +20,7 @@ import pl.llp.aircasting.map.TrackMap
 fun SessionMap(
   session: StationDetails, stream: StationStream, threshold: SensorThreshold?,
   modifier: Modifier = Modifier,
+  notes: List<GeoLocation> = emptyList(),
 ) {
   val vm = koinViewModel<SessionMapViewModel>(key = "session-map-${stream.id}") {
     parametersOf(session.uuid, stream.sensorName)
@@ -32,6 +34,7 @@ fun SessionMap(
       // A finished session (opened from My Data) frames its whole track; no Centre button.
       live = session.endTime == null,
       userCamera, followZoom, onUserMoved = vm::onUserMoved, onRecentre = vm::recentre, modifier = modifier,
+      notes = notes,
     )
   }
 }

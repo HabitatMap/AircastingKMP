@@ -1,11 +1,17 @@
 package pl.llp.aircasting.map
 
 import aircasting.shared.generated.resources.Res
+import aircasting.shared.generated.resources.ic_note
 import aircasting.shared.generated.resources.ic_my_location
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -14,11 +20,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import kotlinx.datetime.TimeZone
+import org.jetbrains.compose.resources.painterResource
 import pl.llp.aircasting.domain.DataSource
+import pl.llp.aircasting.domain.GeoLocation
 import pl.llp.aircasting.domain.MeasurementLevel
 import pl.llp.aircasting.domain.SensorThreshold
 import pl.llp.aircasting.domain.StationDetails
@@ -43,6 +52,8 @@ fun TrackMap(
   points: List<TrackPoint>, threshold: SensorThreshold?, unit: String, timeZone: TimeZone,
   live: Boolean, userCamera: MapCamera?, followZoom: Float?, onUserMoved: (MapCamera) -> Unit, onRecentre: () -> Unit,
   modifier: Modifier = Modifier,
+  /** Where the session's notes were written: one marker each, above the track. */
+  notes: List<GeoLocation> = emptyList(),
 ) {
   // Clip: Compose doesn't clip drawing to layout bounds, and the overlay Canvas draws the whole
   // path, off-screen parts included, over whatever sits next to the map.
@@ -80,6 +91,7 @@ fun TrackMap(
       },
     ) { liveCamera ->
       MapDotsOverlay(dots, liveCamera, levelColours, uncoloured, line, Modifier.fillMaxSize(), markNewest = live)
+      notes.forEach { NoteMarker(Modifier.centredOn(WebMercator.x(it.longitude), WebMercator.y(it.latitude), liveCamera)) }
       shown?.let { i ->
         MapTooltip(
           points[i], unit, timeZone,
@@ -96,6 +108,20 @@ fun TrackMap(
       onClick = onRecentre,
       Modifier.align(Alignment.BottomEnd).padding(4.dp),
     )
+  }
+}
+
+/** The graph's "Timeline note indicator" (Figma 1147:351), as a map pin: 24 dp disc, 12 dp note icon. */
+@Composable
+private fun NoteMarker(modifier: Modifier) {
+  Box(
+    modifier.size(24.dp)
+      .clip(CircleShape)
+      .background(MaterialTheme.colorScheme.surfaceContainerLowest)
+      .border(1.dp, MaterialTheme.colorScheme.onSurface, CircleShape),
+    contentAlignment = Alignment.Center,
+  ) {
+    Icon(painterResource(Res.drawable.ic_note), contentDescription = null, Modifier.size(12.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
   }
 }
 

@@ -909,6 +909,24 @@ first offline launch). Server floats are rounded to the integer columns.
   server-side email-export endpoint. Row formatting **KEEP**; file/share **PLATFORM**.
 - **Notes with photos:** note model carries lat/lng + `photo_location`; camera via ImagePicker,
   EXIF rotate/compress. Model/repo/API **KEEP**; capture **PLATFORM**.
+  Rewrite (*2026-11-26*, Figma `2174:10249`) — `notes` table, `LocalNoteRepository`, `SessionNotesViewModel`:
+  - **Mobile sessions only** (the API is `/mobile_sessions/{uuid}/notes`). Adding only while the
+    session is live; edit and delete on live and finished sessions alike (legacy
+    `SessionDetailsViewController.noteMarkerClicked` → `EditNoteBottomSheet` on any session, then
+    `SessionManager.editNote`/`deleteNote`, which re-sync a finished session). v3 has per-note PATCH/DELETE,
+    so a finished session's changes go up through the notes outbox: no re-create, no second `/finish`.
+  - **Pinned to a reading** (legacy `AddNoteBottomSheet`): the note takes the time **and** position of the
+    session's newest reading that has a location, across all streams — so it sits on a real point of
+    the graph and the track. No located reading yet → nothing stored, "can't be added yet" (legacy
+    `NotesNoLocationError`). Legacy took the date from the last *averaged* reading; we don't average.
+  - Text is trimmed and must not be empty (legacy `notes_description_empty_error`).
+  - `number` (legacy: last + 1 on the phone) is server-allocated in v3 and not stored locally.
+  - **Photo** (legacy camera-only + EXIF rotate/compress): `rememberPhotoCapture` (expect/actual) →
+    upright JPEG, long edge ≤ 1200 px, quality 80 (server keeps 600 px; v3 cap 5 MB). Android:
+    `TakePicture` into a `FileProvider` uri (`<applicationId>.notephotos`, androidApp manifest, no CAMERA
+    permission), gallery picker if no camera app. iOS: `UIImagePickerController` (camera; photo library
+    on the simulator), `NSCameraUsageDescription` in Info.plist. Stored as a BLOB on the note row (lists
+    read only `has_photo`); sent base64 in the create.
 - **Microphone dB sensor:** phone mic as a sensor — 44.1kHz PCM → dB via `SignalPower` +
   `CalibrationHelper`, emits `NewMeasurementEvent` 1/s, thresholds 20/60/70/80/100. Math
 -  Rewrite (decided 2026-11-10): MicrophoneRecorder — stream Phone Microphone / dB, device_id "Builtin", device.model "Phone Microphone" (v3 requires one; legacy sent none). One reading per wall-clock second: the first block of each new second (legacy MicrophoneReader.isSecondTheSame), dbFs + offset (equals legacy CalibrationHelper). One mic session at a time (legacy isMicrophoneSessionAlreadyRecording). Android: its own microphone|location foreground service.

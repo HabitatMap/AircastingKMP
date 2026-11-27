@@ -29,8 +29,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -54,6 +52,7 @@ import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
+import pl.llp.aircasting.ui.components.ConfirmDialog
 import pl.llp.aircasting.i18n.LocalStrings
 import pl.llp.aircasting.ui.components.CardButton
 import pl.llp.aircasting.ui.components.CountBadge
@@ -500,17 +499,12 @@ private fun Footer(state: CardState, onFinish: () -> Unit, onSeeDetails: () -> U
 @Composable
 private fun FinishDialog(sessionName: String, onConfirm: () -> Unit, onDismiss: () -> Unit) {
   val strings = LocalStrings.current
-  AlertDialog(
-    onDismissRequest = onDismiss,
-    containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
-    title = { Text(strings.activeFinishTitle(sessionName)) },
-    text = { Text(strings.activeFinishBody) },
-    confirmButton = {
-      TextButton(
-        onClick = onConfirm,
-        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
-      ) { Text(strings.activeFinishSession) }
-    },
-    dismissButton = { TextButton(onClick = onDismiss) { Text(strings.activeKeepRecording) } },
+  ConfirmDialog(
+    title = strings.activeFinishTitle(sessionName),
+    body = strings.activeFinishBody,
+    confirmLabel = strings.activeFinishSession,
+    dismissLabel = strings.activeKeepRecording,
+    onConfirm = onConfirm,
+    onDismiss = onDismiss,
   )
 }

@@ -19,23 +19,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import pl.llp.aircasting.i18n.LocalStrings
+import pl.llp.aircasting.ui.components.ConfirmDialog
 
 @Composable
 internal fun DeleteAccountConfirmDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
   val strings = LocalStrings.current
-  AlertDialog(
-    onDismissRequest = onDismiss,
-    title = { Text(strings.deleteAccountConfirmTitle) },
-    text = { Text(strings.deleteAccountConfirmBody) },
-    confirmButton = {
-      TextButton(
-        onClick = onConfirm,
-        // Destructive intent gets the error color; the neutral action stays default so the
-        // dangerous one is never the visually easy choice.
-        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
-      ) { Text(strings.deleteAccountSendCode) }
-    },
-    dismissButton = { TextButton(onClick = onDismiss) { Text(strings.cancel) } },
+  ConfirmDialog(
+    title = strings.deleteAccountConfirmTitle,
+    body = strings.deleteAccountConfirmBody,
+    confirmLabel = strings.deleteAccountSendCode,
+    dismissLabel = strings.cancel,
+    onConfirm = onConfirm,
+    onDismiss = onDismiss,
   )
 }
 

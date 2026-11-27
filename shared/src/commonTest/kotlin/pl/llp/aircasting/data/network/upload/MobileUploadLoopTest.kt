@@ -26,10 +26,12 @@ class MobileUploadLoopTest {
 
   private val pending = MutableStateFlow(emptyList<String>())
   private val awaitingFinish = MutableStateFlow(emptyList<String>())
-  private val uploader = FakeUploader(pending, awaitingFinish)
+  private val noteChanges = MutableStateFlow(emptyList<String>())
+  private val uploader = FakeUploader(pending, awaitingFinish, noteChanges)
   private val loop = MobileUploadLoop(
     sessionsWithPending = pending,
     sessionsAwaitingFinish = awaitingFinish,
+    sessionsWithNoteChanges = noteChanges,
     uploader = uploader,
     flushInterval = 60.seconds,
     initialBackoff = 30.seconds,
@@ -81,6 +83,37 @@ class MobileUploadLoopTest {
     awaitingFinish.value = listOf(A)
     runCurrent()
 
+    assertEquals(listOf(A), uploader.uploads)
+  }
+
+  /** A note is a user action waiting to show on the web: no batching, unlike a recording's rows. */
+  @Test
+  fun a_note_change_drains_at_once() = runTest {
+    start()
+    noteChanges.value = listOf(A)
+    runCurrent()
+
+    assertEquals(listOf(A), uploader.uploads)
+  }
+
+  /** A note saved while measurements wait for their batch cuts the wait short. */
+  @Test
+  fun a_note_change_during_the_wait_drains_at_once() = runTest {
+    start()
+    pending.value = listOf(A)
+    advanceBy(10.seconds)
+
+    noteChanges.value = listOf(A)
+    runCurrent()
+
+    assertEquals(listOf(A), uploader.uploads)
+  }
+
+  @Test
+  fun drainOnce_sends_note_changes_too() = runTest {
+    noteChanges.value = listOf(A)
+
+    assertTrue(loop.drainOnce())
     assertEquals(listOf(A), uploader.uploads)
   }
 
@@ -213,6 +246,7 @@ class MobileUploadLoopTest {
   private class FakeUploader(
     private val pending: MutableStateFlow<List<String>>,
     private val awaitingFinish: MutableStateFlow<List<String>>,
+    private val noteChanges: MutableStateFlow<List<String>>,
   ) : SessionUploader {
     val uploads = mutableListOf<String>()
     val failing = mutableSetOf<String>()
@@ -225,6 +259,7 @@ class MobileUploadLoopTest {
       if (sessionUuid in failing) error("offline")
       pending.value -= sessionUuid
       awaitingFinish.value -= sessionUuid
+      noteChanges.value -= sessionUuid
     }
   }
 

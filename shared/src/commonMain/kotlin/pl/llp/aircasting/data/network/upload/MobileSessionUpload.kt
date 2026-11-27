@@ -3,6 +3,7 @@ package pl.llp.aircasting.data.network.upload
 import co.touchlab.kermit.Logger
 import io.ktor.client.plugins.ClientRequestException
 import io.ktor.http.HttpStatusCode
+import kotlinx.datetime.TimeZone
 import pl.llp.aircasting.data.auth.AuthSession
 import pl.llp.aircasting.data.auth.tokenOrNull
 import pl.llp.aircasting.data.network.CreateMobileSessionRequestDto
@@ -16,7 +17,7 @@ import pl.llp.aircasting.domain.session.SessionRepository
 
 /**
  * Brings one recorded mobile session up to date on the server: create (once), upload the
- * outbox, then `/finish` (once, after the user stopped). Each step is skipped when already
+ * outbox and the notes, then `/finish` (once, after the user stopped). Each step is skipped when already
  * done, so calling it again after a failure resumes where it stopped.
  */
 class MobileSessionUpload(
@@ -24,6 +25,7 @@ class MobileSessionUpload(
   private val sessions: SessionRepository,
   private val streams: MeasurementStreamRepository,
   private val uploader: MobileMeasurementUploader,
+  private val notes: MobileNoteUploader,
   private val auth: AuthSession,
 ) : SessionUploader {
   private val log = Logger.withTag("SessionUpload")
@@ -42,6 +44,7 @@ class MobileSessionUpload(
     }
 
     uploader.upload(sessionUuid)
+    notes.upload(sessionUuid, TimeZone.of(session.timeZone))
 
     val endTime = session.endTime
     if (endTime != null && !session.isFinishedOnServer) {

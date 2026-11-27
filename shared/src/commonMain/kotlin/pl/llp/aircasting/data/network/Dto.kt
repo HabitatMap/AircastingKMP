@@ -89,6 +89,19 @@ data class UpdateMobileSessionRequestDto(
   @SerialName("tag_list") val tagList: String? = null,
   @SerialName("contribute") val isContributingToCrowdMap: Boolean? = null,
 )
+/**
+ * `POST /mobile_sessions/{uuid}/notes`. [date] is the wall clock the phone saw (ISO 8601, no zone,
+ * e.g. `2026-08-14T10:00:00`). [photo]: base64 image, max 5 MB decoded; null = no photo (key omitted).
+ */
+@Serializable
+data class CreateNoteRequestDto(
+  val text: String,
+  val date: String,
+  val latitude: Double,
+  val longitude: Double,
+  val photo: String? = null,
+)
+
 @Serializable
 data class NoteDto(
   val id: Long,

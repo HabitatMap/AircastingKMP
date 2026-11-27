@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The camera app writes a note photo here (shared/…/notes/PhotoCapture.android.kt). -->
+<paths>
+    <cache-path name="note_photos" path="note_photos/" />
+</paths>

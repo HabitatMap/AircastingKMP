@@ -3,16 +3,12 @@ package pl.llp.aircasting.data.network
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.delete
-import io.ktor.client.request.forms.formData
-import io.ktor.client.request.forms.submitFormWithBinaryData
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.patch
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
-import io.ktor.http.Headers
-import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import kotlin.time.Instant
 
@@ -95,29 +91,14 @@ class MobileSessionsApi(private val client: HttpClient) {
     }
       .body()
 
-  /** Add a note, optionally attaching photo bytes. */
-  suspend fun addNote(
-    userToken: String,
-    uuid: String,
-    noteJson: String,
-    photoBytes: ByteArray? = null,
-  ): NoteDto = client.submitFormWithBinaryData(
-    url = ApiEndpoints.v3MobileSessionNotes(uuid),
-    formData = formData {
-      append("note", noteJson, Headers.build {
-        append(HttpHeaders.ContentType, "application/json")
-      })
-      if (photoBytes != null) {
-        append("photo", photoBytes, Headers.build {
-          append(HttpHeaders.ContentType, "image/jpeg")
-          append(HttpHeaders.ContentDisposition, "filename=\"photo.jpg\"")
-        })
-      }
-    },
-  ) {
-    aircastingBearerAuth(userToken)
-  }
-    .body()
+  /** Add a note; a photo rides along base64-encoded in the same JSON body. */
+  suspend fun addNote(userToken: String, uuid: String, note: CreateNoteRequestDto): NoteDto =
+    client.post(ApiEndpoints.v3MobileSessionNotes(uuid)) {
+      aircastingBearerAuth(userToken)
+      contentType(ContentType.Application.Json)
+      setBody(note)
+    }
+      .body()
 
   /** Edit text of an existing note. */
   suspend fun editNote(

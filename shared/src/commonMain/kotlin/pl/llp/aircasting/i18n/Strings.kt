@@ -344,6 +344,22 @@ interface Strings {
   val stationNow: String
   val detailsGraph: String
   val detailsMap: String
+  // Notes on own mobile sessions — Figma 2174:10249
+  /** Sheet title, the text field's label and (later) the details tab: "Notes" in every locale so far. */
+  val notesTitle: String
+  val notesAdd: String
+  val notesEmpty: String
+  val notesEditTitle: String
+  val notesDelete: String
+  val notesDeleteConfirmTitle: String
+  val notesDeleteConfirmBody: String
+  val notesAddPhoto: String
+  val notesRetakePhoto: String
+  val notesPhoto: String
+  val notesHint: String
+  val notesPlaceholder: String
+  val notesEmptyError: String
+  val notesNoLocationError: String
   val mapFullScreen: String
   val mapExitFullScreen: String
   val mapTooltipClose: String

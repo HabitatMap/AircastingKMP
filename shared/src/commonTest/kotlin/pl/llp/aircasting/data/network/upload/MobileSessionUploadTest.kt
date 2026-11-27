@@ -8,6 +8,7 @@ import io.ktor.client.plugins.ServerResponseException
 import io.ktor.client.request.HttpRequestData
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.TextContent
 import io.ktor.http.headersOf
@@ -26,6 +27,8 @@ import pl.llp.aircasting.data.network.createAircastingHttpClient
 import pl.llp.aircasting.domain.GeoLocation
 import pl.llp.aircasting.domain.session.Measurement
 import pl.llp.aircasting.domain.session.MeasurementStream
+import pl.llp.aircasting.domain.session.Note
+import pl.llp.aircasting.domain.session.NoteChange
 import pl.llp.aircasting.domain.session.Session
 import pl.llp.aircasting.domain.session.SessionRepository
 import pl.llp.aircasting.domain.session.SessionStatus
@@ -43,6 +46,7 @@ class MobileSessionUploadTest {
   private val requests = mutableListOf<HttpRequestData>()
   private var createStatus = HttpStatusCode.Created
   private val outbox = FakeUploadOutbox()
+  private val noteOutbox = FakeNoteOutbox()
   private val sessions = FakeSessionRepository(SESSION)
   private val streams = FakeStreamRepository(
     listOf(
@@ -152,6 +156,36 @@ class MobileSessionUploadTest {
     assertEquals(1, outbox.rows.size)
   }
 
+  /** The server needs the session before its notes; notes go before /finish so a failure retries both. */
+  @Test
+  fun pending_notes_go_up_after_create_and_before_finish() = runTest {
+    sessions.session = SESSION.copy(endTime = END)
+    noteOutbox.notes += Note(1, UUID, START, "Smells like smoke", LOCATION)
+
+    upload().upload(UUID)
+
+    assertEquals(listOf(CREATE_PATH, NOTES_PATH, FINISH_PATH), requests.map { it.url.encodedPath })
+    assertEquals(mapOf(1L to 17L), noteOutbox.uploaded)
+  }
+
+  /** Notes on a finished session can still change: the next pass sends just those, no create and no second finish. */
+  @Test
+  fun note_changes_on_a_session_finished_on_the_server_go_up_without_create_or_finish() = runTest {
+    sessions.session = SESSION.copy(endTime = END, isFinishedOnServer = true)
+    streams.setSensorTypeId(streamId = 1, sensorTypeId = 2)
+    streams.setSensorTypeId(streamId = 2, sensorTypeId = 1)
+    noteOutbox.edits += NoteChange(id = 1, remoteId = 17, text = "Smoke from the bakery")
+    noteOutbox.deletes += NoteChange(id = 2, remoteId = 18, text = "Typo")
+
+    upload().upload(UUID)
+
+    assertEquals(
+      listOf(HttpMethod.Patch to "$NOTES_PATH/17", HttpMethod.Delete to "$NOTES_PATH/18"),
+      requests.map { it.method to it.url.encodedPath },
+    )
+    assertEquals(listOf("edited 1", "purged 2"), noteOutbox.log)
+  }
+
   @Test
   fun signed_out_sends_nothing() = runTest {
     upload(token = null).upload(UUID)
@@ -166,6 +200,8 @@ class MobileSessionUploadTest {
           if (createStatus == HttpStatusCode.Created) respond(CREATED_JSON, createStatus, JSON_HEADERS)
           else respondError(createStatus)
         "/api/v3/mobile_sessions/$UUID" -> respond(SHOW_JSON, HttpStatusCode.OK, JSON_HEADERS)
+        NOTES_PATH -> respond(NOTE_JSON, HttpStatusCode.Created, JSON_HEADERS)
+        "$NOTES_PATH/17" -> respond(NOTE_JSON, HttpStatusCode.OK, JSON_HEADERS)
         else -> respond("") // /measurements and /finish: only the status matters
       }
     }
@@ -176,6 +212,7 @@ class MobileSessionUploadTest {
       sessions = sessions,
       streams = streams,
       uploader = MobileMeasurementUploader(api, outbox, streams, auth),
+      notes = MobileNoteUploader(api, noteOutbox, auth),
       auth = auth,
     )
   }
@@ -196,6 +233,8 @@ class MobileSessionUploadTest {
     const val UUID = "8d7a3f2e-0000-4000-8000-000000000001"
     const val CREATE_PATH = "/api/v3/mobile_sessions"
     const val FINISH_PATH = "/api/v3/mobile_sessions/$UUID/finish"
+    const val NOTES_PATH = "/api/v3/mobile_sessions/$UUID/notes"
+    val NOTE_JSON = """{"id":17,"text":"Smells like smoke","date":"2026-10-19T10:00:00","latitude":52.23,"longitude":21.01}"""
     val START = Instant.parse("2026-10-19T08:00:00Z")
     val END = Instant.parse("2026-10-19T08:30:00Z")
     val LOCATION = GeoLocation(latitude = 52.23, longitude = 21.01)

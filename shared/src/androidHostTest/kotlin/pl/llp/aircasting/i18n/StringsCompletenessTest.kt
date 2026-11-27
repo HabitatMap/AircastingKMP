@@ -52,6 +52,7 @@ class StringsCompletenessTest {
     "streamTemperature",
     "streamHumidity",
     "networkWifi",
+    "notesTitle", // "Notes" is French too
   ) + onboardingPlaceholders
 
   /**

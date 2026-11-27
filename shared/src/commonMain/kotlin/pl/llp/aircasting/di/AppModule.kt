@@ -17,6 +17,7 @@ import org.koin.dsl.module
 import pl.llp.aircasting.active.ActiveFixedSessionsRepository
 import pl.llp.aircasting.active.ActiveViewModel
 import pl.llp.aircasting.mydata.PastSessionsViewModel
+import pl.llp.aircasting.notes.SessionNotesViewModel
 import pl.llp.aircasting.active.SessionDetailsRepository
 import pl.llp.aircasting.active.SessionGraphViewModel
 import pl.llp.aircasting.active.SessionMapViewModel
@@ -132,6 +133,7 @@ val recordModule = module {
     SessionGraphViewModel(uuid, sensorName, timeZone, get())
   }
   viewModel { (uuid: String, sensorName: String) -> SessionMapViewModel(uuid, sensorName, get()) }
+  viewModel { (uuid: String) -> SessionNotesViewModel(uuid, get()) }
   viewModel(FixedSessionDetailsQualifier) { (uuid: String, sensorName: String?) ->
     val details = FixedSessionDetailsRepository(get<SessionDetailsRepository>(), get())
     StationDetailsViewModel(details.observe(uuid), get(), preferredSensor = sensorName)

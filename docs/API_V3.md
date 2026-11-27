@@ -74,6 +74,14 @@ AirBeam mobile (moving) sessions.
 default, send it), `device { mac_address, model, name? }`, `streams[]` (min 1).
 Optional: `tag_list`, `latitude`, `longitude`.
 
+**Add-note body** — plain JSON (not multipart): required `text`, `date` (ISO 8601 wall clock the phone
+saw, no zone, e.g. `2026-08-14T10:00:00`), `latitude`, `longitude`; optional `photo` = base64 image, max
+5 MB decoded (`413` when the body is too big). `201` returns the note with its server `id` (address it by
+that) and `number` (ordering key only, server-allocated). **No idempotency key, no server dedup:** a POST
+whose response is lost and is retried creates a second note. Accepted as rare (*decided 2026-11-26*);
+if it shows up, before retrying a timed-out create, list the notes and adopt the one with the same
+`date` + `text`.
+
 A stream is `{ sensor_name, unit_symbol }` for **known sensors** (AirBeam PM1/PM2.5/PM10/RH/F and
 `Phone Microphone`). A **custom sensor** must also send `measurement_type`, `measurement_short_type`,
 `unit_name` and `thresholds { very_low, low, medium, high, very_high }` (ascending); its fields cap at 64
@@ -456,6 +464,29 @@ insert-only, per `DOMAIN_KNOWLEDGE.md` rule #4). The traps above shape how it ma
    rows in place — they go out again next pass. Resends are deduped server-side on
    `(stream, timestamp)`. State lives in SQLite, so it survives process death.
 
+### Notes outbox — `notes.remote_id` (*added 2026-11-26*)
+
+A note written on the phone is stored at once with `remote_id = NULL`; that NULL is its outbox entry
+(`NoteOutbox`: `pending` oldest first, `markUploaded` stores the server `id`). `MobileSessionUpload` runs
+`MobileNoteUploader` **after** the session exists on the server and **before** `/finish`, one POST per note;
+a failure throws, the notes already sent keep their id, the rest wait for the next pass. The note's `date`
+is its time on the **session's** wall clock, whole seconds (`2026-10-19T10:00:00`). The upload loop takes
+sessions with note changes as their own input (`sessionsWithNoteChanges`) and sends them without the
+batching wait, even when no measurement is queued. Duplicates on a lost response: see "Add-note body" above.
+
+Edits and deletes (*added 2026-11-26*) live in the same row: `edited` (text changed since the server got
+it) and `deleted` (a tombstone, hidden from every list). Each pass sends creates, then PATCHes
+(`{ text }`), then DELETEs, then purges the row. Two races are covered by that order and by comparing
+texts: an edit made while the create's POST was in flight leaves `edited` set (`markUploaded` clears it
+only if the row still has the text it sent), and a delete made then is a tombstone that has a server id
+once the POST lands, so it gets its DELETE. A tombstone that never reached the server is purged with no
+request. `404` on PATCH or DELETE (deleted on the web meanwhile) counts as done, so it can't block
+`/finish` forever.
+
+Edits and deletes also work on **finished** sessions (*2026-11-27*). The same pass handles them: its
+streams already have `sensor_type_id`s, so there is no create, and `is_finished_on_server` skips `/finish`.
+Only the PATCH and DELETE requests go out (`MobileSessionUploadTest`).
+
 ### When the uploader runs — *decided 2026-10-19*
 
 **Upload is not sync.** v3 has no `sync_with_versioning`, so nothing server-side decides what to upload;
@@ -468,7 +499,9 @@ rows, or one with `end_time` set and `is_finished_on_server = 0`. One loop in `c
 once) for each such session:
 
 1. No work → idle (no timer runs).
-2. A stopped session not yet finished on the server → drain **now** — no caller has to remember to flush.
+2. A stopped session not yet finished on the server, or one with a note change (new, edited, deleted) →
+   drain **now** — no caller has to remember to flush. A note is a one-off user action expected on the
+   web right away; batching it bought nothing and held edits back ~60 s (*fixed 2026-11-27*).
 3. Only rows of still-recording sessions → wait **N = 60 s**, then drain (≈300 frames at 5 streams × 1 Hz;
    radio wakeups, not bytes, drive battery cost).
 4. Failure → exponential backoff (e.g. 30 s … ~10 min), reset on success. Heals the future-`finished_at` `400`.

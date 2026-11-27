@@ -37,6 +37,8 @@ fun SettingsSheet(
   confirmLabel: String = LocalStrings.current.done,
   // Set true to slide the sheet out and then call onDismiss, e.g. after a Save that passed validation.
   closing: Boolean = false,
+  // False lets content fit the sheet's height instead (Modifier.weight), e.g. a photo that shrinks to fit.
+  scrollable: Boolean = true,
   content: @Composable ColumnScope.() -> Unit,
 ) {
   // Open straight to full content height; the half-height stop hid the footer buttons.
@@ -55,7 +57,7 @@ fun SettingsSheet(
     ) {
       // The app's own motion back for the content: only the sheet's hide is retuned.
       MaterialTheme(motionScheme = motion) {
-        Column(Modifier.verticalScroll(rememberScrollState())) {
+        Column(if (scrollable) Modifier.verticalScroll(rememberScrollState()) else Modifier) {
           SheetHeader(
             title,
             // Removing a ModalBottomSheet from composition skips its exit animation: slide out first.

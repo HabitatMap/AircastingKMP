@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -69,9 +70,13 @@ fun StationDetailsScreen(
   graph: @Composable (details: StationDetails, stream: StationStream, threshold: SensorThreshold?, modifier: Modifier) -> Unit,
   /** [fullScreen]: a fixed station's map pans and zooms only there; a mobile track's does both. */
   map: @Composable (details: StationDetails, stream: StationStream, threshold: SensorThreshold?, fullScreen: Boolean, modifier: Modifier) -> Unit,
+  /** App-bar icons, e.g. add note on an own active session. */
+  actions: @Composable RowScope.() -> Unit = {},
+  /** The Notes tab; null (Explore, fixed sessions) = no such tab. */
+  notes: (@Composable (details: StationDetails, stream: StationStream, threshold: SensorThreshold?, modifier: Modifier) -> Unit)? = null,
 ) {
   val strings = LocalStrings.current
-  var showMap by rememberSaveable { mutableStateOf(false) }
+  var tab by rememberSaveable { mutableStateOf(DetailsTab.Graph) }
   var fullScreen by rememberSaveable { mutableStateOf(false) }
   val content = state as? StationDetailsState.Content
   val stream = content?.selected
@@ -79,8 +84,8 @@ fun StationDetailsScreen(
     FullScreenMap(content, stream, map, onExit = { fullScreen = false }, onThresholdChange)
     return
   }
-  // App-bar actions (export, share, favourite, alert) stay hidden until they work.
-  SettingsScaffold(title = "", onBack = onBack) { padding ->
+  // Explore's app-bar actions (export, share, favourite, alert) stay hidden until they work.
+  SettingsScaffold(title = "", onBack = onBack, actions = actions) { padding ->
     Box(
       Modifier.fillMaxSize()
         .padding(padding)
@@ -92,8 +97,15 @@ fun StationDetailsScreen(
         // landscape) the column stops shrinking and scrolls instead, so the graph stays usable.
         // A fixed height is what lets weight() work inside verticalScroll.
         is StationDetailsState.Content -> BoxWithConstraints {
+          // Figma order: Graph | Notes | Map. A tab that went away (no map) falls back to the graph.
+          val tabs = listOfNotNull(
+            DetailsTab.Graph,
+            DetailsTab.Notes.takeIf { notes != null },
+            DetailsTab.Map.takeIf { state.details.hasMap },
+          )
+          val shown = tab.takeIf { it in tabs } ?: DetailsTab.Graph
           // A mobile track pans inline: the column's scroll would steal its vertical drags (Android).
-          val mapTakesDrags = showMap && state.details.hasMap && state.details.type == SessionType.MOBILE
+          val mapTakesDrags = shown == DetailsTab.Map && state.details.type == SessionType.MOBILE
           Column(
             Modifier.verticalScroll(rememberScrollState(), enabled = !mapTakesDrags)
               .height(max(maxHeight, MinContentHeight))
@@ -158,19 +170,20 @@ fun StationDetailsScreen(
               }
               // Picker hugs the graph/map it switches: 8 dp, not the column's 16.
               Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (details.hasMap) {
+                if (tabs.size > 1) {
                   SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                    listOf(false, true).forEachIndexed { index, isMap ->
-
+                    tabs.forEachIndexed { index, each ->
                       SegmentedButton(
-                        selected = showMap == isMap,
-                        onClick = { showMap = isMap },
-                        shape = SegmentedButtonDefaults.itemShape(index, count = 2),
-                      ) { Text(if (isMap) strings.detailsMap else strings.detailsGraph) }
+                        selected = shown == each,
+                        onClick = { tab = each },
+                        shape = SegmentedButtonDefaults.itemShape(index, count = tabs.size),
+                      ) { Text(each.label(strings)) }
                     }
                   }
                 }
-                if (showMap && details.hasMap) {
+                if (shown == DetailsTab.Notes && notes != null) {
+                  notes(details, stream, state.threshold, Modifier.weight(1f))
+                } else if (shown == DetailsTab.Map) {
                   // Figma 599:12567: edge to edge (412 × 408 there; here it takes the free height).
                   Box(
                     Modifier.weight(1f)
@@ -195,7 +208,8 @@ fun StationDetailsScreen(
                   )
                 }
               }
-              ThresholdControls(state, stream, onThresholdChange)
+              // Figma's Notes tab (1245:15635) drops the slider: it colours nothing there but the dots.
+              if (shown != DetailsTab.Notes) ThresholdControls(state, stream, onThresholdChange)
             }
           }
         }
@@ -205,6 +219,14 @@ fun StationDetailsScreen(
 }
 
 private val ScreenPadding = 24.dp
+
+private enum class DetailsTab { Graph, Notes, Map }
+
+private fun DetailsTab.label(strings: Strings) = when (this) {
+  DetailsTab.Graph -> strings.detailsGraph
+  DetailsTab.Notes -> strings.notesTitle
+  DetailsTab.Map -> strings.detailsMap
+}
 
 /** Below this the details column scrolls rather than squeezing the graph/map further. */
 private val MinContentHeight = 640.dp

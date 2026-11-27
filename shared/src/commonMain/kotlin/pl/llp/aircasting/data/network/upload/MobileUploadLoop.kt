@@ -18,12 +18,14 @@ import kotlin.time.Duration.Companion.seconds
 
 /**
  * Keeps mobile sessions uploaded while the process lives. Driven by local data, not events:
- * pending rows wait [flushInterval] to batch; a stopped session not yet finished on the
- * server goes at once; a failed pass backs off, doubling up to [maxBackoff].
+ * pending rows wait [flushInterval] to batch (a recording's rows arrive every second, and radio
+ * wakeups cost battery); a stopped session not yet finished on the server and a note change go at
+ * once (one-off user actions, nothing to batch); a failed pass backs off, doubling up to [maxBackoff].
  */
 class MobileUploadLoop(
   private val sessionsWithPending: Flow<List<String>>,
   private val sessionsAwaitingFinish: Flow<List<String>>,
+  private val sessionsWithNoteChanges: Flow<List<String>>,
   private val uploader: SessionUploader,
   private val flushInterval: Duration = 60.seconds,
   private val initialBackoff: Duration = 30.seconds,
@@ -35,12 +37,12 @@ class MobileUploadLoop(
 
   /** Never returns; cancel the calling scope to stop. */
   suspend fun run() = coroutineScope {
-    val work = combine(sessionsWithPending, sessionsAwaitingFinish, ::Work).stateIn(this)
+    val work = combine(sessionsWithPending, sessionsAwaitingFinish, sessionsWithNoteChanges, ::Work).stateIn(this)
     var backoff: Duration? = null
 
     while (true) {
       work.first { it.all.isNotEmpty() }
-      if (backoff == null && work.value.awaitingFinish.isEmpty()) waitToBatch(work)
+      if (backoff == null && work.value.sendNow.isEmpty()) waitToBatch(work)
 
       val snapshot = work.value
       val failed = passLock.withLock { drain(snapshot.all) }
@@ -52,7 +54,7 @@ class MobileUploadLoop(
   }
   private suspend fun waitToBatch(work: StateFlow<Work>) {
     withTimeoutOrNull(flushInterval) {
-      work.first { it.awaitingFinish.isNotEmpty() }
+      work.first { it.sendNow.isNotEmpty() }
     }
   }
 
@@ -62,7 +64,7 @@ class MobileUploadLoop(
    * @return true when every session went; false means retry later.
    */
   suspend fun drainOnce(): Boolean = passLock.withLock {
-    val work = combine(sessionsWithPending, sessionsAwaitingFinish, ::Work).first()
+    val work = combine(sessionsWithPending, sessionsAwaitingFinish, sessionsWithNoteChanges, ::Work).first()
     !drain(work.all)
   }
 
@@ -81,7 +83,9 @@ class MobileUploadLoop(
     }
     return failed
   }
-  private class Work(val pending: List<String>, val awaitingFinish: List<String>) {
-    val all = (awaitingFinish + pending).distinct()
+  private class Work(pending: List<String>, awaitingFinish: List<String>, noteChanges: List<String>) {
+    /** No batching wait for these. */
+    val sendNow = (awaitingFinish + noteChanges).distinct()
+    val all = (sendNow + pending).distinct()
   }
 }

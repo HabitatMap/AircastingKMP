@@ -19,12 +19,13 @@ fun OutlinedActionButton(
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
   contentColor: Color = MaterialTheme.colorScheme.onSurface,
+  borderColor: Color = MaterialTheme.colorScheme.primaryContainer,
 ) {
   OutlinedButton(
     onClick = onClick,
     modifier = modifier,
     shape = RoundedCornerShape(16.dp),
-    border = BorderStroke(1.2.dp, MaterialTheme.colorScheme.primaryContainer),
+    border = BorderStroke(1.2.dp, borderColor),
     colors = ButtonDefaults.outlinedButtonColors(
       containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
       contentColor = contentColor,

@@ -10,7 +10,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.snapshotFlow
+import aircasting.shared.generated.resources.Res
+import aircasting.shared.generated.resources.ic_note
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.platform.LocalDensity
@@ -55,6 +63,7 @@ import com.patrykandpatrick.vico.compose.common.component.ShapeComponent
 import com.patrykandpatrick.vico.compose.common.component.rememberLineComponent
 import com.patrykandpatrick.vico.compose.common.component.rememberTextComponent
 import kotlinx.coroutines.Dispatchers
+import org.jetbrains.compose.resources.painterResource
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.filterNotNull
@@ -82,6 +91,7 @@ private class ChartViewConfiguration(system: ViewConfiguration, override val tou
  * @param points sorted by x (epoch seconds, local-as-UTC); not empty.
  * @param threshold null = no bands, as the uncoloured header.
  * @param minVisibleSeconds the furthest pinch zoom-in, in seconds visible.
+ * @param notes note markers, in the same x/y as [points] (Figma "Timeline note indicator").
  */
 @Composable
 fun MeasurementChart(
@@ -90,6 +100,7 @@ fun MeasurementChart(
   unit: String,
   modifier: Modifier = Modifier,
   minVisibleSeconds: Double = MIN_VISIBLE_SECONDS,
+  notes: List<ChartPoint> = emptyList(),
 ) {
   val modelProducer = remember { CartesianChartModelProducer() }
   val visibleRange = remember { VisibleRangeProbe() }
@@ -120,9 +131,11 @@ fun MeasurementChart(
       shape = DashedShape(dashLength = 8.dp, gapLength = 4.dp),
     )
   }
-  val decorations = remember(threshold, points, midnightLine, aq) {
+  val noteIcon = painterResource(Res.drawable.ic_note)
+  val decorations = remember(threshold, points, midnightLine, aq, notes, noteIcon, colors) {
     threshold?.let { bands(it, aq) }.orEmpty() +
       MidnightLines(midnightsBetween(points.first().x, points.last().x), midnightLine) +
+      NoteMarkers(notes, noteIcon, colors.surfaceContainerLowest, colors.onSurface, colors.onSurfaceVariant) +
       visibleRange
   }
   val firstX = points.first().x
@@ -386,3 +399,40 @@ private class MidnightLines(private val xs: List<Double>, private val line: Line
 }
 
 private val MidnightLineColor = Color(0xFF737578)
+
+/** Figma "Timeline note indicator" (1147:351): a 24 dp disc with a 12 dp note icon, over the line. */
+private class NoteMarkers(
+  private val notes: List<ChartPoint>,
+  private val icon: Painter,
+  private val disc: Color,
+  private val ink: Color,
+  private val iconTint: Color,
+) : Decoration {
+  override fun drawOverLayers(context: CartesianDrawingContext) {
+    if (notes.isEmpty()) return
+    with(context) {
+      // The line's own mappings (LineCartesianLayer.getDrawX/getDrawY), so a marker sits on its point.
+      val drawingStart = (if (isLtr) layerBounds.left else layerBounds.right) +
+        layoutDirectionMultiplier * layerDimensions.startPadding - scroll
+      val yRange = ranges.getYRange(null)
+      val radius = 12.dp.pixels
+      val iconSize = 12.dp.pixels
+      notes.forEach { note ->
+        val x = drawingStart + layoutDirectionMultiplier * layerDimensions.xSpacing * ((note.x - ranges.minX) / ranges.xStep).toFloat()
+        if (x !in layerBounds.left..layerBounds.right) return@forEach
+        val y = layerBounds.bottom - ((note.y - yRange.minY) / yRange.length).toFloat() * layerBounds.height
+        with(mutableDrawScope) {
+          drawCircle(disc, radius, Offset(x, y))
+          drawCircle(ink, radius, Offset(x, y), style = Stroke(1.dp.pixels))
+          // MutableDrawScope's size is a plain var that Painter.draw's inset doesn't shrink, and a vector
+          // painter fills `size`: without this the icon draws at whatever size was last set (the whole chart).
+          // Vico's own ShapeComponent sets it the same way before drawing its shadow painters.
+          size = Size(iconSize, iconSize)
+          translate(x - iconSize / 2, y - iconSize / 2) {
+            with(icon) { draw(size, colorFilter = ColorFilter.tint(iconTint)) }
+          }
+        }
+      }
+    }
+  }
+}
